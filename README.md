@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/assets/living-answer-hero.png" alt="Living Answer — an evidence-backed maintenance layer for old Zhihu answers" width="100%" />
+</p>
+
 # Living Answer
 
 Living Answer helps readers see which important premises in an older Zhihu
