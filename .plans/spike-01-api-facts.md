@@ -6,21 +6,21 @@
 
 ## Endpoint 清单
 
-| # | HTTP URL | 用途 | 鉴权 | 能否取全文 |
-|---|---|---|---|---|
-| 1 | `GET https://developer.zhihu.com/api/v1/content/zhihu_search` | 知乎站内搜索 | Bearer + X-Request-Timestamp | 否，ContentText 是摘要 |
-| 2 | `GET https://developer.zhihu.com/api/v1/content/global_search` | 全网搜索 | Bearer + X-Request-Timestamp | 否，ContentText 是摘要 |
-| 3 | `GET https://developer.zhihu.com/api/v1/content/hot_list` | 知乎热榜 | Bearer + X-Request-Timestamp | 否，Summary 是摘要 |
-| 4 | `POST https://developer.zhihu.com/v1/chat/completions` | 知乎直答 | Bearer + X-Request-Timestamp | 不适用（生成式回答） |
-| 5 | `GET https://developer.zhihu.com/api/v1/user/contents` | 当前用户的创作内容 | Bearer + X-Request-Timestamp | 否，Summary 是摘要 |
-| 6 | `GET https://developer.zhihu.com/api/v1/user/followees` | 当前用户的关注列表 | Bearer + X-Request-Timestamp | 否（不返回正文） |
-| 7 | `GET https://developer.zhihu.com/api/v1/user/favlists` | 当前用户的收藏夹列表 | Bearer + X-Request-Timestamp | 否（不返回正文） |
-| 8 | `GET https://developer.zhihu.com/api/v1/user/favlist_contents` | 指定收藏夹内容 | Bearer + X-Request-Timestamp | 否，Summary 是摘要 |
-| 9 | `GET https://developer.zhihu.com/api/v1/user/collections` | 近期收藏 | Bearer + X-Request-Timestamp | 否，Summary 是摘要 |
-| 10 | `SSE https://developer.zhihu.com/api/mcp/zhihu_search/v1/sse` | MCP 知乎搜索 | Bearer | 否（同 zhihu_search） |
-| 11 | `SSE https://developer.zhihu.com/api/mcp/global_search/v1/sse` | MCP 全网搜索 | Bearer | 否（同 global_search） |
-| 12 | `SSE https://developer.zhihu.com/api/mcp/hot_list/v1/sse` | MCP 热榜 | Bearer | 否（同 hot_list） |
-| 13 | `POST https://developer.zhihu.com/api/mcp/zhida/v1/stream` | MCP 直答 | Bearer | 不适用（生成式回答） |
+| #   | HTTP URL                                                       | 用途                 | 鉴权                         | 能否取全文             |
+| --- | -------------------------------------------------------------- | -------------------- | ---------------------------- | ---------------------- |
+| 1   | `GET https://developer.zhihu.com/api/v1/content/zhihu_search`  | 知乎站内搜索         | Bearer + X-Request-Timestamp | 否，ContentText 是摘要 |
+| 2   | `GET https://developer.zhihu.com/api/v1/content/global_search` | 全网搜索             | Bearer + X-Request-Timestamp | 否，ContentText 是摘要 |
+| 3   | `GET https://developer.zhihu.com/api/v1/content/hot_list`      | 知乎热榜             | Bearer + X-Request-Timestamp | 否，Summary 是摘要     |
+| 4   | `POST https://developer.zhihu.com/v1/chat/completions`         | 知乎直答             | Bearer + X-Request-Timestamp | 不适用（生成式回答）   |
+| 5   | `GET https://developer.zhihu.com/api/v1/user/contents`         | 当前用户的创作内容   | Bearer + X-Request-Timestamp | 否，Summary 是摘要     |
+| 6   | `GET https://developer.zhihu.com/api/v1/user/followees`        | 当前用户的关注列表   | Bearer + X-Request-Timestamp | 否（不返回正文）       |
+| 7   | `GET https://developer.zhihu.com/api/v1/user/favlists`         | 当前用户的收藏夹列表 | Bearer + X-Request-Timestamp | 否（不返回正文）       |
+| 8   | `GET https://developer.zhihu.com/api/v1/user/favlist_contents` | 指定收藏夹内容       | Bearer + X-Request-Timestamp | 否，Summary 是摘要     |
+| 9   | `GET https://developer.zhihu.com/api/v1/user/collections`      | 近期收藏             | Bearer + X-Request-Timestamp | 否，Summary 是摘要     |
+| 10  | `SSE https://developer.zhihu.com/api/mcp/zhihu_search/v1/sse`  | MCP 知乎搜索         | Bearer                       | 否（同 zhihu_search）  |
+| 11  | `SSE https://developer.zhihu.com/api/mcp/global_search/v1/sse` | MCP 全网搜索         | Bearer                       | 否（同 global_search） |
+| 12  | `SSE https://developer.zhihu.com/api/mcp/hot_list/v1/sse`      | MCP 热榜             | Bearer                       | 否（同 hot_list）      |
+| 13  | `POST https://developer.zhihu.com/api/mcp/zhida/v1/stream`     | MCP 直答             | Bearer                       | 不适用（生成式回答）   |
 
 > 注：MCP 端点仅为协议封装层（SSE / Streamable HTTP），底层数据来源与 HTTP API 一致。`clouapi.md` 和 `open-platform.md` 未列举任何单独内容正文 endpoint。
 
@@ -171,13 +171,13 @@
 
 **区分"内容不存在/无权访问" vs "调用失败/超限"：**
 
-| 场景 | 判断方式 |
-|---|---|
-| 内容不存在 / 无权访问 | 两接口均**未记载**独立的「内容不存在」或「无权访问该内容」错误码。空结果以 `EmptyReason`（zhihu_search）或 `HasMore=false` + 空 `Items`（global_search）表示。无内容时 HTTP 200，Code=0，仅数据为空。推测为服务端逻辑过滤，并非 error。 |
-| 鉴权失败 | `20001` |
-| 频率限制 | `30001` |
-| 配额耗尽 | 仅 user-api.md 列出 `30002`；搜索类接口**未单独列出**配额错误码，推测可能复用 `30001` 或其他码，**未记载**。 |
-| 调用失败 / 超限 / 内部错误 | `90001` |
+| 场景                       | 判断方式                                                                                                                                                                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 内容不存在 / 无权访问      | 两接口均**未记载**独立的「内容不存在」或「无权访问该内容」错误码。空结果以 `EmptyReason`（zhihu_search）或 `HasMore=false` + 空 `Items`（global_search）表示。无内容时 HTTP 200，Code=0，仅数据为空。推测为服务端逻辑过滤，并非 error。 |
+| 鉴权失败                   | `20001`                                                                                                                                                                                                                                 |
+| 频率限制                   | `30001`                                                                                                                                                                                                                                 |
+| 配额耗尽                   | 仅 user-api.md 列出 `30002`；搜索类接口**未单独列出**配额错误码，推测可能复用 `30001` 或其他码，**未记载**。                                                                                                                            |
+| 调用失败 / 超限 / 内部错误 | `90001`                                                                                                                                                                                                                                 |
 
 CLI 层还有独立错误码（`cli.md:294-317`）：`AUTH_REQUIRED`（未配置）、`AUTH_INVALID`（凭证无效）、`30001`（频率限制，服务端）、`30002`（配额耗尽，服务端）、`NETWORK_ERROR`/`TIMEOUT`、`UPSTREAM_ERROR`。
 
@@ -201,6 +201,7 @@ CLI 层还有独立错误码（`cli.md:294-317`）：`AUTH_REQUIRED`（未配置
 证据 — `open-platform.md:42-44` — "单个账号最多可申请 20 个 Access Secret。同一账号下所有 Access Secret 共享同一个试用调用额度池。"
 
 **总结：**
+
 - 配额维度为 **per 账号**（所有 Access Secret 共享），不是 per app 或 per user。
 - 未记载 OAuth 授权用户有独立配额。
 - 同一账号下所有 Access Secret 共享额度池，对应能力额度耗尽后该账号下所有 Access Secret 均无法继续调用。
@@ -215,13 +216,13 @@ CLI 层还有独立错误码（`cli.md:294-317`）：`AUTH_REQUIRED`（未配置
 
 ### Q10. 外层 `zhihu-hackathon` Skill 与内层官方 Skill 的互相矛盾之处
 
-| # | 矛盾点 | 外层说法 | 内层说法 | 判定 |
-|---|---|---|---|---|
-| 1 | 版本号 | 外层 SKILL.md 未声明自身版本号 | 内层 SKILL.md:9 — `当前 Skill 版本：0.2.1`；manifest.json `"version": "0.2.1"` | 外层无版本声明，内层有 `0.2.1`；严格说不是互斥，是外层缺失。 |
-| 2 | 用户数据接口的 `Summary` 语义 | 外层 SKILL.md:111 — "创作接口只返回标题与摘要" | 内层 SKILL.md 作同样的说明 | 一致，无矛盾。 |
-| 3 | ContentText 语义 | 外层 SKILL.md:78 — "搜索摘要不是完整原文" | 内层 SKILL.md 作同样的说明 | 一致，无矛盾。 |
-| 4 | OAuth 支持 | 外层 SKILL.md:148 — "CLI 日常调用不使用 OAuth"；cli.md:246 — "所有 me 命令只查询当前 Access Secret 所属账号，不接受 OAuth Token" | 内层 oauth.md 独立说明 OAuth 集成方式；user-api.md:27-33 描述两种身份模型 | 无矛盾。外层说明 CLI 不实现 OAuth，内层 oauth.md 面向"应用开发者代表其他用户"。 |
-| 5 | 安装路径 | 外层 SKILL.md:61 — 官方 Skill 安装到 `.codex/skills/zhihu` | 内层 SKILL.md 不指定安装路径 | 外层定义了安装位置，内层未约束。这不是内容上的矛盾，而是分层职责不同。 |
+| #   | 矛盾点                        | 外层说法                                                                                                                         | 内层说法                                                                       | 判定                                                                            |
+| --- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| 1   | 版本号                        | 外层 SKILL.md 未声明自身版本号                                                                                                   | 内层 SKILL.md:9 — `当前 Skill 版本：0.2.1`；manifest.json `"version": "0.2.1"` | 外层无版本声明，内层有 `0.2.1`；严格说不是互斥，是外层缺失。                    |
+| 2   | 用户数据接口的 `Summary` 语义 | 外层 SKILL.md:111 — "创作接口只返回标题与摘要"                                                                                   | 内层 SKILL.md 作同样的说明                                                     | 一致，无矛盾。                                                                  |
+| 3   | ContentText 语义              | 外层 SKILL.md:78 — "搜索摘要不是完整原文"                                                                                        | 内层 SKILL.md 作同样的说明                                                     | 一致，无矛盾。                                                                  |
+| 4   | OAuth 支持                    | 外层 SKILL.md:148 — "CLI 日常调用不使用 OAuth"；cli.md:246 — "所有 me 命令只查询当前 Access Secret 所属账号，不接受 OAuth Token" | 内层 oauth.md 独立说明 OAuth 集成方式；user-api.md:27-33 描述两种身份模型      | 无矛盾。外层说明 CLI 不实现 OAuth，内层 oauth.md 面向"应用开发者代表其他用户"。 |
+| 5   | 安装路径                      | 外层 SKILL.md:61 — 官方 Skill 安装到 `.codex/skills/zhihu`                                                                       | 内层 SKILL.md 不指定安装路径                                                   | 外层定义了安装位置，内层未约束。这不是内容上的矛盾，而是分层职责不同。          |
 
 **结论：外层与内层在接口定义、字段语义、鉴权方式上无互相矛盾。** 外层作为编排层只描述安装/部署流程，内层作为接口 reference 定义协议契约，两者引用关系清晰。最接近的"不一致"地方是外层 SKILL.md 未声明版本号（内层有 `0.2.1`），但这属于信息缺失而非互斥。以外层版本号缺失标为观察项。
 
@@ -229,18 +230,18 @@ CLI 层还有独立错误码（`cli.md:294-317`）：`AUTH_REQUIRED`（未配置
 
 以下条目在文档中未闭合，Phase B 需通过真实 API 调用验证：
 
-| # | 待验证项 | 来源问题 | 为什么必须验证 |
-|---|---|---|---|
-| 1 | `zhihu_search` 是否存在真正返回「完整正文」的分支路径 | Q5 | 文档所有路径均只返回摘要，但不排除未文档化的参数或内部变体 |
-| 2 | `zhihu_search` 的 `ContentID` 是否可传入其他 endpoint 取全文 | Q5 | `ContentID` 存在但未文档化其作为请求参数的任何 endpoint |
-| 3 | `EditTime` 的实际返回类型 | Q6 | zhihu_search 写 Int32、global_search 写 Int64，schema 级别矛盾 |
-| 4 | `EditTime` 在 zhihu_search 的实际语义（发布 or 编辑） | Q6 | 描述为「发布时间或更新时间戳」，语义模糊 |
-| 5 | `zhihu_search` 空结果 / 无权访问的精确 HTTP 状态码与响应结构 | Q7 | 文档说 Code=0 + EmptyReason 表示无结果，未记载无权访问他人内容的错误码 |
-| 6 | `global_search` 是否也有 `10001` 错误码（文档未列出但可能共用） | Q7 | global_search 错误码表缺少 `10001`，是否遗漏或有意省略 |
-| 7 | `global_search` 配额耗尽时的错误码（是否复用 30001） | Q7、Q8 | 搜索类接口错误码表仅列出 30001，未区分频率限制和配额耗尽 |
-| 8 | `/api/v1/user/contents` 能否通过某种方式读取非本人、非 OAuth 授权用户的内容 | Q4 | 仅记载了"本人"和"OAuth 授权用户"两种场景，未明确禁止或其他方式 |
-| 9 | 开放平台实际配额剩余量（文档无实时查询 API） | Q8 | `cli.md:142` 确认 v0.1 无额度查询 API，需去开发者中心查看 |
-| 10 | 直答 API 的错误码体系（文档只给了一个示例结构，无完整码表） | Q7 | `http-api.md` 直答章节仅给了一个示例错误 JSON，无完整错误码表 |
+| #   | 待验证项                                                                    | 来源问题 | 为什么必须验证                                                         |
+| --- | --------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| 1   | `zhihu_search` 是否存在真正返回「完整正文」的分支路径                       | Q5       | 文档所有路径均只返回摘要，但不排除未文档化的参数或内部变体             |
+| 2   | `zhihu_search` 的 `ContentID` 是否可传入其他 endpoint 取全文                | Q5       | `ContentID` 存在但未文档化其作为请求参数的任何 endpoint                |
+| 3   | `EditTime` 的实际返回类型                                                   | Q6       | zhihu_search 写 Int32、global_search 写 Int64，schema 级别矛盾         |
+| 4   | `EditTime` 在 zhihu_search 的实际语义（发布 or 编辑）                       | Q6       | 描述为「发布时间或更新时间戳」，语义模糊                               |
+| 5   | `zhihu_search` 空结果 / 无权访问的精确 HTTP 状态码与响应结构                | Q7       | 文档说 Code=0 + EmptyReason 表示无结果，未记载无权访问他人内容的错误码 |
+| 6   | `global_search` 是否也有 `10001` 错误码（文档未列出但可能共用）             | Q7       | global_search 错误码表缺少 `10001`，是否遗漏或有意省略                 |
+| 7   | `global_search` 配额耗尽时的错误码（是否复用 30001）                        | Q7、Q8   | 搜索类接口错误码表仅列出 30001，未区分频率限制和配额耗尽               |
+| 8   | `/api/v1/user/contents` 能否通过某种方式读取非本人、非 OAuth 授权用户的内容 | Q4       | 仅记载了"本人"和"OAuth 授权用户"两种场景，未明确禁止或其他方式         |
+| 9   | 开放平台实际配额剩余量（文档无实时查询 API）                                | Q8       | `cli.md:142` 确认 v0.1 无额度查询 API，需去开发者中心查看              |
+| 10  | 直答 API 的错误码体系（文档只给了一个示例结构，无完整码表）                 | Q7       | `http-api.md` 直答章节仅给了一个示例错误 JSON，无完整错误码表          |
 
 ## 与公开 developer.zhihu.com 文档的差异
 

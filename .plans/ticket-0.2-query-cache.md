@@ -20,15 +20,18 @@
 ```ts
 // 期望的公开接口形状（可以微调命名，但语义不得偏离）
 export declare const makeQueryCache: <K, V>(options: {
-  readonly ttl: Duration.Input;          // Effect Duration
+  readonly ttl: Duration.Input; // Effect Duration
   readonly now?: () => Effect.Effect<Instant.Instant>; // 可注入时钟，默认 Clock
-  readonly maxEntries?: number;          // 默认 256；超出按插入序逐出最旧
+  readonly maxEntries?: number; // 默认 256；超出按插入序逐出最旧
 }) => Effect.Effect<QueryCache<K, V>>;
 
 export interface QueryCache<K, V> {
-  readonly get: (key: K) => Effect.Effect<V, CacheMiss>;       // 过期视为 miss 并删除
+  readonly get: (key: K) => Effect.Effect<V, CacheMiss>; // 过期视为 miss 并删除
   readonly set: (key: K, value: V) => Effect.Effect<void>;
-  readonly getOrSet: (key: K, compute: () => Effect.Effect<V, E>) => Effect.Effect<V, E | CacheMiss>;
+  readonly getOrSet: (
+    key: K,
+    compute: () => Effect.Effect<V, E>,
+  ) => Effect.Effect<V, E | CacheMiss>;
   readonly invalidate: (key: K) => Effect.Effect<void>;
   readonly stats: Effect.Effect<CacheStats>; // { hits, misses, entries } 只读快照
 }
