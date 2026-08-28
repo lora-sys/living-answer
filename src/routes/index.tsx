@@ -13,6 +13,11 @@ export const Route = createFileRoute("/")({
         content: "Living Answer 为过去的知乎回答补充今天已经发生变化的关键前提与证据。",
       },
     ],
+    links: [
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
+      { rel: "alternate icon", type: "image/x-icon", href: "/favicon.ico" },
+    ],
   }),
   component: Home,
 });

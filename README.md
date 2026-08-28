@@ -39,6 +39,48 @@ vp test
 vp build
 ```
 
+## Troubleshooting
+
+When something looks off, run the doctor first. It reports Node version,
+package manager, and Vite+ installation status in one place.
+
+```bash
+vp env doctor
+```
+
+### Port already in use
+
+`vp dev` does not assume a fixed port. If a previous session left a process
+bound to the printed port, stop it (the address is shown in the dev output)
+or let the next run pick a new one.
+
+```bash
+# list processes for the printed port
+# macOS / Linux
+lsof -i :<port>
+# Windows
+netstat -ano | findstr :<port>
+```
+
+### Dependencies drifted
+
+`vp install` rewrites the lockfile. To restore a clean state from the
+pinned lockfile:
+
+```bash
+vp install --frozen-lockfile
+vp check
+```
+
+### Wrong Node version
+
+The project pins Node 24 LTS via `devEngines`. If `vp env doctor` reports
+the wrong runtime, install the pinned version and re-run:
+
+```bash
+vp env install
+```
+
 ## Current boundary
 
 Ticket 0 only establishes the runnable application baseline. It does not call

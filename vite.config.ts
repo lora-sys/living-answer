@@ -6,6 +6,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 
 const config = defineConfig({
+  publicDir: "public",
   fmt: {
     ignorePatterns: ["src/routeTree.gen.ts"],
   },
