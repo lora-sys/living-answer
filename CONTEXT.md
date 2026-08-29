@@ -23,8 +23,13 @@ remaining open issue (favicon 404, README troubleshooting) without introducing
 new dependencies. Ticket 0.2 verified (2026-08-29): the offline Effect query
 cache provides injectable time, TTL, bounded eviction, and single-flight
 `getOrSet`; `vp check` and `vp test` are green. It makes no external API calls.
-M1 still answers ingestion and immutable snapshots, and Spike 01 is still
-active, so ingestion Ticket 1 is not Ready.
+Ticket 0.4 verified (2026-08-30): the immutable AnswerSnapshot value object
+is implemented as a pure domain record with typed results and deterministic v1
+fingerprints; `vp check` and `vp test` are green. Ticket 0.5 verified
+(2026-08-30): the immutable PatchEvidence value object is implemented as a
+pure domain record with typed results and deterministic v1 fingerprints; `vp
+check` and `vp test` are green. Spike 01 remains active, so ingestion Ticket 1
+is not Ready.
 
 Confirmed external fact: the official Zhihu Hackathon Search Skill and user
 content listing expose summaries. They do not document a way to fetch the full
