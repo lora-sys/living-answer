@@ -20,8 +20,11 @@ Ticket 0 verified (2026-08-28): `vp install --frozen-lockfile`, `vp check`,
 `vp test`, `vp build` all green; desktop 1440x900 and mobile 375x667 renders
 match `.local/evidence/ticket-0-{desktop,mobile}.png`. Ticket 0.1 closes the
 remaining open issue (favicon 404, README troubleshooting) without introducing
-new dependencies. M1 still answers ingestion and immutable snapshots, and
-Spike 01 is still active, so ingestion Ticket 1 is not Ready.
+new dependencies. Ticket 0.2 verified (2026-08-29): the offline Effect query
+cache provides injectable time, TTL, bounded eviction, and single-flight
+`getOrSet`; `vp check` and `vp test` are green. It makes no external API calls.
+M1 still answers ingestion and immutable snapshots, and Spike 01 is still
+active, so ingestion Ticket 1 is not Ready.
 
 Confirmed external fact: the official Zhihu Hackathon Search Skill and user
 content listing expose summaries. They do not document a way to fetch the full

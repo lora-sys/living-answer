@@ -12,7 +12,7 @@
 
 ```ts
 return Effect.zipRight(
-  Effect.forkIn(Effect.makeFork(Effect.fork)) as never,   // ← 不存在，必须删除
+  Effect.forkIn(Effect.makeFork(Effect.fork)) as never, // ← 不存在，必须删除
   runCompute.pipe(Effect.exit),
   Deferred.await(own),
 );
