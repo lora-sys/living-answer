@@ -9,6 +9,8 @@ import { CacheMiss, makeQueryCache } from "./query-cache";
 import { parseZhihuAnswerUrl } from "./zhihu-answer-url";
 import type { ZhihuAnswerUrlFailureReason } from "./zhihu-answer-url";
 
+import { StoreError, type ExcerptStore } from "./excerpt-store";
+
 // ── Request ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -81,6 +83,8 @@ export interface AnswerExcerptProviderOptions {
   readonly now?: () => Effect.Effect<number, never>;
   /** Maximum cached entries. */
   readonly maxEntries?: number;
+  /** Optional persistent store for surviving server restarts. */
+  readonly store?: ExcerptStore;
 }
 
 // ── Service ────────────────────────────────────────────────────────────────────
@@ -247,36 +251,79 @@ export const makeAnswerExcerptProvider = (
         const { questionId, answerId, canonicalUrl } = urlResult;
         const cacheKey = `${questionId}:${answerId}`;
 
-        // Step 2: getOrSet — cache only successful, fully-valid AnswerExcerpt.
-        return cache
-          .getOrSet(cacheKey, () =>
-            Effect.flatMap(
-              options.fetchItems({
-                questionId,
-                answerId,
-                canonicalUrl,
-              }),
-              (rawItems) => validateAndCreate(rawItems, questionId, answerId, clockNow),
-            ),
-          )
-          .pipe(
-            Effect.mapError((raw): AnswerExcerptProviderFailure => {
-              // Compute failures are already part of the public taxonomy.
-              if (isProviderFailure(raw)) {
-                return raw;
+        // Step 2: try in-memory cache first
+        const onCacheMiss = (): Effect.Effect<AnswerExcerpt, AnswerExcerptProviderFailure> => {
+          // Step 3: try persistent store on cache miss
+          if (!options.store) {
+            return fetchAndCache();
+          }
+
+          return Effect.flatMap(
+            Effect.exit(options.store.findLatest(questionId, answerId)),
+            (storeExit) => {
+              if (storeExit._tag === "Failure") {
+                // Store error — the store error is surfaced as a provider error
+                return Effect.fail(
+                  new AnswerExcerptProviderError({
+                    reason: `store error: ${storeExit.cause._tag === "Fail" && storeExit.cause.error instanceof StoreError ? storeExit.cause.error.reason : "unknown"}`,
+                  }),
+                );
               }
-              if (raw instanceof CacheMiss) {
-                // Should never occur after the expired-entry fix but is mapped
-                // to avoid leaking internal cache types.
-                return new AnswerExcerptProviderError({
-                  reason: `unexpected cache miss for ${String(raw.key)}`,
-                });
+
+              if (storeExit.value !== null) {
+                // Store hit: write to in-memory cache and return
+                return Effect.flatMap(cache.set(cacheKey, storeExit.value), () =>
+                  Effect.succeed(storeExit.value as AnswerExcerpt),
+                );
               }
-              return new AnswerExcerptProviderError({
-                reason: raw instanceof Error ? raw.message : "unknown provider failure",
-              });
-            }),
+
+              // Store miss: fall through to API fetch
+              return fetchAndCache();
+            },
           );
+        };
+
+        // Step 4: fetch from API and cache the result
+        const fetchAndCache = (): Effect.Effect<AnswerExcerpt, AnswerExcerptProviderFailure> => {
+          return cache
+            .getOrSet(cacheKey, () =>
+              Effect.flatMap(
+                options.fetchItems({
+                  questionId,
+                  answerId,
+                  canonicalUrl,
+                }),
+                (rawItems) => validateAndCreate(rawItems, questionId, answerId, clockNow),
+              ),
+            )
+            .pipe(
+              Effect.tap((excerpt) => {
+                // Save to persistent store on successful fetch (best-effort)
+                if (options.store) {
+                  return Effect.ignore(options.store.save(excerpt));
+                }
+                return Effect.void;
+              }),
+              Effect.mapError((raw): AnswerExcerptProviderFailure => {
+                // Compute failures are already part of the public taxonomy.
+                if (isProviderFailure(raw)) {
+                  return raw;
+                }
+                if (raw instanceof CacheMiss) {
+                  // Should never occur after the expired-entry fix but is mapped
+                  // to avoid leaking internal cache types.
+                  return new AnswerExcerptProviderError({
+                    reason: `unexpected cache miss for ${String(raw.key)}`,
+                  });
+                }
+                return new AnswerExcerptProviderError({
+                  reason: raw instanceof Error ? raw.message : "unknown provider failure",
+                });
+              }),
+            );
+        };
+
+        return cache.get(cacheKey).pipe(Effect.catchAll(() => onCacheMiss()));
       };
 
       const stats = (): Effect.Effect<CacheStats> => cache.stats();

@@ -39,6 +39,8 @@ import { PatchAnalysisError } from "../lib/patch-analysis-workflow";
 
 import { createServerFn } from "@tanstack/react-start";
 
+import { makeSqliteExcerptStore, type ExcerptStore } from "../lib/excerpt-store";
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Handler factory (testable — receives injected dependencies)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -350,12 +352,17 @@ const FIVE_SECONDS_MS = 5_000 as const;
 const ABSENT_CONTEXT_FINGERPRINT = "v1:0000000000000000" as const;
 
 /**
- * Lazy singleton provider for the server process.
+ * Lazy singleton store + provider for the server process.
  */
+let storeInstance: Promise<ExcerptStore> | null = null;
 let cachedProvider: Promise<AnswerExcerptProvider> | null = null;
 
 const getOrCreateProvider = async (secret: string): Promise<AnswerExcerptProvider> => {
+  if (!storeInstance) {
+    storeInstance = Effect.runPromise(makeSqliteExcerptStore());
+  }
   if (!cachedProvider) {
+    const store = await storeInstance;
     cachedProvider = Effect.runPromise(
       makeAnswerExcerptProvider({
         fetchItems: makeZhihuSearchItemsFetcher({
@@ -366,6 +373,7 @@ const getOrCreateProvider = async (secret: string): Promise<AnswerExcerptProvide
           }),
         }),
         ttl: 60_000,
+        store,
       }),
     );
   }
