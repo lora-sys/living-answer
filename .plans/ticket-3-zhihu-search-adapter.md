@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned.
+Implemented (2026-08-30). See commit `80ba144`.
 
 ## Context
 
@@ -53,13 +53,9 @@ It deliberately does not know about `AnswerExcerpt`:
 
 ```ts
 export type ZhihuSearchTransportFailureReason =
-  | "NETWORK_FAILED"
-  | "HTTP_STATUS"
-  | "NON_JSON_RESPONSE";
+  "NETWORK_FAILED" | "HTTP_STATUS" | "NON_JSON_RESPONSE";
 
-export class ZhihuSearchTransportError extends Data.TaggedError(
-  "ZhihuSearchTransportError",
-)<{
+export class ZhihuSearchTransportError extends Data.TaggedError("ZhihuSearchTransportError")<{
   readonly reason: ZhihuSearchTransportFailureReason;
   readonly status?: number;
 }> {}

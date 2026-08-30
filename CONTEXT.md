@@ -54,8 +54,18 @@ all provider data as untrusted, and caches only successful results. It remains
 offline, injected, and persistent-free; persistence requires a later approved
 ticket. `vp check`, `vp test`, and `vp build` are green.
 
+Ticket 3 verified (2026-08-30): the Zhihu search adapter
+(`src/lib/zhihu-search-adapter.ts`) builds the documented `zhihu_search`
+request, validates its response envelope, and returns only raw
+`Data.Items` to `AnswerExcerptProvider`. Its transport is injectable; HTTP,
+timeout, and malformed-JSON failures map to `AnswerExcerptProviderError`.
+It remains persistence-free, does not read `process.env`, and never treats
+search summaries as a full `AnswerSnapshot` body. `vp check`, `vp test`, and
+`vp build` are green.
+
 ## Next decision
 
-Design the smallest approved provider/cache boundary for one real answer
-excerpt. Do not add database, importer, or persistence code until that plan is
-approved. Revisit a legal full-body source separately.
+Wire the verified Zhihu search adapter into an approved server-side caller for
+one real answer excerpt, while keeping the secret and network boundary outside
+domain code. Do not add database, importer, or persistence code until that plan
+is approved. Revisit a legal full-body source separately.

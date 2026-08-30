@@ -25,6 +25,10 @@ does not replace the original answer or generate a generic "latest answer".
   is the offline, injected entry point for summary-class Zhihu data. Provider
   data is treated as untrusted and validated at runtime. No persistence code
   exists yet; persistence requires a later approved ticket.
+- The Zhihu search adapter (see `src/lib/zhihu-search-adapter.ts`) is protocol-
+  only: it returns raw search `Data.Items` through an injectable transport and
+  does not own candidate validation, caching, persistence, or full-body
+  ingestion.
 - Do not add empty architecture directories or abstractions for services that
   do not exist in the current Ticket.
 
