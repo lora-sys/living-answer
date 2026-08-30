@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
@@ -217,6 +217,23 @@ function Home() {
               </div>
             )}
           </form>
+
+          {/* Golden Demo secondary action */}
+          <div className="mt-6">
+            <Link
+              to="/read/golden-demo"
+              className="inline-flex items-center gap-1.5 text-sm text-stone-500 transition-colors hover:text-stone-800"
+            >
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                <span
+                  aria-hidden="true"
+                  className="mr-1 inline-block h-1 w-1 rounded-full bg-amber-500"
+                />
+                证伪演示
+              </span>
+              <span>阅读精选演示（无需链接）</span>
+            </Link>
+          </div>
         </div>
       </section>
     </main>
