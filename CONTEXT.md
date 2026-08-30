@@ -40,9 +40,14 @@ time in the fingerprint as an event identity. Spike 01 Phase B completed (2026-0
    responses confirm Int64. Schema must use Int64.
 4. Ticket 1 is not Ready.
 
+Ticket 1R verified (2026-08-30): `AnswerExcerpt` is a separate immutable domain
+record for summary-class data. It anchors to the parsed question/answer IDs and
+preserves provider provenance; `sourceContentId` is a canonical decimal string
+because observed ContentIDs exceed `Number.MAX_SAFE_INTEGER`. It is never stored
+as `AnswerSnapshot.body`. `vp check`, `vp test`, and `vp build` are green.
+
 ## Next decision
 
-Reshape the ingestion boundary around an honest AnswerExcerpt or summary record
-that matches the data the open API actually provides, or wait for a legal
-full-body source. Do not add database, importer, or persistence code before
-that decision is made.
+Design the smallest approved provider/cache boundary for one real answer
+excerpt. Do not add database, importer, or persistence code until that plan is
+approved. Revisit a legal full-body source separately.

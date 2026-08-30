@@ -49,7 +49,8 @@ Spike 01 findings (see `.plans/spike-01-phase-b-facts.md`):
   but longitudinal update behavior remains unverified.
 - `EditTime` actual type in live responses is Int64, not Int32; use Int64.
 
-Ticket 1 is not Ready. The next decision is to reshape the ingestion boundary
-(potentially around an honest `AnswerExcerpt` or summary record) or wait for a
-legal full-body source. Do not add database / importer / persistence code
-before that decision is made. Follow `.plans/01-answer-ingestion.md`.
+Ticket 1R selected the honest `AnswerExcerpt` boundary for summary-class data.
+Use it as a separate record type; never store an excerpt as
+`AnswerSnapshot.body`. The original full-body Ticket 1 remains not Ready, and
+network adapters, cache integration, importer, and persistence require a new
+approved ticket. Follow `.plans/01-answer-ingestion.md`.

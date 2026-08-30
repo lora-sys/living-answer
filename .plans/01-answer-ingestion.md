@@ -24,9 +24,11 @@ unverified; this does not authorize storing a summary as `AnswerSnapshot.body`.
 `EditTime` actual type in live responses is Int64, not Int32 as documented in
 `http-api.md:357`. Schema must use Int64.
 
-Ticket 1 is therefore not Ready. The ingestion boundary needs to be reshaped
-to match what the open API actually provides, or a legal full-body source must
-be secured before persistence code is added.
+Ticket 1R therefore reshaped the domain boundary: `AnswerExcerpt` is a separate
+immutable record for summary-class data and is never stored as
+`AnswerSnapshot.body`. The original full-body Ticket 1 remains not Ready.
+Provider/cache integration needs its own approved plan before persistence or
+importer code is added.
 
 ## Spike 01 exit criteria
 
