@@ -81,7 +81,6 @@ interface CacheState<K, V> {
 // Both branches use one homogeneous deferred error channel.
 type Decision<V> =
   | { readonly _tag: "hit"; readonly value: V }
-  | { readonly _tag: "expired" }
   | { readonly _tag: "join"; readonly deferred: Deferred.Deferred<V, Error> }
   | { readonly _tag: "start"; readonly deferred: Deferred.Deferred<V, Error> };
 
@@ -201,23 +200,27 @@ const build = <K, V>(
             if (hit && hit.expiresAt > nowMs) {
               return [{ _tag: "hit", value: hit.value }, addHits(s)];
             }
-            if (hit) {
-              return [{ _tag: "expired" }, missEvict(s, key)];
-            }
-            const pending = findPending(s.pending, key);
+            // Remove a stale entry (absent or expired) without bumping the
+            // miss counter.  A getOrSet caller is about to recompute, so the
+            // stale slot is not an external lookup miss.
+            const cleaned = Object.freeze({
+              ...s,
+              entries: s.entries.filter((e) => !sameKey(e.key, key)),
+            });
+            const pending = findPending(cleaned.pending, key);
             if (pending) {
-              return [{ _tag: "join", deferred: pending.deferred }, s];
+              return [{ _tag: "join", deferred: pending.deferred }, cleaned];
             }
-            const nextPending: PendingOp<K, V>[] = [...s.pending, { key, deferred }];
-            return [{ _tag: "start", deferred }, Object.freeze({ ...s, pending: nextPending })];
+            const nextPending: PendingOp<K, V>[] = [...cleaned.pending, { key, deferred }];
+            return [
+              { _tag: "start", deferred },
+              Object.freeze({ ...cleaned, pending: nextPending }),
+            ];
           }),
           (decision): Effect.Effect<V, Error | CacheMiss<K>> => {
             switch (decision._tag) {
               case "hit": {
                 return Effect.succeed(decision.value);
-              }
-              case "expired": {
-                return Effect.fail(new CacheMiss({ key }));
               }
               case "join": {
                 return Deferred.await(decision.deferred);

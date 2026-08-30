@@ -240,4 +240,82 @@ describe("query-cache", () => {
     expect(misses).toBe(3);
     expect(entries).toBe(2);
   });
+
+  // ------------------------------------------------------------------
+  // 8. getOrSet recomputes an expired entry
+  // ------------------------------------------------------------------
+  it("getOrSet recomputes an expired entry", async () => {
+    const { Effect } = await import("effect");
+    const ttl = 500;
+    const cache = await Effect.runPromise(
+      makeQueryCache<string, number>({ ttl, now: () => Effect.succeed(_now) }),
+    );
+
+    await Effect.runPromise(cache.set("k1", 10));
+    expect((await Effect.runPromise(cache.stats())).entries).toBe(1);
+
+    advance(ttl + 10);
+
+    // After expiry, getOrSet recomputes instead of returning CacheMiss
+    const value = await Effect.runPromise(cache.getOrSet("k1", () => Effect.succeed(20)));
+    expect(value).toBe(20);
+    expect((await Effect.runPromise(cache.stats())).entries).toBe(1);
+  });
+
+  // ------------------------------------------------------------------
+  // 9. Concurrent getOrSet calls after expiry compute once (single-flight)
+  // ------------------------------------------------------------------
+  it("concurrent getOrSet calls after expiry compute once", async () => {
+    const { Deferred, Effect, Fiber } = await import("effect");
+    const ttl = 2000;
+    const cache = await Effect.runPromise(
+      makeQueryCache<string, number>({ ttl, now: () => Effect.succeed(_now) }),
+    );
+
+    await Effect.runPromise(cache.set("k1", 10));
+    advance(ttl + 10);
+
+    const gate = await Effect.runPromise(Deferred.make<void>());
+    let calls = 0;
+    const compute = () => {
+      calls++;
+      return Effect.zipRight(Deferred.await(gate), Effect.succeed(99));
+    };
+
+    const results = await Effect.runPromise(
+      Effect.gen(function* () {
+        const fib1 = yield* Effect.fork(cache.getOrSet("k1", compute));
+        const fib2 = yield* Effect.fork(cache.getOrSet("k1", compute));
+        yield* Effect.yieldNow();
+        yield* Deferred.succeed(gate, undefined);
+        const r1 = yield* Fiber.join(fib1);
+        const r2 = yield* Fiber.join(fib2);
+        return [r1, r2];
+      }),
+    );
+    expect(results[0]).toBe(99);
+    expect(results[1]).toBe(99);
+    expect(calls).toBe(1); // single-flight preserved after expiry
+  });
+
+  // ------------------------------------------------------------------
+  // 10. Recomputed value after expiry is cached for subsequent calls
+  // ------------------------------------------------------------------
+  it("recomputed value after expiry is cached", async () => {
+    const { Effect } = await import("effect");
+    const ttl = 500;
+    const cache = await Effect.runPromise(
+      makeQueryCache<string, number>({ ttl, now: () => Effect.succeed(_now) }),
+    );
+
+    await Effect.runPromise(cache.set("k1", 10));
+    advance(ttl + 10);
+
+    // getOrSet recomputes and caches the new value
+    await Effect.runPromise(cache.getOrSet("k1", () => Effect.succeed(20)));
+
+    // Subsequent get should return the recomputed value (fresh cache hit)
+    const value = await Effect.runPromise(cache.get("k1"));
+    expect(value).toBe(20);
+  });
 });
