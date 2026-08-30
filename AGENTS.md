@@ -21,6 +21,10 @@ does not replace the original answer or generate a generic "latest answer".
   `vp test`, and `vp build`.
 - Keep external providers behind adapters. Domain code must not depend on
   React, TanStack, provider SDKs, or environment-specific paths.
+- The `AnswerExcerptProvider` boundary (see `src/lib/answer-excerpt-provider.ts`)
+  is the offline, injected entry point for summary-class Zhihu data. Provider
+  data is treated as untrusted and validated at runtime. No persistence code
+  exists yet; persistence requires a later approved ticket.
 - Do not add empty architecture directories or abstractions for services that
   do not exist in the current Ticket.
 

@@ -27,6 +27,15 @@ unverified; this does not authorize storing a summary as `AnswerSnapshot.body`.
 Ticket 1R therefore reshaped the domain boundary: `AnswerExcerpt` is a separate
 immutable record for summary-class data and is never stored as
 `AnswerSnapshot.body`. The original full-body Ticket 1 remains not Ready.
+
+Ticket 2 verified (2026-08-30): the `AnswerExcerptProvider` boundary
+(`src/lib/answer-excerpt-provider.ts`) connects a supported Zhihu answer URL to
+a validated `AnswerExcerpt` through an injected provider function. It reuses
+the offline `QueryCache` (with expired-entry recompute fix), treats all provider
+data as untrusted, and caches only successful results. The boundary remains
+offline and injected — no live API, no credentials, no persistence. Persistence
+and importer code require a later approved ticket.
+
 Provider/cache integration needs its own approved plan before persistence or
 importer code is added.
 

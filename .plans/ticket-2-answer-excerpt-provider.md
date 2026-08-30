@@ -2,8 +2,8 @@
 
 ## Status
 
-Planned. Executor implementation scope; no code has been written for this
-ticket yet.
+Implemented. The provider boundary is offline, injected, and covered by the
+verification commands below.
 
 ## Context
 
@@ -64,9 +64,7 @@ The service accepts a URL string so callers cannot bypass URL validation:
 
 ```ts
 export interface AnswerExcerptProvider {
-  readonly resolve: (
-    url: string,
-  ) => Effect.Effect<AnswerExcerpt, AnswerExcerptProviderFailure>;
+  readonly resolve: (url: string) => Effect.Effect<AnswerExcerpt, AnswerExcerptProviderFailure>;
   readonly stats: () => Effect.Effect<CacheStats>;
 }
 ```

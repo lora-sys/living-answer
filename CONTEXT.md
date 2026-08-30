@@ -46,6 +46,14 @@ preserves provider provenance; `sourceContentId` is a canonical decimal string
 because observed ContentIDs exceed `Number.MAX_SAFE_INTEGER`. It is never stored
 as `AnswerSnapshot.body`. `vp check`, `vp test`, and `vp build` are green.
 
+Ticket 2 verified (2026-08-30): the `AnswerExcerptProvider` boundary
+(`src/lib/answer-excerpt-provider.ts`) resolves a supported Zhihu answer URL
+into a validated `AnswerExcerpt` through an injected provider function. It
+reuses the offline `QueryCache` (with the expired-entry recompute fix), treats
+all provider data as untrusted, and caches only successful results. It remains
+offline, injected, and persistent-free; persistence requires a later approved
+ticket. `vp check`, `vp test`, and `vp build` are green.
+
 ## Next decision
 
 Design the smallest approved provider/cache boundary for one real answer
