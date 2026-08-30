@@ -9,6 +9,7 @@ import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
+import { RealResultRead } from "../components/analysis/RealResultRead";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -311,12 +312,21 @@ function Home() {
                 {analysisLoading && <span className="text-sm text-stone-500">正在分析…</span>}
               </div>
 
-              <AnalysisResultPanel
-                result={analysisResult}
-                isLoading={analysisLoading}
-                analysisError={analysisError}
-                onRetry={handleRetry}
-              />
+              {/* Render real-data read view on successful analysis, otherwise show the generic panel */}
+              {analysisResult !== null && analysisResult.status === "ok" && resultData !== null ? (
+                <RealResultRead
+                  excerpt={resultData.excerpt}
+                  result={analysisResult}
+                  contextText={contextText}
+                />
+              ) : (
+                <AnalysisResultPanel
+                  result={analysisResult}
+                  isLoading={analysisLoading}
+                  analysisError={analysisError}
+                  onRetry={handleRetry}
+                />
+              )}
             </div>
           )}
 
