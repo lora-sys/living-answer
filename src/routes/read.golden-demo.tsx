@@ -24,11 +24,17 @@ function ReadGoldenDemo() {
   const [openParagraphId, setOpenParagraphId] = useState<string | null>(null);
   const [activePatchId, setActivePatchId] = useState<string | null>(null);
   const triggeringMarkerRef = useRef<HTMLButtonElement>(null);
+  const desktopPanelRef = useRef<HTMLElement>(null);
 
   const DESKTOP_PANEL_ID = "patch-panel-desktop";
   const MOBILE_PANEL_ID = "patch-panel-mobile";
 
   const openPatch = (paragraphId: string, patchId: string) => {
+    // Toggle: close if the same paragraph is already open
+    if (openParagraphId === paragraphId) {
+      closePanel();
+      return;
+    }
     // Preserve the triggering marker reference for focus return
     const marker = document.querySelector(
       `[data-paragraph-id="${paragraphId}"]`,
@@ -61,13 +67,29 @@ function ReadGoldenDemo() {
     return () => document.removeEventListener("keydown", handler);
   }, [openParagraphId]);
 
+  // Move keyboard focus into the desktop panel when it opens
+  useEffect(() => {
+    if (openParagraphId !== null && desktopPanelRef.current) {
+      // Find the first focusable element inside the panel
+      const focusable = desktopPanelRef.current.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable) {
+        focusable.focus();
+      } else {
+        desktopPanelRef.current.setAttribute("tabindex", "-1");
+        desktopPanelRef.current.focus();
+      }
+    }
+  }, [openParagraphId]);
+
   return (
     <main className="min-h-screen bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
       {/* Back link — outside the flex layout so panel open/close doesn't shift it */}
       <div className="mx-auto w-full max-w-5xl">
         <Link
           to="/"
-          className="mb-8 inline-flex items-center gap-1 text-sm text-stone-500 transition-colors hover:text-stone-800"
+          className="mb-8 inline-flex items-center gap-1 text-sm text-stone-600 transition-colors hover:text-stone-800"
         >
           <span aria-hidden="true">&larr;</span> 返回首页
         </Link>
@@ -131,7 +153,7 @@ function ReadGoldenDemo() {
 
         {/* Desktop: right-side panel (only when open) */}
         {openParagraphId && (
-          <aside className="hidden lg:block lg:w-[380px] shrink-0">
+          <aside ref={desktopPanelRef} className="hidden lg:block lg:w-[380px] shrink-0">
             <PatchPanel
               patches={goldenDemoFixture.patches}
               activePatchId={activePatchId}

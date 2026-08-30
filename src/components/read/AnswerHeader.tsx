@@ -27,7 +27,7 @@ export function AnswerHeader({ fixture }: AnswerHeaderProps) {
         </div>
         <div>
           <p className="text-sm font-medium text-stone-900">{syntheticAuthor.displayName}</p>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-stone-600">
             知乎回答 · 捕获于 {formatDateYYYYMMDD(capturedAt)}
           </p>
         </div>

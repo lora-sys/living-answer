@@ -36,6 +36,7 @@ export function PatchPanel({ patches, activePatchId, onClose, panelId }: PatchPa
         ref={panelRef}
         id={panelId}
         role="region"
+        aria-label="变化面板"
         aria-live="polite"
         className="rounded-[2rem] border border-stone-300/80 bg-white/90 p-6 shadow-lg lg:p-8"
       >
@@ -51,10 +52,11 @@ export function PatchPanel({ patches, activePatchId, onClose, panelId }: PatchPa
       ref={panelRef}
       id={panelId}
       role="region"
+      aria-label="变化面板"
       aria-live="polite"
       className={[
         "rounded-[2rem] border border-amber-200 bg-white/95 p-6 shadow-lg lg:p-8",
-        "max-h-[70vh] overflow-y-auto lg:max-h-none",
+        "max-h-[70vh] overflow-y-auto lg:max-h-[calc(100vh-8rem)]",
       ].join(" ")}
     >
       {/* Header with type + close */}
