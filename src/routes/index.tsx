@@ -2,10 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
-import { type ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
+import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
+import type { AnalyzePatchResponse } from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
 import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
+import { analyzePatch } from "../server/analyze-patch";
+import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,6 +32,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const boundResolve = useServerFn(resolveAnswerExcerpt);
+  const boundAnalyze = useServerFn(analyzePatch);
+
+  // ── Excerpt state ──────────────────────────────────────────────────────────
+
   const [url, setUrl] = useState("");
   const [errorState, setErrorState] = useState<{
     code:
@@ -46,6 +53,15 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [serverResult, setServerResult] = useState<ResolveAnswerExcerptResponse | null>(null);
 
+  // ── Analysis state ─────────────────────────────────────────────────────────
+
+  const [analysisResult, setAnalysisResult] = useState<AnalyzePatchResponse | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [contextText, setContextText] = useState("");
+
+  // ── Excerpt handler ────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = url.trim();
@@ -58,6 +74,9 @@ function Home() {
     // Clear prior results and start loading
     setErrorState(null);
     setServerResult(null);
+    setAnalysisResult(null);
+    setAnalysisLoading(false);
+    setAnalysisError(null);
     setLoading(true);
 
     const response = await boundResolve({ data: { url: trimmed } }).catch(() => null);
@@ -68,6 +87,45 @@ function Home() {
     }
     setLoading(false);
   };
+
+  // ── Analysis handler ───────────────────────────────────────────────────────
+
+  const runAnalysis = async (): Promise<void> => {
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setAnalysisLoading(true);
+
+    const trimmedUrl = url.trim();
+    const trimmedContext = contextText.trim();
+
+    let response: AnalyzePatchResponse | null = null;
+    try {
+      response = await boundAnalyze({
+        data: { url: trimmedUrl, context: trimmedContext || undefined },
+      }).catch(() => null);
+    } catch {
+      response = { status: "error", code: "PROVIDER_ERROR" };
+    }
+
+    if (response) {
+      setAnalysisResult(response);
+    } else {
+      setAnalysisResult({ status: "error", code: "PROVIDER_ERROR" });
+    }
+    setAnalysisLoading(false);
+  };
+
+  const handleAnalyze = async (): Promise<void> => {
+    await runAnalysis();
+  };
+
+  // ── Retry handler ──────────────────────────────────────────────────────────
+
+  const handleRetry = async (): Promise<void> => {
+    await runAnalysis();
+  };
+
+  // ── Derive display state ────────────────────────────────────────────────────
 
   const isPending = loading;
   const resultData = serverResult?.status === "ok" ? serverResult : null;
@@ -91,6 +149,8 @@ function Home() {
           | "INVALID_PROVIDER_ANSWER"
           | "PROVIDER_ERROR")
       : null;
+
+  const showExtractSuccess = showSuccess && resultData !== null;
 
   return (
     <main className="relative isolate flex min-h-screen items-center overflow-hidden bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
@@ -148,7 +208,7 @@ function Home() {
               >
                 {isPending ? "获取中..." : "获取摘录"}
               </button>
-              {isPending && <span className="text-sm text-stone-500">正在检索回答摘录...</span>}
+              {isPending && <span className="text-sm text-stone-500">正在检索回答摘录…</span>}
             </div>
 
             {showLoading && (
@@ -157,7 +217,7 @@ function Home() {
                   aria-hidden="true"
                   className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-[#d97757]"
                 />
-                <p className="text-sm text-stone-600">正在获取回答摘录...</p>
+                <p className="text-sm text-stone-600">正在获取回答摘录…</p>
               </div>
             )}
 
@@ -202,6 +262,62 @@ function Home() {
               </div>
             )}
           </form>
+
+          {/* Maintenance context and analysis — available after successful excerpt */}
+          {showExtractSuccess && (
+            <div className="mt-8 space-y-4 border-t border-stone-200 pt-6">
+              <div>
+                <label
+                  htmlFor="analysis-context"
+                  className="block text-sm font-medium text-stone-600"
+                >
+                  维护备注（可选）
+                </label>
+                <textarea
+                  id="analysis-context"
+                  value={contextText}
+                  onChange={(e) => {
+                    setContextText(e.target.value);
+                    if (analysisError) setAnalysisError(null);
+                  }}
+                  placeholder="描述您在维护中了解到的前提变化…"
+                  rows={3}
+                  disabled={analysisLoading}
+                  className={
+                    "mt-1.5 block w-full rounded-xl border bg-white px-4 py-3 text-base text-stone-900 " +
+                    "placeholder:text-stone-400 " +
+                    "border-stone-300 focus:border-[#d97757] focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 " +
+                    "disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500 " +
+                    "resize-y"
+                  }
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAnalyze}
+                  disabled={analysisLoading}
+                  className={
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
+                    "bg-[#d97757] hover:bg-[#c4684a] " +
+                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
+                    "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+                  }
+                >
+                  {analysisLoading ? "分析中…" : "分析前提变化"}
+                </button>
+                {analysisLoading && <span className="text-sm text-stone-500">正在分析…</span>}
+              </div>
+
+              <AnalysisResultPanel
+                result={analysisResult}
+                isLoading={analysisLoading}
+                analysisError={analysisError}
+                onRetry={handleRetry}
+              />
+            </div>
+          )}
 
           {/* Golden Demo secondary action */}
           <div className="mt-6">

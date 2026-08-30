@@ -2,8 +2,7 @@
 
 ## Status
 
-Approved (2026-08-30). Plan produced by `plan_agent`; implementation is
-assigned to Claude Code `fable`.
+Implemented (2026-08-30). Implementation completed by Claude Code `fable`.
 
 ## Context
 
