@@ -37,7 +37,19 @@ does not replace the original answer or generate a generic "latest answer".
 
 ## Known blocker
 
-The official Hackathon Search Skill exposes answer summaries, not a documented
-arbitrary full-answer payload. Do not invent a full-answer ingestion path or
-store a summary as if it were a complete `AnswerSnapshot`. Follow
-`.plans/01-answer-ingestion.md` and Spike 01 until the source is settled.
+Spike 01 findings (see `.plans/spike-01-phase-b-facts.md`):
+
+- The official open API surface has no documented full Zhihu answer-body path.
+  Official search and user-content data is summary-class (max 1121 chars observed).
+  Do not invent a full-answer ingestion path.
+- A summary / excerpt must never be stored as `AnswerSnapshot.body`.
+  `AnswerSnapshot` and `PatchRevision` are immutable historical records of
+  complete content; a summary does not qualify.
+- `ContentID` is a stable-identity candidate (integer, unique per content item)
+  but longitudinal update behavior remains unverified.
+- `EditTime` actual type in live responses is Int64, not Int32; use Int64.
+
+Ticket 1 is not Ready. The next decision is to reshape the ingestion boundary
+(potentially around an honest `AnswerExcerpt` or summary record) or wait for a
+legal full-body source. Do not add database / importer / persistence code
+before that decision is made. Follow `.plans/01-answer-ingestion.md`.

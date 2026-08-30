@@ -16,6 +16,7 @@
 **Envelope:** `{"Code": 0, "Message": "success", "Data": {"HasMore": false, "SearchHashId": "78933239d2d0ba62bb2eb398a14aaaed", "Items": [...]}}`
 
 **Notable field values:**
+
 - `SearchHashId`: `78933239d2d0ba62bb2eb398a14aaaed` (undocumented key)
 - 3 Items with `ContentType: "Article"`
 - `AuthorityLevel: "4"` (string, not integer)
@@ -31,6 +32,7 @@
 **Envelope:** `{"Code": 0, "Message": "success", "Data": {"HasMore": false, "SearchHashId": "...", "Items": [...]}}`
 
 **Notable:**
+
 - `ContentType`: empty string `""` for all 3 items (different from zhihu_search)
 - Items include external URLs (cnaifm.com, ai.baidu.com, news.cn)
 - `EditTime` values: 1758470400, 1787721292 (Int64, consistent)
@@ -41,6 +43,7 @@
 **Envelope:** `{"Code": 0, "Message": "success", "Data": {"Items": [...]}}`
 
 **Notable:**
+
 - 1 item returned (self content)
 - Fields: ContentType, Url, CreatedAt, LikeCount, CommentCount, FavoriteCount, Title, Summary
 - No ContentText, no body, no content field
@@ -51,6 +54,7 @@
 **Response:** `{"Code": 10001, "Message": "Query is required", "Data": null}`
 
 **Notable:**
+
 - Error envelope shape distinct from success
 - `Data: null` (not empty array)
 
@@ -59,6 +63,7 @@
 **Envelope:** `{"Code": 0, "Message": "success", "Data": {"HasMore": false, "SearchHashId": "...", "Items": [...]}}`
 
 **Notable:**
+
 - 3 items returned despite nonsense query (fallback/recommended content)
 - Mixed ContentTypes: "Article" and "Answer"
 - Negative ContentIDs present: `-4615792117042400368`, `-8765571236311781284`
@@ -67,42 +72,42 @@
 
 ## ContentID Analysis
 
-| ContentID | ContentType | URL Slug | Match? |
-|-----------|------------|----------|--------|
-| 2705156457651695051 | Article | 2077051021499577708 | No |
-| 8352583115239733186 | Article | 2077047956688131256 | No |
-| -1631083950788193165 | Article | 2061887382652196824 | No |
-| -8765571236311781284 | Answer | N/A (Answer URL) | N/A |
+| ContentID            | ContentType | URL Slug            | Match? |
+| -------------------- | ----------- | ------------------- | ------ |
+| 2705156457651695051  | Article     | 2077051021499577708 | No     |
+| 8352583115239733186  | Article     | 2077047956688131256 | No     |
+| -1631083950788193165 | Article     | 2061887382652196824 | No     |
+| -8765571236311781284 | Answer      | N/A (Answer URL)    | N/A    |
 
 **Conclusion:** ContentID is a stable internal identifier candidate — an integer unique per content item, observed within this probe. It does NOT map to the URL slug ID. Longitudinal update behavior (e.g., whether a given ContentID's ContentText changes over time) remains unverified. Provides a reliable cross-reference anchor.
 
 ## EditTime Type Verification
 
-| Endpoint | Observed Type | Observed Values | Docs Claim | Match? |
-|----------|-------------|-----------------|------------|--------|
-| zhihu_search | int (Int64) | 1787987553, 1787986822, 1788014905 | Int32 (http-api.md:357) | **NO** |
-| global_search | int (Int64) | 1758470400, 1787721292 | Int32 (http-api.md:357) | **NO** |
+| Endpoint      | Observed Type | Observed Values                    | Docs Claim              | Match? |
+| ------------- | ------------- | ---------------------------------- | ----------------------- | ------ |
+| zhihu_search  | int (Int64)   | 1787987553, 1787986822, 1788014905 | Int32 (http-api.md:357) | **NO** |
+| global_search | int (Int64)   | 1758470400, 1787721292             | Int32 (http-api.md:357) | **NO** |
 
 **Conclusion:** EditTime is Int64 in live responses. Documentation at http-api.md:357 is incorrect. http-api.md:150 (Int64) is correct.
 
 ## Error Code Verification
 
-| Code | Endpoint | Message | Observed? | Docs? |
-|------|----------|---------|-----------|-------|
-| 0 | zhihu_search, global_search, user/contents | "success" | Yes (3 calls) | Yes |
-| 10001 | zhihu_search | "Query is required" | Yes (Call 4) | Documented |
-| 30001 | — | rate limit | No | Yes |
-| 30002 | — | quota limit | No | Yes |
-| 20002 | — | auth failure | No | Yes |
+| Code  | Endpoint                                   | Message             | Observed?     | Docs?      |
+| ----- | ------------------------------------------ | ------------------- | ------------- | ---------- |
+| 0     | zhihu_search, global_search, user/contents | "success"           | Yes (3 calls) | Yes        |
+| 10001 | zhihu_search                               | "Query is required" | Yes (Call 4)  | Documented |
+| 30001 | —                                          | rate limit          | No            | Yes        |
+| 30002 | —                                          | quota limit         | No            | Yes        |
+| 20002 | —                                          | auth failure        | No            | Yes        |
 
 **New observation:** Code 10001 returned with `Data: null` (not empty Items array or EmptyReason envelope).
 
 ## User Contents Boundary
 
-| Test | Result |
-|------|--------|
-| No-OAuth self request (Call 3) | Code=0, 1 item, Summary only (253 chars) |
-| Cross-user request | NOT tested (no userId/UrlToken in response schema) |
+| Test                           | Result                                             |
+| ------------------------------ | -------------------------------------------------- |
+| No-OAuth self request (Call 3) | Code=0, 1 item, Summary only (253 chars)           |
+| Cross-user request             | NOT tested (no userId/UrlToken in response schema) |
 
 **Asserted boundary:** Self-only. The `/user/contents` endpoint returns metadata + Summary for the authenticated user's own content. No ContentText or full-text field accessible without OAuth.
 
@@ -122,11 +127,13 @@
 
 ## Spike 01 Exit Recommendation
 
-**Proceed to Ticket 1 with confirmed ingestion boundary.**
+**Proceed to ingestion-boundary redesign; the original Ticket 1 remains not
+Ready.**
 
 Key confirmed facts for Ticket 1 design:
+
 1. **Ingestion ceiling:** ContentText is summary-class for Zhihu content (max 1121 chars observed on Zhihu items). An external article in Call 2 reached 2243 chars but is not a Zhihu answer body. No full-body path exists through the open API for Zhihu content.
-2. **Identity anchor:** ContentID is stable, integer, unique per content item — suitable for AnswerSnapshot identity.
+2. **Identity anchor:** ContentID is a stable-identity candidate: integer and unique per content item, but longitudinal update behavior remains unverified. This does not authorize using a summary as `AnswerSnapshot.body`.
 3. **Schema discrepancy:** EditTime is Int64, not Int32 as documented in http-api.md:357. Schema must use Int64.
 4. **Error handling:** Three distinct shapes — success (Code=0, Items), invalid params (Code=10001, Data=null), and empty results (EmptyReason, not observed but documented).
 5. **User boundary:** Self-only without OAuth. Summary-only content for user endpoints.
@@ -134,10 +141,10 @@ Key confirmed facts for Ticket 1 design:
 
 ## Difference from Published Docs
 
-| Doc Location | Claim | Live API | Discrepancy |
-|-------------|-------|----------|-------------|
-| http-api.md:357 | EditTime is Int32 | EditTime is Int64 (JSON int, values > 2.1B) | **Type mismatch** |
-| http-api.md:150 | EditTime is Int64 | EditTime is Int64 (JSON int, values > 2.1B) | Consistent |
-| user-api.md:26 | "Self or OAuth-authorized user" | Confirmed — no ContentText without OAuth | Consistent |
-| global_search docs | Error table missing 10001 | Code 10001 confirmed | **Missing from error table** |
-| ContentType on global_search | Not specified | Returns empty string `""` | **Undocumented behavior** |
+| Doc Location                 | Claim                           | Live API                                    | Discrepancy                  |
+| ---------------------------- | ------------------------------- | ------------------------------------------- | ---------------------------- |
+| http-api.md:357              | EditTime is Int32               | EditTime is Int64 (JSON int, values > 2.1B) | **Type mismatch**            |
+| http-api.md:150              | EditTime is Int64               | EditTime is Int64 (JSON int, values > 2.1B) | Consistent                   |
+| user-api.md:26               | "Self or OAuth-authorized user" | Confirmed — no ContentText without OAuth    | Consistent                   |
+| global_search docs           | Error table missing 10001       | Code 10001 confirmed                        | **Missing from error table** |
+| ContentType on global_search | Not specified                   | Returns empty string `""`                   | **Undocumented behavior**    |

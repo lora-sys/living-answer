@@ -27,16 +27,22 @@ Tickets 0.4-0.6 verified (2026-08-30): the immutable AnswerSnapshot,
 PatchEvidence, and PatchRevision value objects are implemented as pure domain
 records with typed results and deterministic v1 fingerprints; `vp check` and
 `vp test` are green. PatchRevision is update-only and includes its capture
-time in the fingerprint as an event identity. Spike 01 remains active, so
-ingestion Ticket 1 is not Ready.
+time in the fingerprint as an event identity. Spike 01 Phase B completed (2026-08-30, see `.plans/spike-01-phase-b-facts.md`):
 
-Confirmed external fact: the official Zhihu Hackathon Search Skill and user
-content listing expose summaries. They do not document a way to fetch the full
-body of an arbitrary Zhihu answer. A search summary must never be stored or
-presented as a complete `AnswerSnapshot`.
+1. The official open API surface exposes no documented full Zhihu answer-body
+   path. Observed Zhihu ContentText is summary-class (max 1121 characters).
+   Official search and user-content data is summary-class. A summary / excerpt
+   must never be stored as `AnswerSnapshot.body`.
+2. `ContentID` is a stable-identity candidate (unique integer per content item,
+   does not map to URL slug ID). Longitudinal update behavior remains
+   unverified.
+3. OpenAPI documentation at `http-api.md:357` states EditTime is Int32; live
+   responses confirm Int64. Schema must use Int64.
+4. Ticket 1 is not Ready.
 
 ## Next decision
 
-Close Spike 01 by confirming a legal full-answer source or reshaping the
-competition ingestion boundary. Do not add database or importer code before
-that decision.
+Reshape the ingestion boundary around an honest AnswerExcerpt or summary record
+that matches the data the open API actually provides, or wait for a legal
+full-body source. Do not add database, importer, or persistence code before
+that decision is made.
