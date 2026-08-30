@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 
+import { type ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
+import { failureMessage, formatTimestamp } from "../lib/failure-messages";
 import { APP_NAME, PRODUCT_TAGLINE, READY_MESSAGE, STACK_LABEL } from "../lib/app-info";
+import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title: "Living Answer · 开发环境已准备完成",
+        title: "Living Answer · 知乎回答摘录",
       },
       {
         name: "description",
@@ -23,6 +28,70 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const boundResolve = useServerFn(resolveAnswerExcerpt);
+  const [url, setUrl] = useState("");
+  const [errorState, setErrorState] = useState<{
+    code:
+      | "INVALID_REQUEST"
+      | "MISSING_ACCESS_SECRET"
+      | "UNSUPPORTED_ANSWER_URL"
+      | "ANSWER_NOT_FOUND"
+      | "AMBIGUOUS_ANSWER"
+      | "INVALID_PROVIDER_ANSWER"
+      | "PROVIDER_ERROR";
+    message: string;
+  } | null>(null);
+
+  // Async states managed via useState (no react-query)
+  const [loading, setLoading] = useState(false);
+  const [serverResult, setServerResult] = useState<ResolveAnswerExcerptResponse | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = url.trim();
+
+    if (trimmed === "") {
+      setErrorState({ code: "INVALID_REQUEST", message: failureMessage("INVALID_REQUEST") });
+      return;
+    }
+
+    // Clear prior results and start loading
+    setErrorState(null);
+    setServerResult(null);
+    setLoading(true);
+
+    const response = await boundResolve({ data: { url: trimmed } }).catch(() => null);
+    if (response) {
+      setServerResult(response as ResolveAnswerExcerptResponse);
+    } else {
+      setServerResult({ status: "error", code: "PROVIDER_ERROR" });
+    }
+    setLoading(false);
+  };
+
+  const isPending = loading;
+  const resultData = serverResult?.status === "ok" ? serverResult : null;
+  const resultError = serverResult;
+
+  const showLoading = isPending;
+  const showSuccess = !isPending && !!resultData;
+  const showError = !isPending && !showSuccess && resultError !== null;
+  const serverErrorCode =
+    showError &&
+    resultError &&
+    typeof resultError === "object" &&
+    resultError.status === "error" &&
+    "code" in resultError
+      ? (resultError.code as
+          | "INVALID_REQUEST"
+          | "MISSING_ACCESS_SECRET"
+          | "UNSUPPORTED_ANSWER_URL"
+          | "ANSWER_NOT_FOUND"
+          | "AMBIGUOUS_ANSWER"
+          | "INVALID_PROVIDER_ANSWER"
+          | "PROVIDER_ERROR")
+      : null;
+
   return (
     <main className="relative isolate flex min-h-screen items-center overflow-hidden bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
       <div
@@ -53,8 +122,101 @@ function Home() {
           </p>
         </div>
 
-        <div className="mt-14 border-t border-stone-200 pt-6">
+        <div className="mt-14 border-t border-stone-200 pt-8">
           <p className="text-sm font-medium text-stone-500">{STACK_LABEL}</p>
+
+          <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
+            <div>
+              <label htmlFor="answer-url" className="block text-sm font-medium text-stone-600">
+                知乎回答链接
+              </label>
+              <input
+                id="answer-url"
+                type="url"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  if (errorState) setErrorState(null);
+                }}
+                placeholder="https://www.zhihu.com/question/42/answer/100"
+                disabled={isPending}
+                autoComplete="off"
+                className={
+                  "mt-1.5 block w-full rounded-xl border bg-white px-4 py-3 text-base text-stone-900 " +
+                  "placeholder:text-stone-400 " +
+                  "border-stone-300 focus:border-[#d97757] focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 " +
+                  "disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500"
+                }
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={isPending}
+                className={
+                  "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
+                  "bg-[#d97757] hover:bg-[#c4684a] " +
+                  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
+                  "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+                }
+              >
+                {isPending ? "获取中..." : "获取摘录"}
+              </button>
+              {isPending && <span className="text-sm text-stone-500">正在检索回答摘录...</span>}
+            </div>
+
+            {showLoading && (
+              <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-[#d97757]"
+                />
+                <p className="text-sm text-stone-600">正在获取回答摘录...</p>
+              </div>
+            )}
+
+            {errorState && !isPending && (
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+                <p className="text-sm font-medium text-stone-700">{errorState.message}</p>
+              </div>
+            )}
+
+            {showError && serverErrorCode && (
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+                <p className="text-sm font-medium text-stone-700">
+                  {failureMessage(serverErrorCode)}
+                </p>
+              </div>
+            )}
+
+            {showSuccess && resultData && (
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6 sm:py-6">
+                <p className="whitespace-pre-wrap break-words text-base leading-7 text-stone-800 sm:text-lg sm:leading-8">
+                  {resultData.excerpt.excerpt}
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-stone-500">
+                  <span>
+                    知乎问题{" "}
+                    <span className="font-medium text-stone-700">
+                      #{resultData.excerpt.questionId}
+                    </span>
+                  </span>
+                  <span>
+                    回答{" "}
+                    <span className="font-medium text-stone-700">
+                      #{resultData.excerpt.answerId}
+                    </span>
+                  </span>
+                  <span>摘录时间 {formatTimestamp(resultData.excerpt.capturedAt)}</span>
+                </div>
+                <p className="mt-1 text-sm text-stone-500">
+                  来源编辑时间 {formatTimestamp(resultData.excerpt.sourceEditTime)}
+                </p>
+              </div>
+            )}
+          </form>
         </div>
       </section>
     </main>
