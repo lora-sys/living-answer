@@ -1,5 +1,6 @@
 /**
- * Pure failure-code-to-user-message mapping for the answer excerpt flow.
+ * Pure failure-code-to-user-message mapping for the answer excerpt and
+ * patch-analysis server flows.
  *
  * Server failure codes are serialized error states.  Each maps to a short,
  * calm Chinese sentence that informs the user without exposing headers,
@@ -25,19 +26,37 @@ export type AnswerExcerptServerFailureCode =
   | "INVALID_PROVIDER_ANSWER"
   | "PROVIDER_ERROR";
 
+/**
+ * All server failure codes returned by the patch-analysis flow.
+ *
+ * Extends `AnswerExcerptServerFailureCode` with codes specific to the
+ * OpenAI-backed analysis step.  Any string assignable to this type is
+ * accepted by `failureMessage`.
+ */
+export type AnalyzePatchServerFailureCode =
+  | AnswerExcerptServerFailureCode
+  | "MISSING_OPENAI_KEY"
+  | "MODEL_TRANSPORT_ERROR"
+  | "MALFORMED_MODEL_OUTPUT"
+  | "ANALYSIS_INVARIANT_VIOLATION";
+
 // ── Mapping ─────────────────────────────────────────────────────────────────────
 
 /**
  * Human-readable Chinese message keyed by every server failure code.
  */
-const FAILURE_MESSAGES: Readonly<Record<AnswerExcerptServerFailureCode, string>> = {
-  INVALID_REQUEST: "请输入一个有效的知乎回答链接。",
+const FAILURE_MESSAGES: Readonly<Record<AnalyzePatchServerFailureCode, string>> = {
+  INVALID_REQUEST: "请输入一个有效的知乎回答链接和维护备注。",
   MISSING_ACCESS_SECRET: "服务暂时不可用，请稍后再试。",
   UNSUPPORTED_ANSWER_URL: "该链接格式暂不支持，请检查链接后重试。",
   ANSWER_NOT_FOUND: "未找到匹配的知乎回答。请确认链接是否正确。",
   AMBIGUOUS_ANSWER: "找到多个可能的回答，请提供更精确的链接。",
   INVALID_PROVIDER_ANSWER: "获取到的回答数据不完整，请稍后再试。",
   PROVIDER_ERROR: "获取回答摘录时出现异常，请稍后再试。",
+  MISSING_OPENAI_KEY: "AI 服务暂时不可用，请稍后再试。",
+  MODEL_TRANSPORT_ERROR: "模型服务暂时不可用，请稍后再试。",
+  MALFORMED_MODEL_OUTPUT: "模型响应异常，请稍后再试。",
+  ANALYSIS_INVARIANT_VIOLATION: "分析过程中出现内部错误，请稍后再试。",
 };
 
 // ── Pure functions ─────────────────────────────────────────────────────────────
@@ -48,7 +67,7 @@ const FAILURE_MESSAGES: Readonly<Record<AnswerExcerptServerFailureCode, string>>
  * Returns a non-empty string for every known failure code.  The function
  * does not throw and does not depend on runtime locale settings.
  */
-export const failureMessage = (code: AnswerExcerptServerFailureCode): string =>
+export const failureMessage = (code: AnalyzePatchServerFailureCode): string =>
   FAILURE_MESSAGES[code];
 
 /**

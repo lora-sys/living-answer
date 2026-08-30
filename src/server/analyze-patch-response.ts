@@ -1,0 +1,141 @@
+import { PatchAnalysisError } from "../lib/patch-analysis-workflow";
+import type {
+  PatchAnalysisDecision,
+  PatchAnalysisUpdateDecision,
+} from "../lib/patch-analysis-workflow";
+import type { PatchEvidence } from "../lib/patch-evidence";
+import type { AnalyzePatchServerFailureCode } from "../lib/failure-messages";
+
+// ── Failure codes (serializable strings) ──────────────────────────────────────
+
+export type { AnalyzePatchServerFailureCode } from "../lib/failure-messages";
+
+// ── Evidence summary ────────────────────────────────────────────────────────────
+
+export interface AnalyzePatchEvidenceSummary {
+  readonly fingerprint: string;
+  readonly sourceLabel: string;
+  readonly sourceUrl: string;
+}
+
+// ── Advisory-only UPDATE decision ───────────────────────────────────────────────
+
+export interface AnalyzePatchUpdateResponse {
+  readonly verdict: "UPDATE";
+  readonly reason: string;
+  readonly patchBodyStatus: "no-body-available";
+  readonly selectedEvidenceFingerprints: readonly string[];
+  readonly evidenceSummary: readonly AnalyzePatchEvidenceSummary[];
+}
+
+// ── NO_PATCH and UNKNOWN decisions ─────────────────────────────────────────────
+
+export interface AnalyzePatchNoPatchResponse {
+  readonly verdict: "NO_PATCH";
+  readonly reason: string;
+}
+
+export interface AnalyzePatchUnknownResponse {
+  readonly verdict: "UNKNOWN";
+  readonly reason: string;
+}
+
+// ── Decision fragment inside the ok response ────────────────────────────────────
+
+export type AnalyzePatchDecisionResponse =
+  | AnalyzePatchUpdateResponse
+  | AnalyzePatchNoPatchResponse
+  | AnalyzePatchUnknownResponse;
+
+// ── Response union ─────────────────────────────────────────────────────────────
+
+export type AnalyzePatchResponse =
+  | { readonly status: "ok"; readonly decision: AnalyzePatchDecisionResponse }
+  | { readonly status: "error"; readonly code: AnalyzePatchServerFailureCode };
+
+// ── Mapper: PatchAnalysisError → server failure code ───────────────────────────
+
+export const toPatchAnalysisFailureCode = (
+  _error: PatchAnalysisError,
+): AnalyzePatchServerFailureCode => {
+  // Malformed model output variants collapse to one user-facing code.
+  if (
+    _error.reason === "MALFORMED_JSON" ||
+    _error.reason === "INVALID_VERDICT" ||
+    _error.reason === "INVALID_REASON"
+  ) {
+    return "MALFORMED_MODEL_OUTPUT";
+  }
+
+  // Transport failures from the OpenAI adapter.
+  if (_error.reason === "TRANSPORT_FAILED") {
+    return "MODEL_TRANSPORT_ERROR";
+  }
+
+  // Anything else is a defensive invariant failure; never expose the internal
+  // error details in the response.
+  return "ANALYSIS_INVARIANT_VIOLATION";
+};
+
+// ── Response constructors ──────────────────────────────────────────────────────
+
+/**
+ * Map a PatchAnalysisDecision to an advisory decision object.
+ *
+ * For UPDATE, the server never exposes a proposed patch body.  Instead it
+ * signals `patchBodyStatus: "no-body-available"` and includes only evidence
+ * records that carry an external URL (no `null` source URLs).
+ *
+ * For NO_PATCH and UNKNOWN, the decision is returned verbatim without extra
+ * fields.
+ */
+export const mapDecisionToResponse = (
+  decision: PatchAnalysisDecision,
+  evidence: readonly PatchEvidence[],
+): AnalyzePatchDecisionResponse => {
+  switch (decision._tag) {
+    case "UPDATE": {
+      const update = decision as PatchAnalysisUpdateDecision;
+      const evidenceSummary = evidence
+        .filter((e) => typeof e.sourceUrl === "string" && e.sourceUrl !== "")
+        .map((e) => ({
+          fingerprint: e.fingerprint,
+          sourceLabel: e.sourceLabel,
+          sourceUrl: e.sourceUrl as string,
+        }));
+
+      return {
+        verdict: "UPDATE",
+        reason: update.reason,
+        patchBodyStatus: "no-body-available",
+        selectedEvidenceFingerprints: update.selectedEvidenceFingerprints,
+        evidenceSummary,
+      };
+    }
+
+    case "NO_PATCH":
+      return {
+        verdict: "NO_PATCH",
+        reason: decision.reason,
+      };
+
+    case "UNKNOWN":
+      return {
+        verdict: "UNKNOWN",
+        reason: decision.reason,
+      };
+  }
+};
+
+export const okResponse = (
+  decision: PatchAnalysisDecision,
+  evidence: readonly PatchEvidence[],
+): AnalyzePatchResponse => ({
+  status: "ok",
+  decision: mapDecisionToResponse(decision, evidence),
+});
+
+export const errorResponse = (code: AnalyzePatchServerFailureCode): AnalyzePatchResponse => ({
+  status: "error",
+  code,
+});

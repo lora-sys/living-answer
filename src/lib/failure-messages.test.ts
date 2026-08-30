@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  type AnalyzePatchServerFailureCode,
   type AnswerExcerptServerFailureCode,
   failureMessage,
   formatTimestamp,
@@ -8,7 +9,7 @@ import {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-const ALL_CODES: readonly AnswerExcerptServerFailureCode[] = [
+const EXCERPT_CODES: readonly AnswerExcerptServerFailureCode[] = [
   "INVALID_REQUEST",
   "MISSING_ACCESS_SECRET",
   "UNSUPPORTED_ANSWER_URL",
@@ -18,12 +19,28 @@ const ALL_CODES: readonly AnswerExcerptServerFailureCode[] = [
   "PROVIDER_ERROR",
 ];
 
+const ANALYZE_PATCH_CODES: readonly AnalyzePatchServerFailureCode[] = [
+  ...EXCERPT_CODES,
+  "MISSING_OPENAI_KEY",
+  "MODEL_TRANSPORT_ERROR",
+  "MALFORMED_MODEL_OUTPUT",
+  "ANALYSIS_INVARIANT_VIOLATION",
+];
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 describe("failure-messages", () => {
   describe("failureMessage", () => {
-    for (const code of ALL_CODES) {
+    for (const code of EXCERPT_CODES) {
       it(`returns a non-empty Chinese message for ${code}`, () => {
+        const msg = failureMessage(code);
+        expect(typeof msg).toBe("string");
+        expect(msg.length).toBeGreaterThan(0);
+      });
+    }
+
+    for (const code of ANALYZE_PATCH_CODES) {
+      it(`returns a non-empty Chinese message for analyze-patch code ${code}`, () => {
         const msg = failureMessage(code);
         expect(typeof msg).toBe("string");
         expect(msg.length).toBeGreaterThan(0);
@@ -38,7 +55,7 @@ describe("failure-messages", () => {
       {
         label: "INVALID_REQUEST → explicit input error",
         code: "INVALID_REQUEST",
-        expected: "请输入一个有效的知乎回答链接。",
+        expected: "请输入一个有效的知乎回答链接和维护备注。",
       },
       {
         label: "ANSWER_NOT_FOUND → no matching answer",
@@ -79,13 +96,13 @@ describe("failure-messages", () => {
     }
 
     it("messages are distinct across all failure codes", () => {
-      const msgs = new Set(ALL_CODES.map(failureMessage));
-      expect(msgs.size).toBe(ALL_CODES.length);
+      const msgs = new Set(ANALYZE_PATCH_CODES.map(failureMessage));
+      expect(msgs.size).toBe(ANALYZE_PATCH_CODES.length);
     });
 
     it("no message contains raw provider error text or credential placeholders", () => {
       const forbidden = /secret|token|password|Error:|TypeError|stack|payload/;
-      for (const code of ALL_CODES) {
+      for (const code of ANALYZE_PATCH_CODES) {
         expect(forbidden.test(failureMessage(code))).toBe(false);
       }
     });
