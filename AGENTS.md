@@ -29,6 +29,10 @@ does not replace the original answer or generate a generic "latest answer".
   only: it returns raw search `Data.Items` through an injectable transport and
   does not own candidate validation, caching, persistence, or full-body
   ingestion.
+- The server function (see `src/server/resolve-answer-excerpt.ts`) is the only
+  current `process.env` boundary for `ZHIHU_ACCESS_SECRET`. It returns a JSON-
+  safe result and must not expose credentials, headers, raw provider bodies, or
+  error causes.
 - Do not add empty architecture directories or abstractions for services that
   do not exist in the current Ticket.
 

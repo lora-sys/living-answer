@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned.
+Implemented (2026-08-30). See commit `716c248`.
 
 ## Context
 

@@ -63,9 +63,16 @@ It remains persistence-free, does not read `process.env`, and never treats
 search summaries as a full `AnswerSnapshot` body. `vp check`, `vp test`, and
 `vp build` are green.
 
+Ticket 4 verified (2026-08-30): the TanStack Start server function
+(`src/server/resolve-answer-excerpt.ts`) composes the verified provider and
+adapter boundaries and returns a JSON-safe discriminated union. The
+`ZHIHU_ACCESS_SECRET` is read only in that server wiring module; provider cache
+remains in process memory and tests use injected fake providers without real
+network access. `vp check`, `vp test`, and `vp build` are green.
+
 ## Next decision
 
-Wire the verified Zhihu search adapter into an approved server-side caller for
-one real answer excerpt, while keeping the secret and network boundary outside
-domain code. Do not add database, importer, or persistence code until that plan
-is approved. Revisit a legal full-body source separately.
+Design the smallest user-facing excerpt flow over the verified server function,
+including request, loading, error, and no-match states. Do not add database,
+importer, or persistence code until that plan is approved. Revisit a legal
+full-body source separately.
