@@ -7,6 +7,7 @@ import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
 import type { AnalyzePatchResponse } from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
+import { formatEvidenceLine, truncatePreview } from "../lib/golden-demo-preview";
 import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
@@ -344,46 +345,89 @@ function Home() {
           )}
         </section>
 
-        {/* ═══ Demo entries — structural variety ════════════════════════════════════════════════ */}
-        <section>
-          <h2 className="text-sm font-semibold text-stone-500">精选演示</h2>
+        {/* ═══ 合成数据精选演示 ═══════════════════════════════════════════════════ */}
+        <section aria-labelledby="golden-demos-heading">
+          <h2 id="golden-demos-heading" className="text-sm font-semibold text-stone-500">
+            精选演示
+          </h2>
 
-          <div className="mt-6 space-y-3">
-            {demoEntries.map((entry) => (
-              <Link
-                key={entry.id}
-                to={`/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]}
-                className={[
-                  "group block rounded-2xl border border-stone-200 bg-white/80 p-5 transition-colors",
-                  "hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
-                ].join(" ")}
-              >
-                <div className="flex items-center gap-3">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#d97757]" />
-                  <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
-                    {entry.topic}
-                  </span>
-                  <span className="text-xs text-stone-400">合成数据 · 精选演示</span>
-                </div>
+          <ul className="mt-6 space-y-3" role="list">
+            {demoEntries.map((entry) => {
+              const firstPatch = entry.patches[0];
+              const firstEvidence = firstPatch.evidence[0];
+              const originalPreview = truncatePreview(firstPatch.originalExcerpt);
+              const changePreview = truncatePreview(firstPatch.currentChange);
+              const evidenceLine = formatEvidenceLine(
+                firstEvidence.organization,
+                firstEvidence.sourceType,
+                firstEvidence.publishedAt,
+              );
 
-                <h3 className="mt-2.5 text-base font-semibold tracking-tight text-stone-900 sm:text-lg">
-                  {entry.displayTitle}
-                </h3>
-
-                <p className="mt-1.5 text-sm leading-6 text-stone-600">{entry.description}</p>
-
-                <span className="mt-3 inline-flex items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
-                  阅读演示
-                  <span
-                    aria-hidden="true"
-                    className="ml-1 transition-transform group-hover:translate-x-0.5"
+              return (
+                <li key={entry.id}>
+                  <Link
+                    to={
+                      `/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]
+                    }
+                    className={[
+                      "group block min-w-0 rounded-2xl border border-stone-200 bg-stone-50/60 p-5",
+                      "transition-colors hover:bg-stone-50",
+                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
+                    ].join(" ")}
                   >
-                    &rarr;
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </div>
+                    {/* topic row */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span
+                        aria-hidden="true"
+                        className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#d97757]"
+                      />
+                      <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                        {entry.topic}
+                      </span>
+                      <span className="text-xs text-stone-400">合成数据 · 精选演示</span>
+                    </div>
+
+                    {/* title */}
+                    <h3 className="mt-2.5 text-base font-semibold tracking-tight text-stone-900 sm:text-lg">
+                      {entry.displayTitle}
+                    </h3>
+
+                    {/* 原文前提 */}
+                    <div className="mt-3">
+                      <span className="text-xs font-medium text-stone-500">原文前提</span>
+                      <p className="mt-0.5 break-words text-sm leading-6 text-stone-600">
+                        {originalPreview}
+                      </p>
+                    </div>
+
+                    {/* 现在变化 */}
+                    <div className="mt-2">
+                      <span className="text-xs font-medium text-stone-500">现在变化</span>
+                      <p className="mt-0.5 break-words text-sm leading-6 text-stone-600">
+                        {changePreview}
+                      </p>
+                    </div>
+
+                    {/* evidence + CTA row */}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                      <span className="break-words text-xs text-stone-500">
+                        <span className="font-medium text-stone-600">证据</span> {evidenceLine}
+                      </span>
+                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
+                        阅读原文与旁证
+                        <span
+                          aria-hidden="true"
+                          className="ml-1 transition-transform group-hover:translate-x-0.5"
+                        >
+                          &rarr;
+                        </span>
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </div>
     </main>
