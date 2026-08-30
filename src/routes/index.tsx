@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { type ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
-import { APP_NAME, PRODUCT_TAGLINE, READY_MESSAGE, STACK_LABEL } from "../lib/app-info";
+import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 
 export const Route = createFileRoute("/")({
@@ -100,19 +100,6 @@ function Home() {
       />
 
       <section className="mx-auto w-full max-w-4xl rounded-[2rem] border border-stone-300/80 bg-white/80 p-7 shadow-[0_24px_80px_rgba(71,60,48,0.12)] backdrop-blur sm:p-12 lg:p-16">
-        <div className="mb-16 flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm font-semibold tracking-[0.18em] text-stone-600 uppercase">
-            答案补丁 · Foundation 0
-          </p>
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
-            <span
-              aria-hidden="true"
-              className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]"
-            />
-            {READY_MESSAGE}
-          </div>
-        </div>
-
         <div className="max-w-3xl">
           <h1 className="text-5xl font-semibold tracking-[-0.045em] text-balance sm:text-7xl">
             {APP_NAME}
@@ -123,8 +110,6 @@ function Home() {
         </div>
 
         <div className="mt-14 border-t border-stone-200 pt-8">
-          <p className="text-sm font-medium text-stone-500">{STACK_LABEL}</p>
-
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
             <div>
               <label htmlFor="answer-url" className="block text-sm font-medium text-stone-600">
@@ -229,7 +214,7 @@ function Home() {
                   aria-hidden="true"
                   className="mr-1 inline-block h-1 w-1 rounded-full bg-amber-500"
                 />
-                证伪演示
+                更新演示
               </span>
               <span>阅读精选演示（无需链接）</span>
             </Link>

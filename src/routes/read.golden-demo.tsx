@@ -63,28 +63,30 @@ function ReadGoldenDemo() {
 
   return (
     <main className="min-h-screen bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
-      <div
-        className={[
-          "mx-auto w-full max-w-5xl",
-          openParagraphId ? "flex flex-col lg:flex-row" : "",
-        ].join(" ")}
-      >
-        {/* Back link */}
+      {/* Back link — outside the flex layout so panel open/close doesn't shift it */}
+      <div className="mx-auto w-full max-w-5xl">
         <Link
           to="/"
           className="mb-8 inline-flex items-center gap-1 text-sm text-stone-500 transition-colors hover:text-stone-800"
         >
           <span aria-hidden="true">&larr;</span> 返回首页
         </Link>
+      </div>
 
+      <div
+        className={[
+          "w-full mx-auto max-w-5xl",
+          openParagraphId ? "flex flex-col lg:flex-row" : "",
+        ].join(" ")}
+      >
         {/* Left: Answer body */}
         <article className="min-w-0 flex-1">
           <AnswerHeader fixture={goldenDemoFixture} />
 
           <section className="rounded-[2rem] border border-stone-300/80 bg-white/80 p-7 shadow-[0_24px_80px_rgba(71,60,48,0.12)] backdrop-blur sm:p-10">
-            <h2 className="text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">
               ChatGPT Free 与 Plus 的关键差异
-            </h2>
+            </h1>
 
             <div className="mt-8 space-y-6 text-base leading-7 text-stone-800 sm:leading-8">
               {goldenDemoFixture.paragraphs.map((paragraph, index) => {
