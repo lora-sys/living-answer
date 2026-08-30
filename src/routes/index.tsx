@@ -176,51 +176,9 @@ function Home() {
           </p>
         </section>
 
-        {/* ═══ Demo entries — structural variety ════════════════════════════ */}
-        <section>
-          <h2 className="text-sm font-semibold text-stone-500">精选演示</h2>
-
-          <div className="mt-6 space-y-3">
-            {demoEntries.map((entry) => (
-              <Link
-                key={entry.id}
-                to={`/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]}
-                className={[
-                  "group block rounded-2xl border border-stone-200 bg-white/80 p-5 transition-colors",
-                  "hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
-                ].join(" ")}
-              >
-                <div className="flex items-center gap-3">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#d97757]" />
-                  <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
-                    {entry.topic}
-                  </span>
-                  <span className="text-xs text-stone-400">合成数据 · 精选演示</span>
-                </div>
-
-                <h3 className="mt-2.5 text-base font-semibold tracking-tight text-stone-900 sm:text-lg">
-                  {entry.displayTitle}
-                </h3>
-
-                <p className="mt-1.5 text-sm leading-6 text-stone-600">{entry.description}</p>
-
-                <span className="mt-3 inline-flex items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
-                  阅读演示
-                  <span
-                    aria-hidden="true"
-                    className="ml-1 transition-transform group-hover:translate-x-0.5"
-                  >
-                    &rarr;
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
         {/* ═══ URL-first workflow ════════════════════════════════════════════ */}
         <section>
-          <h2 className="text-sm font-semibold text-stone-500">用真实链接体验</h2>
+          <h2 className="text-sm font-semibold text-stone-500">粘贴一个知乎回答链接</h2>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
             <div>
@@ -247,20 +205,25 @@ function Home() {
               />
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={isPending}
-                className={
-                  "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
-                  "bg-[#d97757] hover:bg-[#c4684a] " +
-                  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
-                  "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
-                }
-              >
-                {isPending ? "获取中..." : "获取摘录"}
-              </button>
-              {isPending && <span className="text-sm text-stone-500">正在检索回答摘录…</span>}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className={
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
+                    "bg-[#d97757] hover:bg-[#c4684a] " +
+                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
+                    "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+                  }
+                >
+                  {isPending ? "获取中..." : "获取摘录"}
+                </button>
+                {isPending && <span className="text-sm text-stone-500">正在检索回答摘录…</span>}
+              </div>
+              <p className="text-xs text-stone-500">
+                粘贴后点击获取摘录，查看该回答的前提是否已变化。
+              </p>
             </div>
 
             {showLoading && (
@@ -379,6 +342,48 @@ function Home() {
               )}
             </div>
           )}
+        </section>
+
+        {/* ═══ Demo entries — structural variety ════════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-sm font-semibold text-stone-500">精选演示</h2>
+
+          <div className="mt-6 space-y-3">
+            {demoEntries.map((entry) => (
+              <Link
+                key={entry.id}
+                to={`/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]}
+                className={[
+                  "group block rounded-2xl border border-stone-200 bg-white/80 p-5 transition-colors",
+                  "hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
+                ].join(" ")}
+              >
+                <div className="flex items-center gap-3">
+                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#d97757]" />
+                  <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                    {entry.topic}
+                  </span>
+                  <span className="text-xs text-stone-400">合成数据 · 精选演示</span>
+                </div>
+
+                <h3 className="mt-2.5 text-base font-semibold tracking-tight text-stone-900 sm:text-lg">
+                  {entry.displayTitle}
+                </h3>
+
+                <p className="mt-1.5 text-sm leading-6 text-stone-600">{entry.description}</p>
+
+                <span className="mt-3 inline-flex items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
+                  阅读演示
+                  <span
+                    aria-hidden="true"
+                    className="ml-1 transition-transform group-hover:translate-x-0.5"
+                  >
+                    &rarr;
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
         </section>
       </div>
     </main>

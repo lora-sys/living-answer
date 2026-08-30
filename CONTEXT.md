@@ -81,8 +81,18 @@ placeholder evidence. `vp check`, `vp test` (513 tests), and `vp build` are
 green; browser checks covered desktop/mobile panel interaction, redirects,
 unknown ids, and no horizontal overflow at 320/375/414/768 px.
 
+Ticket 12 verified (2026-08-31): the home page now makes the real-answer paste
+URL workflow the first action after the restrained hero and places the three
+golden demos below it. The URL section uses an action-oriented heading and a
+quiet expectation hint without changing the visual system, routes, server
+functions, analysis states, or demo behavior. `vp check`, `vp test` (513
+tests), and `vp build` are green. Browser evidence covers 320, 375, 414, 768,
+and 1440 px; the form precedes demos and no tested width has horizontal
+overflow.
+
 ## Next decision
 
-Prepare the public production demo without expanding product scope. Keep the
-real-answer workflow behind quota protection and failure states, then use the
-remaining time for Eval, polish, product documentation, and the demo script.
+Implement claim-anchored UPDATE rendering next: make each returned change carry
+the affected original wording, the current state, impact, and matched evidence.
+Keep generic UPDATE rendering as the fallback. Then add the offline Eval
+harness and prepare the public production demo without expanding product scope.
