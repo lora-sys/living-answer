@@ -40,7 +40,7 @@ export class PatchAnalysisError extends Data.TaggedError("PatchAnalysisError")<{
  */
 type AnalysisPrompt = {
   readonly task: "analyze-patch";
-  readonly version: "1";
+  readonly version: "2";
   readonly proposal: {
     readonly proposedBody: string;
     readonly answerSnapshotFingerprint: string;
@@ -61,6 +61,9 @@ type AnalysisPrompt = {
     readonly verdict: "UPDATE" | "NO_PATCH" | "UNKNOWN";
     readonly reason: string;
     readonly selectedEvidenceFingerprints?: readonly string[];
+    readonly affectedWording?: string;
+    readonly currentState?: string;
+    readonly impactOnAnswer?: string;
   };
 };
 
@@ -70,6 +73,9 @@ type ModelResponse = {
   readonly verdict: string;
   readonly reason: string;
   readonly selectedEvidenceFingerprints?: readonly string[];
+  readonly affectedWording?: string;
+  readonly currentState?: string;
+  readonly impactOnAnswer?: string;
 };
 
 // ── Decision types ─────────────────────────────────────────────────────────────
@@ -80,6 +86,9 @@ export interface PatchAnalysisUpdateDecision {
   readonly _tag: "UPDATE";
   readonly selectedEvidenceFingerprints: readonly string[];
   readonly reason: string;
+  readonly affectedWording?: string;
+  readonly currentState?: string;
+  readonly impactOnAnswer?: string;
 }
 
 export interface PatchAnalysisNoPatchDecision {
@@ -114,6 +123,24 @@ export interface PatchAnalysisWorkflowDeps {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/**
+ * Validate a text field: trim, require non-empty, reject control characters
+ * (charCode < 0x20), and enforce a maximum character length.
+ * Returns the validated string or null when the field should be rejected.
+ */
+const validateTextField = (raw: unknown, maxLength: number): string | null => {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  if (trimmed.length > maxLength) return null;
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmed.charCodeAt(i) < 0x20) return null;
+  }
+  return trimmed;
+};
+
+// ── Prompt construction ────────────────────────────────────────────────────────
+
 const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
   const evidenceEntries = input.evidence.map((e) => ({
     fingerprint: e.fingerprint,
@@ -144,7 +171,7 @@ const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
 
   return Object.freeze({
     task: "analyze-patch",
-    version: "1",
+    version: "2",
     proposal: Object.freeze(proposalEntries) as AnalysisPrompt["proposal"],
     evidence: Object.freeze(evidenceEntries),
     ...(hasAnswerContext ? { answerContext: Object.freeze(answerContext) } : {}),
@@ -152,29 +179,20 @@ const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
       verdict: "UPDATE",
       reason: "string",
       selectedEvidenceFingerprints: ["v1:hex"],
+      affectedWording: "string",
+      currentState: "string",
+      impactOnAnswer: "string",
     }),
   } as AnalysisPrompt);
 };
+
+// ── Parsing helpers ─────────────────────────────────────────────────────────────
 
 const parseVerdict = (raw: unknown): PatchAnalysisVerdict | null => {
   if (raw === "UPDATE" || raw === "NO_PATCH" || raw === "UNKNOWN") {
     return raw;
   }
   return null;
-};
-
-const normalizeReason = (raw: string): string | null => {
-  const trimmed = raw.trim();
-  if (trimmed === "") return null;
-
-  // Reject reasons that contain control characters or are excessively long
-  // (defense-in-depth against model injection)
-  if (trimmed.length > 500) return null;
-  for (let i = 0; i < trimmed.length; i++) {
-    if (trimmed.charCodeAt(i) < 0x20) return null;
-  }
-
-  return trimmed;
 };
 
 const parseModelResponse = (
@@ -242,7 +260,7 @@ const parseModelResponse = (
     };
   }
 
-  const reason = normalizeReason(obj.reason);
+  const reason = validateTextField(obj.reason, 500);
   if (reason === null) {
     return {
       _tag: "failure",
@@ -284,15 +302,55 @@ const parseModelResponse = (
     selectedEvidenceFingerprints = Object.freeze(fingerprints);
   }
 
+  // --- affectedWording (optional) ----------------------------------------------
+
+  const affectedWording = validateTextField(
+    "affectedWording" in obj ? obj.affectedWording : undefined,
+    200,
+  );
+
+  // --- currentState (optional) -------------------------------------------------
+
+  const currentState = validateTextField("currentState" in obj ? obj.currentState : undefined, 200);
+
+  // --- impactOnAnswer (optional) -----------------------------------------------
+
+  const impactOnAnswer = validateTextField(
+    "impactOnAnswer" in obj ? obj.impactOnAnswer : undefined,
+    200,
+  );
+
   return {
     _tag: "success",
     response: {
       verdict,
       reason,
       selectedEvidenceFingerprints,
+      ...(affectedWording !== null ? { affectedWording } : {}),
+      ...(currentState !== null ? { currentState } : {}),
+      ...(impactOnAnswer !== null ? { impactOnAnswer } : {}),
     },
   };
 };
+
+// ── Claim-anchor verification ──────────────────────────────────────────────────
+
+/**
+ * Verify that `affectedWording` (when present) is an exact contiguous substring
+ * of the supplied excerpt.  If it does not match, the field is dropped rather
+ * than trusting a paraphrase or fabricated quote.
+ */
+const verifyClaimAnchor = (
+  wording: string | undefined,
+  excerpt: string | undefined,
+): string | undefined => {
+  if (wording === undefined) return undefined;
+  if (typeof excerpt !== "string" || excerpt === "") return undefined;
+  if (!excerpt.includes(wording)) return undefined;
+  return wording;
+};
+
+// ── Product invariant enforcement ──────────────────────────────────────────────
 
 /**
  * Enforce the product invariant: UPDATE requires at least one evidence record
@@ -382,15 +440,26 @@ export const analyzePatch =
         return yield* Effect.fail(parseResult.error);
       }
 
-      const { verdict, reason, selectedEvidenceFingerprints } = parseResult.response;
+      const {
+        verdict,
+        reason,
+        selectedEvidenceFingerprints,
+        affectedWording,
+        currentState,
+        impactOnAnswer,
+      } = parseResult.response;
 
       // Build the typed decision.
       switch (verdict) {
         case "UPDATE": {
+          const verifiedWording = verifyClaimAnchor(affectedWording, input.excerpt?.excerpt);
           const updateDecision: PatchAnalysisUpdateDecision = {
             _tag: "UPDATE",
             selectedEvidenceFingerprints: selectedEvidenceFingerprints ?? [],
             reason,
+            affectedWording: verifiedWording,
+            currentState,
+            impactOnAnswer,
           };
           return enforceUpdateInvariant(updateDecision, input.evidence);
         }

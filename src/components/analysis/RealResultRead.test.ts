@@ -196,6 +196,138 @@ describe("RealResultRead", () => {
     });
   });
 
+  // ── UPDATE with claim-anchored optional fields ──────────────────────────────
+
+  describe("UPDATE with claim-anchored optional fields", () => {
+    const FULL_REASON = "The answer premise about the world population has changed.";
+    const FULL_UPDATE_RESULT: AnalyzePatchResponse = Object.freeze({
+      status: "ok" as const,
+      decision: {
+        verdict: "UPDATE" as const,
+        reason: FULL_REASON,
+        patchBodyStatus: "no-body-available" as const,
+        selectedEvidenceFingerprints: ["v1:abc123def4567890"],
+        evidenceSummary: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+          },
+        ],
+        affectedWording: "这是回答的第一段。",
+        currentState: "World population reached 8 billion in 2022.",
+        impactOnAnswer: "The original answer's premise about population is outdated.",
+        matchedEvidence: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+            quote: "这是有效的引用文本，超长了的时候会被截断。",
+          },
+        ],
+      },
+    });
+
+    const PARTIAL_UPDATE_RESULT: AnalyzePatchResponse = Object.freeze({
+      status: "ok" as const,
+      decision: {
+        verdict: "UPDATE" as const,
+        reason: "Some premise changed.",
+        patchBodyStatus: "no-body-available" as const,
+        selectedEvidenceFingerprints: ["v1:abc123def4567890"],
+        evidenceSummary: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+          },
+        ],
+        affectedWording: "这是回答的第一段。",
+      },
+    });
+
+    const LEGACY_UPDATE_RESULT: AnalyzePatchResponse = Object.freeze({
+      status: "ok" as const,
+      decision: {
+        verdict: "UPDATE" as const,
+        reason: "The answer now has a different premise.",
+        patchBodyStatus: "no-body-available" as const,
+        selectedEvidenceFingerprints: ["v1:abc123def4567890"],
+        evidenceSummary: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+          },
+        ],
+      },
+    });
+
+    const renderFull = (): string =>
+      h(
+        React.createElement(RealResultRead, {
+          excerpt: EXCERPT,
+          result: FULL_UPDATE_RESULT,
+        }),
+      );
+
+    const renderPartial = (): string =>
+      h(
+        React.createElement(RealResultRead, {
+          excerpt: EXCERPT,
+          result: PARTIAL_UPDATE_RESULT,
+        }),
+      );
+
+    const renderLegacy = (): string =>
+      h(
+        React.createElement(RealResultRead, {
+          excerpt: EXCERPT,
+          result: LEGACY_UPDATE_RESULT,
+        }),
+      );
+
+    it("renders all new sections for a full claim-anchored UPDATE", () => {
+      const html = renderFull();
+      expect(html).toContain("原文受影响前提");
+      expect(html).toContain("当前状况");
+      expect(html).toContain("对回答的影响");
+      expect(html).toContain(FULL_REASON);
+      expect(html).toContain("匹配证据");
+      expect(html).toContain("参考来源");
+      expect(html).toContain("来源A");
+      expect(html).not.toContain("proposedBody");
+    });
+
+    it("renders only present sections for a partial UPDATE", () => {
+      const html = renderPartial();
+      expect(html).toContain("原文受影响前提");
+      expect(html).not.toContain("当前状况");
+      expect(html).not.toContain("对回答的影响");
+      expect(html).not.toContain("匹配证据");
+      expect(html).toContain("Some premise changed.");
+      expect(html).toContain("参考来源");
+      expect(html).not.toContain("proposedBody");
+    });
+
+    it("renders the same generic card as today for a legacy UPDATE", () => {
+      const html = renderLegacy();
+      expect(html).toContain("The answer now has a different premise.");
+      expect(html).toContain("参考来源");
+      expect(html).toContain("来源A");
+      expect(html).not.toContain("原文受影响前提");
+      expect(html).not.toContain("匹配证据");
+      expect(html).not.toContain("proposedBody");
+      expect(html).toContain("bg-[#fdf6f3]");
+    });
+
+    it("never renders proposedBody in any UPDATE variant", () => {
+      expect(renderFull()).not.toContain("proposedBody");
+      expect(renderPartial()).not.toContain("proposedBody");
+      expect(renderLegacy()).not.toContain("proposedBody");
+    });
+  });
+
   // ── Styling invariants ──────────────────────────────────────────────────────
 
   describe("styling invariants", () => {
@@ -204,6 +336,35 @@ describe("RealResultRead", () => {
       expect(html).toContain("bg-[#fdf6f3]");
       expect(html).toContain("border-[#d97757]");
       expect(html).toContain("bg-amber-100");
+    });
+
+    it("UPDATE with matchedEvidence renders amber styling", () => {
+      const result: AnalyzePatchResponse = {
+        status: "ok",
+        decision: {
+          verdict: "UPDATE",
+          reason: MEMOIZED_REASON,
+          patchBodyStatus: "no-body-available",
+          selectedEvidenceFingerprints: [],
+          evidenceSummary: [],
+          matchedEvidence: [
+            {
+              fingerprint: "v1:testtesttesttest",
+              sourceLabel: "T",
+              sourceUrl: "https://example.com",
+              quote: "Q",
+            },
+          ],
+        },
+      };
+      const html = h(
+        React.createElement(RealResultRead, {
+          excerpt: EXCERPT,
+          result,
+        }),
+      );
+      expect(html).toContain("bg-[#fdf6f3]");
+      expect(html).toContain("border-[#d97757]");
     });
 
     it("NO_PATCH uses stone (neutral) styling", () => {

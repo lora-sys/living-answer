@@ -698,4 +698,128 @@ describe("analyze-patch", () => {
       expect(prompt.answerContext?.excerptText).toBe(excerpt.excerpt);
     });
   });
+
+  // ── Optional fields flow through server response ──────────────────────────
+
+  describe("optional fields in UPDATE response", () => {
+    it("includes affectedWording, currentState, and impactOnAnswer in the response", async () => {
+      const excerpt = EXCERPT_WITH_URL;
+      const serverFp = serverEvidenceFingerprint(excerpt, VALID_URL);
+
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [serverFp],
+          affectedWording: "A relevant excerpt.",
+          currentState: "The world reached 8 billion.",
+          impactOnAnswer: "The answer's premise is now outdated.",
+        }),
+      );
+      const h = buildHandler("openai-key", "zhihu-secret", provider, chat);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UPDATE");
+        const update = response.decision as AnalyzePatchUpdateResponse;
+        expect(update.affectedWording).toBe("A relevant excerpt.");
+        expect(update.currentState).toBe("The world reached 8 billion.");
+        expect(update.impactOnAnswer).toBe("The answer's premise is now outdated.");
+        expect(update.matchedEvidence).toBeDefined();
+        expect(update.matchedEvidence).toHaveLength(1);
+      }
+    });
+
+    it("omits optional fields when model does not provide them", async () => {
+      const excerpt = EXCERPT_WITH_URL;
+      const serverFp = serverEvidenceFingerprint(excerpt, VALID_URL);
+
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [serverFp],
+        }),
+      );
+      const h = buildHandler("openai-key", "zhihu-secret", provider, chat);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UPDATE");
+        const update = response.decision as AnalyzePatchUpdateResponse;
+        expect("affectedWording" in update).toBe(false);
+        expect("currentState" in update).toBe(false);
+        expect("impactOnAnswer" in update).toBe(false);
+        expect(update.matchedEvidence).toHaveLength(1);
+      }
+    });
+
+    it("response contains no proposedBody field", async () => {
+      const excerpt = EXCERPT_WITH_URL;
+      const serverFp = serverEvidenceFingerprint(excerpt, VALID_URL);
+
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [serverFp],
+        }),
+      );
+      const h = buildHandler("openai-key", "zhihu-secret", provider, chat);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect("proposedBody" in response.decision).toBe(false);
+      }
+    });
+
+    it("downgrades UPDATE when the selected fingerprint does not exist", async () => {
+      const excerpt = EXCERPT_WITH_URL;
+
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: ["v1:aaaaaaaaaaaaaaaa"],
+        }),
+      );
+      const h = buildHandler("openai-key", "zhihu-secret", provider, chat);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UNKNOWN"); // downgraded by invariant
+      }
+    });
+
+    it("matchedEvidence is omitted when selected evidence has no external URL", async () => {
+      const excerpt = makeExcerpt({
+        excerpt: "Short text.",
+      });
+      const noUrlFp = serverEvidenceFingerprint(excerpt, ""); // empty URL
+
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [noUrlFp],
+        }),
+      );
+      const h = buildHandler("openai-key", "zhihu-secret", provider, chat);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UNKNOWN"); // downgraded by invariant
+      }
+    });
+  });
 });

@@ -283,4 +283,159 @@ describe("analyze-patch-response", () => {
       );
     });
   });
+
+  // ── New optional fields on UPDATE response ────────────────────────────────
+
+  describe("new optional fields", () => {
+    it("carries affectedWording through to the response", () => {
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [],
+        affectedWording: "population reached 8 billion",
+      };
+      const result = mapDecisionToResponse(decision, []);
+      if (result.verdict === "UPDATE") {
+        expect(result.affectedWording).toBe("population reached 8 billion");
+      }
+    });
+
+    it("carries currentState through to the response", () => {
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [],
+        currentState: "The world is at 8 billion.",
+      };
+      const result = mapDecisionToResponse(decision, []);
+      if (result.verdict === "UPDATE") {
+        expect(result.currentState).toBe("The world is at 8 billion.");
+      }
+    });
+
+    it("carries impactOnAnswer through to the response", () => {
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [],
+        impactOnAnswer: "The date in the answer is now outdated.",
+      };
+      const result = mapDecisionToResponse(decision, []);
+      if (result.verdict === "UPDATE") {
+        expect(result.impactOnAnswer).toBe("The date in the answer is now outdated.");
+      }
+    });
+
+    it("omits optional fields when not present on the decision", () => {
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [],
+      };
+      const result = mapDecisionToResponse(decision, []);
+      if (result.verdict === "UPDATE") {
+        expect("affectedWording" in result).toBe(false);
+        expect("currentState" in result).toBe(false);
+        expect("impactOnAnswer" in result).toBe(false);
+        expect("matchedEvidence" in result).toBe(false);
+      }
+    });
+  });
+
+  // ── matchedEvidence mapping ──────────────────────────────────────────────
+
+  describe("matchedEvidence", () => {
+    it("builds matchedEvidence from selected records that exist with external URLs", () => {
+      const evidence = [makeExternalEvidence(), makeNoUrlEvidence()];
+      const fp = evidence[0].fingerprint;
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [fp],
+      };
+      const result = mapDecisionToResponse(decision, evidence);
+      if (result.verdict === "UPDATE") {
+        expect(result.matchedEvidence).toBeDefined();
+        expect(result.matchedEvidence).toHaveLength(1);
+        expect(result.matchedEvidence![0].fingerprint).toBe(fp);
+        expect(result.matchedEvidence![0].sourceLabel).toBe("un.org");
+        expect(result.matchedEvidence![0].sourceUrl).toBe("https://www.un.org/en/dayof8billion");
+        expect(result.matchedEvidence![0].quote).toBe("8 billion people");
+      }
+    });
+
+    it("excludes unselected evidence from matchedEvidence", () => {
+      const evidence = [makeExternalEvidence(), makeNoUrlEvidence()];
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [evidence[0].fingerprint], // only selects first
+      };
+      const result = mapDecisionToResponse(decision, evidence);
+      if (result.verdict === "UPDATE") {
+        expect(result.matchedEvidence).toBeDefined();
+        expect(result.matchedEvidence).toHaveLength(1);
+        expect(result.matchedEvidence![0].fingerprint).toBe(evidence[0].fingerprint);
+      }
+    });
+
+    it("excludes evidence without external URL from matchedEvidence", () => {
+      const noUrlEv = makeNoUrlEvidence();
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [noUrlEv.fingerprint],
+      };
+      const result = mapDecisionToResponse(decision, [noUrlEv]);
+      if (result.verdict === "UPDATE") {
+        expect(result.matchedEvidence).toBeUndefined();
+      }
+    });
+
+    it("omits matchedEvidence when no evidence is selected", () => {
+      const evidence = [makeExternalEvidence()];
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [],
+      };
+      const result = mapDecisionToResponse(decision, evidence);
+      if (result.verdict === "UPDATE") {
+        expect("matchedEvidence" in result).toBe(false);
+      }
+    });
+
+    it("quotes match server-owned PatchEvidence record, truncated at 120 chars", () => {
+      const longQuote = "x".repeat(200);
+      const evidence = [makeEvidence("source", "https://example.com", longQuote, 1_700_000_000)];
+      const fp = evidence[0].fingerprint;
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [fp],
+      };
+      const result = mapDecisionToResponse(decision, evidence);
+      if (result.verdict === "UPDATE") {
+        expect(result.matchedEvidence).toBeDefined();
+        expect(result.matchedEvidence![0].quote).toHaveLength(121); // 120 + "…"
+        expect(result.matchedEvidence![0].quote).toBe("x".repeat(120) + "…");
+      }
+    });
+
+    it("does not include unmatched evidence fingerprints", () => {
+      const evidence = [makeExternalEvidence(), makeNoUrlEvidence()];
+      const fakeFp = "v1:0000000000000000"; // not in evidence array
+      const decision: PatchAnalysisUpdateDecision = {
+        _tag: "UPDATE",
+        reason: "Confirmed.",
+        selectedEvidenceFingerprints: [fakeFp, evidence[0].fingerprint],
+      };
+      const result = mapDecisionToResponse(decision, evidence);
+      if (result.verdict === "UPDATE") {
+        expect(result.matchedEvidence).toBeDefined();
+        expect(result.matchedEvidence).toHaveLength(1);
+        expect(result.matchedEvidence![0].fingerprint).toBe(evidence[0].fingerprint);
+      }
+    });
+  });
 });

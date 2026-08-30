@@ -433,7 +433,7 @@ describe("patch-analysis-workflow", () => {
 
     // Prompt is deterministic JSON containing only domain data.
     expect(prompt.task).toBe("analyze-patch");
-    expect(prompt.version).toBe("1");
+    expect(prompt.version).toBe("2");
     expect(prompt.proposal).toBeDefined();
     const proposalJson = prompt.proposal as Record<string, string>;
     expect(proposalJson.proposedBody).toBe(proposal.proposedBody);
@@ -454,6 +454,9 @@ describe("patch-analysis-workflow", () => {
     expect(expected.verdict).toBe("UPDATE");
     expect(expected.reason).toBe("string");
     expect(expected.selectedEvidenceFingerprints).toEqual(["v1:hex"]);
+    expect(expected.affectedWording).toBe("string");
+    expect(expected.currentState).toBe("string");
+    expect(expected.impactOnAnswer).toBe("string");
   });
 
   it("calls the chat service exactly once", async () => {
@@ -750,18 +753,356 @@ describe("patch-analysis-workflow", () => {
     expect(proposalJson.evidenceFingerprint).toBe(fp);
   });
 
-  it("omits evidenceFingerprint from proposal when not present", async () => {
-    let capturedContent = "";
-    const chat = makeFakeChat((request) => {
-      capturedContent = request.messages[0].content;
-      return JSON.stringify({ verdict: "NO_PATCH", reason: "ok" });
+  // ── Optional fields: affectedWording, currentState, impactOnAnswer ──────────
+
+  describe("optional fields", () => {
+    it("UPDATE decision carries affectedWording, currentState, and impactOnAnswer when model provides them", async () => {
+      const excerptResult = createAnswerExcerpt({
+        questionId: "42",
+        answerId: "100",
+        capturedAt: 1_700_000_000,
+        sourceContentId: "42",
+        sourceContentType: "Answer",
+        sourceEditTime: 1_699_999_000,
+        excerpt: "世界人口在2022年达到80亿。这是回答的第一段。",
+      });
+      if (excerptResult._tag === "failure")
+        throw new Error(`Excerpt failed: ${excerptResult.reason}`);
+
+      const evidence = [
+        EVIDENCE_WITH_URL(
+          "un.org",
+          "https://www.un.org/en/dayof8billion",
+          "8 billion people",
+          1_700_000_000,
+        ),
+      ];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Population milestone confirmed.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: "世界人口在2022年达到80亿。",
+          currentState: "The world population reached 8 billion in 2022.",
+          impactOnAnswer: "The original answer's premise about the date is outdated.",
+        }),
+      );
+
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(
+          buildInput({ proposal: PROPOSAL(), evidence, excerpt: excerptResult.excerpt }),
+        ),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      const update = decision as PatchAnalysisUpdateDecision;
+      expect(update.affectedWording).toBe("世界人口在2022年达到80亿。");
+      expect(update.currentState).toBe("The world population reached 8 billion in 2022.");
+      expect(update.impactOnAnswer).toBe(
+        "The original answer's premise about the date is outdated.",
+      );
     });
 
-    const deps = makeDeps(chat);
-    await runDecision(analyzePatch(deps)(buildInput()));
+    it("legacy UPDATE response carries no optional fields when model does not provide them", async () => {
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "External source confirms.",
+          selectedEvidenceFingerprints: [realFp],
+        }),
+      );
+      const evidence = [
+        EVIDENCE_WITH_URL(
+          "un.org",
+          "https://www.un.org/en/dayof8billion",
+          "8 billion people",
+          1_700_000_000,
+        ),
+      ];
+      const realFp = evidence[0].fingerprint;
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(buildInput({ proposal: PROPOSAL(), evidence })),
+      );
 
-    const parsed = JSON.parse(capturedContent) as Record<string, unknown>;
-    const proposalJson = parsed.proposal as Record<string, unknown>;
-    expect("evidenceFingerprint" in proposalJson).toBe(false);
+      expect(decision._tag).toBe("UPDATE");
+      const update = decision as PatchAnalysisUpdateDecision;
+      expect(update.affectedWording).toBeUndefined();
+      expect(update.currentState).toBeUndefined();
+      expect(update.impactOnAnswer).toBeUndefined();
+    });
+
+    it("omits affectedWording when it exceeds 200 characters", async () => {
+      const excerptResult = createAnswerExcerpt({
+        questionId: "42",
+        answerId: "100",
+        capturedAt: 1_700_000_000,
+        sourceContentId: "42",
+        sourceContentType: "Answer",
+        sourceEditTime: 1_699_999_000,
+        excerpt: "x".repeat(300),
+      });
+      if (excerptResult._tag === "failure")
+        throw new Error(`Excerpt failed: ${excerptResult.reason}`);
+
+      const longWording = "x".repeat(201);
+      // This substring IS in the excerpt (which is 300 x's), but it's too long
+      const evidence = [EVIDENCE_WITH_URL("un.org", "https://www.un.org", "quote", 1_700_000_000)];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Overlong wording.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: longWording,
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(
+          buildInput({ proposal: PROPOSAL(), evidence, excerpt: excerptResult.excerpt }),
+        ),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).affectedWording).toBeUndefined();
+    });
+
+    it("omits affectedWording when it contains control characters", async () => {
+      const excerptResult = createAnswerExcerpt({
+        questionId: "42",
+        answerId: "100",
+        capturedAt: 1_700_000_000,
+        sourceContentId: "42",
+        sourceContentType: "Answer",
+        sourceEditTime: 1_699_999_000,
+        excerpt: "clean excerpt text here.",
+      });
+      if (excerptResult._tag === "failure")
+        throw new Error(`Excerpt failed: ${excerptResult.reason}`);
+
+      const evidence = [EVIDENCE_WITH_URL("un.org", "https://www.un.org", "quote", 1_700_000_000)];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Control char wording.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: "excerpt text here.",
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(
+          buildInput({ proposal: PROPOSAL(), evidence, excerpt: excerptResult.excerpt }),
+        ),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).affectedWording).toBeUndefined();
+    });
+
+    it("omits currentState when it exceeds 200 characters", async () => {
+      const evidence = [EVIDENCE_WITH_URL("un.org", "https://www.un.org", "quote", 1_700_000_000)];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "test",
+          selectedEvidenceFingerprints: [realFp],
+          currentState: "x".repeat(201),
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(buildInput({ proposal: PROPOSAL(), evidence })),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).currentState).toBeUndefined();
+    });
+
+    it("omits impactOnAnswer when it contains control characters", async () => {
+      const evidence = [EVIDENCE_WITH_URL("un.org", "https://www.un.org", "quote", 1_700_000_000)];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "test",
+          selectedEvidenceFingerprints: [realFp],
+          impactOnAnswer: "hasa null",
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(buildInput({ proposal: PROPOSAL(), evidence })),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).impactOnAnswer).toBeUndefined();
+    });
+  });
+
+  // ── Claim anchor: exact substring verification ──────────────────────────────
+
+  describe("claim anchor verification", () => {
+    it("keeps affectedWording when it is an exact contiguous substring of the excerpt", async () => {
+      const excerptText = "世界人口在2022年达到80亿，这是一个重要的里程碑。";
+      const excerptResult = createAnswerExcerpt({
+        questionId: "42",
+        answerId: "100",
+        capturedAt: 1_700_000_000,
+        sourceContentId: "42",
+        sourceContentType: "Answer",
+        sourceEditTime: 1_699_999_000,
+        excerpt: excerptText,
+      });
+      if (excerptResult._tag === "failure")
+        throw new Error(`Excerpt failed: ${excerptResult.reason}`);
+
+      const evidence = [
+        EVIDENCE_WITH_URL(
+          "un.org",
+          "https://www.un.org/en/dayof8billion",
+          "8 billion people",
+          1_700_000_000,
+        ),
+      ];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: "2022年达到80亿",
+        }),
+      );
+
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(
+          buildInput({ proposal: PROPOSAL(), evidence, excerpt: excerptResult.excerpt }),
+        ),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).affectedWording).toBe("2022年达到80亿");
+    });
+
+    it("drops affectedWording when it is a paraphrase not present verbatim in the excerpt", async () => {
+      const excerptText = "世界人口在2022年达到80亿。";
+      const excerptResult = createAnswerExcerpt({
+        questionId: "42",
+        answerId: "100",
+        capturedAt: 1_700_000_000,
+        sourceContentId: "42",
+        sourceContentType: "Answer",
+        sourceEditTime: 1_699_999_000,
+        excerpt: excerptText,
+      });
+      if (excerptResult._tag === "failure")
+        throw new Error(`Excerpt failed: ${excerptResult.reason}`);
+
+      const evidence = [
+        EVIDENCE_WITH_URL(
+          "un.org",
+          "https://www.un.org/en/dayof8billion",
+          "8 billion people",
+          1_700_000_000,
+        ),
+      ];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: "world population hit 8 billion", // paraphrase, not in excerpt
+        }),
+      );
+
+      const deps = makeDeps(chat);
+      const decision = await runDecision(
+        analyzePatch(deps)(
+          buildInput({ proposal: PROPOSAL(), evidence, excerpt: excerptResult.excerpt }),
+        ),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).affectedWording).toBeUndefined();
+    });
+
+    it("drops affectedWording when the excerpt is absent", async () => {
+      const evidence = [
+        EVIDENCE_WITH_URL(
+          "un.org",
+          "https://www.un.org/en/dayof8billion",
+          "8 billion people",
+          1_700_000_000,
+        ),
+      ];
+      const realFp = evidence[0].fingerprint;
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UPDATE",
+          reason: "Confirmed.",
+          selectedEvidenceFingerprints: [realFp],
+          affectedWording: "some wording",
+        }),
+      );
+
+      const deps = makeDeps(chat);
+      // No excerpt supplied
+      const decision = await runDecision(
+        analyzePatch(deps)(buildInput({ proposal: PROPOSAL(), evidence })),
+      );
+
+      expect(decision._tag).toBe("UPDATE");
+      expect((decision as PatchAnalysisUpdateDecision).affectedWording).toBeUndefined();
+    });
+  });
+
+  // ── Optional fields: NO_PATCH and UNKNOWN ignore new fields ──────────────────
+
+  describe("optional fields on other verdicts", () => {
+    it("NO_PATCH decision never carries optional fields", async () => {
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "NO_PATCH",
+          reason: "Accurate.",
+          affectedWording: "should-not-appear",
+          currentState: "should-not-appear",
+          impactOnAnswer: "should-not-appear",
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(analyzePatch(deps)(buildInput()));
+      expect(decision._tag).toBe("NO_PATCH");
+      const noPatch = decision as PatchAnalysisNoPatchDecision;
+      expect("affectedWording" in noPatch).toBe(false);
+      expect("currentState" in noPatch).toBe(false);
+      expect("impactOnAnswer" in noPatch).toBe(false);
+    });
+
+    it("UNKNOWN decision never carries optional fields", async () => {
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: "UNKNOWN",
+          reason: "Inconclusive.",
+          affectedWording: "should-not-appear",
+          currentState: "should-not-appear",
+          impactOnAnswer: "should-not-appear",
+        }),
+      );
+      const deps = makeDeps(chat);
+      const decision = await runDecision(analyzePatch(deps)(buildInput()));
+      expect(decision._tag).toBe("UNKNOWN");
+      const unk = decision as PatchAnalysisUnknownDecision;
+      expect("affectedWording" in unk).toBe(false);
+      expect("currentState" in unk).toBe(false);
+      expect("impactOnAnswer" in unk).toBe(false);
+    });
   });
 });

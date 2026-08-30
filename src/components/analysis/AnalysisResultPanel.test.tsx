@@ -162,6 +162,81 @@ describe("AnalysisResultPanel", () => {
     });
   });
 
+  // ── UPDATE with claim-anchored optional fields ──────────────────────────────
+
+  describe("UPDATE with claim-anchored optional fields", () => {
+    const FULL_UPDATE = Object.freeze({
+      status: "ok" as const,
+      decision: {
+        _tag: "UPDATE" as const,
+        verdict: "UPDATE" as const,
+        reason: MEMOIZED_REASON,
+        patchBodyStatus: "no-body-available" as const,
+        selectedEvidenceFingerprints: ["v1:abc123def4567890"],
+        evidenceSummary: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+          },
+        ],
+        affectedWording: "test excerpt text",
+        currentState: "The world reached 8 billion.",
+        impactOnAnswer: "Outdated premise.",
+        matchedEvidence: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+            quote: "evidence quote text here",
+          },
+        ],
+      },
+    });
+
+    const LEGACY_UPDATE = Object.freeze({
+      status: "ok" as const,
+      decision: {
+        _tag: "UPDATE" as const,
+        verdict: "UPDATE" as const,
+        reason: MEMOIZED_REASON,
+        patchBodyStatus: "no-body-available" as const,
+        selectedEvidenceFingerprints: ["v1:abc123def4567890"],
+        evidenceSummary: [
+          {
+            fingerprint: "v1:abc123def4567890",
+            sourceLabel: "来源A",
+            sourceUrl: "https://example.com/a",
+          },
+        ],
+      },
+    });
+
+    it("renders all new sections for a full UPDATE", () => {
+      const html = renderPanel({ result: FULL_UPDATE });
+      expect(html).toContain("原文受影响前提");
+      expect(html).toContain("当前状况");
+      expect(html).toContain("对回答的影响");
+      expect(html).toContain("匹配证据");
+      expect(html).not.toContain("proposedBody");
+    });
+
+    it("renders the same generic card for legacy UPDATE", () => {
+      const html = renderPanel({ result: LEGACY_UPDATE });
+      expect(html).toContain(MEMOIZED_REASON);
+      expect(html).toContain("参考来源");
+      expect(html).not.toContain("原文受影响前提");
+      expect(html).not.toContain("匹配证据");
+      expect(html).not.toContain("proposedBody");
+      expect(html).toContain("bg-[#fdf6f3]");
+    });
+
+    it("never renders proposedBody on UPDATE", () => {
+      expect(renderPanel({ result: FULL_UPDATE })).not.toContain("proposedBody");
+      expect(renderPanel({ result: LEGACY_UPDATE })).not.toContain("proposedBody");
+    });
+  });
+
   // ── NO_PATCH verdict ───────────────────────────────────────────────────────
 
   describe("NO_PATCH verdict", () => {

@@ -18,6 +18,17 @@ export interface AnalyzePatchEvidenceSummary {
   readonly sourceUrl: string;
 }
 
+// ── Matched evidence record (server-owned, built from PatchEvidence) ────────────
+
+const EVIDENCE_QUOTE_DISPLAY_MAX = 120;
+
+export interface MatchedEvidenceRecord {
+  readonly fingerprint: string;
+  readonly sourceLabel: string;
+  readonly sourceUrl: string;
+  readonly quote: string;
+}
+
 // ── Advisory-only UPDATE decision ───────────────────────────────────────────────
 
 export interface AnalyzePatchUpdateResponse {
@@ -26,6 +37,10 @@ export interface AnalyzePatchUpdateResponse {
   readonly patchBodyStatus: "no-body-available";
   readonly selectedEvidenceFingerprints: readonly string[];
   readonly evidenceSummary: readonly AnalyzePatchEvidenceSummary[];
+  readonly affectedWording?: string;
+  readonly currentState?: string;
+  readonly impactOnAnswer?: string;
+  readonly matchedEvidence?: readonly MatchedEvidenceRecord[];
 }
 
 // ── NO_PATCH and UNKNOWN decisions ─────────────────────────────────────────────
@@ -104,13 +119,42 @@ export const mapDecisionToResponse = (
           sourceUrl: e.sourceUrl as string,
         }));
 
-      return {
+      const matchedSet = new Set(update.selectedEvidenceFingerprints);
+      const matchedRecords: MatchedEvidenceRecord[] = [];
+      for (const e of evidence) {
+        if (
+          typeof e.sourceUrl === "string" &&
+          e.sourceUrl !== "" &&
+          matchedSet.has(e.fingerprint)
+        ) {
+          const truncatedQuote =
+            e.quote.length > EVIDENCE_QUOTE_DISPLAY_MAX
+              ? e.quote.slice(0, EVIDENCE_QUOTE_DISPLAY_MAX) + "…"
+              : e.quote;
+          matchedRecords.push({
+            fingerprint: e.fingerprint,
+            sourceLabel: e.sourceLabel,
+            sourceUrl: e.sourceUrl,
+            quote: truncatedQuote,
+          });
+        }
+      }
+
+      const response: AnalyzePatchUpdateResponse = {
         verdict: "UPDATE",
         reason: update.reason,
         patchBodyStatus: "no-body-available",
         selectedEvidenceFingerprints: update.selectedEvidenceFingerprints,
         evidenceSummary,
+        ...(update.affectedWording !== undefined
+          ? { affectedWording: update.affectedWording }
+          : {}),
+        ...(update.currentState !== undefined ? { currentState: update.currentState } : {}),
+        ...(update.impactOnAnswer !== undefined ? { impactOnAnswer: update.impactOnAnswer } : {}),
+        ...(matchedRecords.length > 0 ? { matchedEvidence: matchedRecords } : {}),
       };
+
+      return response;
     }
 
     case "NO_PATCH":
