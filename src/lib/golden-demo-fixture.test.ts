@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   goldenDemoFixture,
+  GOLDEN_DEMOS,
   splitBodyParagraphs,
   paragraphId,
   type GoldenDemoFixture,
@@ -22,9 +23,64 @@ const expectSuccessSnapshot = (result: AnswerSnapshotResult): AnswerSnapshot => 
   return result.snapshot;
 };
 
-// ── describe: Golden Demo Fixture ──────────────────────────────────────────────
+// ── Metadata and GOLDEN_DEMOS map ─────────────────────────────────────────────
 
-describe("goldenDemoFixture", () => {
+describe("GOLDEN_DEMOS map", () => {
+  it("contains exactly three fixtures", () => {
+    expect(Object.keys(GOLDEN_DEMOS)).toHaveLength(3);
+  });
+
+  it("contains the expected fixture ids", () => {
+    const ids = Object.keys(GOLDEN_DEMOS);
+    expect(ids).toContain("chatgpt-free-plus");
+    expect(ids).toContain("create-react-app");
+    expect(ids).toContain("delayed-retirement");
+  });
+
+  it("each fixture has the required metadata fields", () => {
+    for (const fixture of Object.values(GOLDEN_DEMOS)) {
+      expect(fixture.id.length).toBeGreaterThan(0);
+      expect(fixture.displayTitle.length).toBeGreaterThan(0);
+      expect(fixture.topic.length).toBeGreaterThan(0);
+      expect(fixture.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("fixture id matches its key in the map", () => {
+    for (const [id, fixture] of Object.entries(GOLDEN_DEMOS)) {
+      expect(fixture.id).toBe(id);
+    }
+  });
+
+  it("each fixture has a stable fingerprint from createAnswerSnapshot", () => {
+    for (const fixture of Object.values(GOLDEN_DEMOS)) {
+      const fp = fixture.snapshot.fingerprint;
+      expect(fp).toMatch(/^v1:[0-9a-f]{16}$/);
+      expect(Object.isFrozen(fixture.snapshot)).toBe(true);
+    }
+  });
+
+  it("each fixture is deeply frozen", () => {
+    for (const fixture of Object.values(GOLDEN_DEMOS)) {
+      expect(Object.isFrozen(fixture)).toBe(true);
+      expect(Object.isFrozen(fixture.provenance)).toBe(true);
+      expect(Object.isFrozen(fixture.syntheticAuthor)).toBe(true);
+      expect(Object.isFrozen(fixture.patches)).toBe(true);
+      expect(Object.isFrozen(fixture.patches[0])).toBe(true);
+      expect(Object.isFrozen(fixture.patches[0].evidence)).toBe(true);
+      expect(Object.isFrozen(fixture.patches[0].evidence[0])).toBe(true);
+      expect(Object.isFrozen(fixture.paragraphs)).toBe(true);
+    }
+  });
+
+  it("backward-compatible goldenDemoFixture equals the map entry", () => {
+    expect(goldenDemoFixture).toBe(GOLDEN_DEMOS["chatgpt-free-plus"]);
+  });
+});
+
+// ── describe: ChatGPT Free / Plus (existing fixture) ─────────────────────────
+
+describe("goldenDemoFixture (chatgpt-free-plus)", () => {
   // ── provenance and synthetic identity ──────────────────────────────────
 
   it("is marked as curated-demo, not a live capture", () => {
@@ -42,8 +98,8 @@ describe("goldenDemoFixture", () => {
   it("references two OpenAI primary-source URLs in provenance", () => {
     const urls = goldenDemoFixture.provenance.openaiPrimarySources;
     expect(urls).toHaveLength(2);
-    expect(urls[0]).toBe("https://developers.openai.com/api/docs/pricing");
-    expect(urls[1]).toBe("https://developers.openai.com/api/docs/guides/rate-limits");
+    expect(urls?.[0]).toBe("https://developers.openai.com/api/docs/pricing");
+    expect(urls?.[1]).toBe("https://developers.openai.com/api/docs/guides/rate-limits");
   });
 
   it("has a stable, deterministic fingerprint from createAnswerSnapshot", () => {
@@ -140,17 +196,13 @@ describe("goldenDemoFixture", () => {
   });
 
   it("evidence content supports pricing and tiering/rate-limit structure, not consumer quotas", () => {
-    // Consumer-subscription and per-user message quota text that must never appear
-    // in any evidence field on any patch.
     const forbidden = [
-      // Chinese consumer-quota phrasing
       /ChatGPT Plus.*\$20/,
       /ChatGPT Plus/,
       /每月 \$20/,
       /用户每小时限制/,
       /每小时条数/,
       /消息配额/,
-      // English consumer-subscription phrasing
       /\$20\/month/,
       /broader access to GPT-4/,
       /ChatGPT.*consumer/,
@@ -192,12 +244,85 @@ describe("goldenDemoFixture", () => {
   });
 
   it("type is inferable without a cast", () => {
-    // If goldenDemoFixture was not typed as GoldenDemoFixture, this would
-    // fail to compile. The fact that it compiles proves the cast was removed.
     const _check: GoldenDemoFixture = goldenDemoFixture;
     expect(_check).toBe(goldenDemoFixture);
   });
 });
+
+// ── describe: Create React App fixture ────────────────────────────────────────
+
+describe("createReactAppFixture", () => {
+  const fixture = GOLDEN_DEMOS["create-react-app"];
+
+  it("has correct metadata", () => {
+    expect(fixture.id).toBe("create-react-app");
+    expect(fixture.displayTitle).toContain("Create React App");
+    expect(fixture.topic).toBe("React 生态");
+    expect(fixture.description.length).toBeGreaterThan(10);
+  });
+
+  it("has at least 4 paragraphs", () => {
+    expect(fixture.paragraphs.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("has exactly two patches", () => {
+    expect(fixture.patches.length).toBe(2);
+  });
+
+  it("both patches are UPDATE type with valid evidence", () => {
+    for (const patch of fixture.patches) {
+      expect(patch.type).toBe("UPDATE");
+      expect(patch.evidence.length).toBeGreaterThanOrEqual(2);
+      for (const ev of patch.evidence) {
+        expect(ev.sourceUrl).toMatch(/^https:\/\//);
+      }
+    }
+  });
+
+  it("references CRA-related primary sources", () => {
+    const urls = fixture.patches.flatMap((p) => p.evidence.map((e) => e.sourceUrl));
+    expect(urls.some((u) => u.includes("react.dev"))).toBe(true);
+    expect(urls.some((u) => u.includes("github.com"))).toBe(true);
+  });
+});
+
+// ── describe: Delayed Retirement fixture ─────────────────────────────────────
+
+describe("delayedRetirementFixture", () => {
+  const fixture = GOLDEN_DEMOS["delayed-retirement"];
+
+  it("has correct metadata", () => {
+    expect(fixture.id).toBe("delayed-retirement");
+    expect(fixture.displayTitle).toContain("延迟");
+    expect(fixture.topic).toBe("社会政策");
+    expect(fixture.description.length).toBeGreaterThan(10);
+  });
+
+  it("has at least 4 paragraphs", () => {
+    expect(fixture.paragraphs.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("has exactly two patches", () => {
+    expect(fixture.patches.length).toBe(2);
+  });
+
+  it("both patches are UPDATE type with valid evidence", () => {
+    for (const patch of fixture.patches) {
+      expect(patch.type).toBe("UPDATE");
+      expect(patch.evidence.length).toBeGreaterThanOrEqual(2);
+      for (const ev of patch.evidence) {
+        expect(ev.sourceUrl).toMatch(/^https:\/\//);
+      }
+    }
+  });
+
+  it("references NPC/gov.cn primary sources", () => {
+    const urls = fixture.patches.flatMap((p) => p.evidence.map((e) => e.sourceUrl));
+    expect(urls.some((u) => u.includes("gov.cn"))).toBe(true);
+  });
+});
+
+// ── describe: Utility functions ──────────────────────────────────────────────
 
 describe("splitBodyParagraphs", () => {
   it("splits on double newline", () => {

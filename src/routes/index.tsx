@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
+import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
+import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
 import type { AnalyzePatchResponse } from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
@@ -50,7 +52,6 @@ function Home() {
     message: string;
   } | null>(null);
 
-  // Async states managed via useState (no react-query)
   const [loading, setLoading] = useState(false);
   const [serverResult, setServerResult] = useState<ResolveAnswerExcerptResponse | null>(null);
 
@@ -73,7 +74,6 @@ function Home() {
       return;
     }
 
-    // Clear prior results and start loading
     setErrorState(null);
     setServerResult(null);
     setAnalysisResult(null);
@@ -121,13 +121,19 @@ function Home() {
     await runAnalysis();
   };
 
-  // ── Retry handler ──────────────────────────────────────────────────────────
-
   const handleRetry = async (): Promise<void> => {
     await runAnalysis();
   };
 
-  // ── Derive display state ────────────────────────────────────────────────────
+  // ── Demo entries data ──────────────────────────────────────────────────────
+
+  const demoEntries: GoldenDemoFixture[] = [
+    GOLDEN_DEMOS["chatgpt-free-plus"],
+    GOLDEN_DEMOS["create-react-app"],
+    GOLDEN_DEMOS["delayed-retirement"],
+  ];
+
+  // ── Derive display state ───────────────────────────────────────────────────
 
   const isPending = loading;
   const resultData = serverResult?.status === "ok" ? serverResult : null;
@@ -155,23 +161,67 @@ function Home() {
   const showExtractSuccess = showSuccess && resultData !== null;
 
   return (
-    <main className="relative isolate flex min-h-screen items-center overflow-hidden bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top_left,rgba(217,119,87,0.2),transparent_58%)]"
-      />
-
-      <section className="mx-auto w-full max-w-4xl rounded-[2rem] border border-stone-300/80 bg-white/80 p-7 shadow-[0_24px_80px_rgba(71,60,48,0.12)] backdrop-blur sm:p-12 lg:p-16">
-        <div className="max-w-3xl">
-          <h1 className="text-5xl font-semibold tracking-[-0.045em] text-balance sm:text-7xl">
+    <main className="flex min-h-screen items-start bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
+      <div className="mx-auto w-full max-w-4xl space-y-16">
+        {/* ═══ Restrained hero ═══════════════════════════════════════════════ */}
+        <section className="max-w-3xl">
+          <h1 className="text-4xl font-semibold tracking-[-0.03em] text-stone-900 sm:text-5xl lg:text-6xl">
             {APP_NAME}
           </h1>
-          <p className="mt-7 text-lg leading-8 text-stone-700 sm:text-xl sm:leading-9">
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-stone-700 sm:text-xl sm:leading-9">
             {PRODUCT_TAGLINE}
           </p>
-        </div>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-600">
+            不替换原文 · 证据不足时不生成补丁 · 每条变化可以回到一手来源
+          </p>
+        </section>
 
-        <div className="mt-14 border-t border-stone-200 pt-8">
+        {/* ═══ Demo entries — structural variety ════════════════════════════ */}
+        <section>
+          <h2 className="text-sm font-semibold text-stone-500">精选演示</h2>
+
+          <div className="mt-6 space-y-3">
+            {demoEntries.map((entry) => (
+              <Link
+                key={entry.id}
+                to={`/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]}
+                className={[
+                  "group block rounded-2xl border border-stone-200 bg-white/80 p-5 transition-colors",
+                  "hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
+                ].join(" ")}
+              >
+                <div className="flex items-center gap-3">
+                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#d97757]" />
+                  <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                    {entry.topic}
+                  </span>
+                  <span className="text-xs text-stone-400">合成数据 · 精选演示</span>
+                </div>
+
+                <h3 className="mt-2.5 text-base font-semibold tracking-tight text-stone-900 sm:text-lg">
+                  {entry.displayTitle}
+                </h3>
+
+                <p className="mt-1.5 text-sm leading-6 text-stone-600">{entry.description}</p>
+
+                <span className="mt-3 inline-flex items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
+                  阅读演示
+                  <span
+                    aria-hidden="true"
+                    className="ml-1 transition-transform group-hover:translate-x-0.5"
+                  >
+                    &rarr;
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ═══ URL-first workflow ════════════════════════════════════════════ */}
+        <section>
+          <h2 className="text-sm font-semibold text-stone-500">用真实链接体验</h2>
+
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
             <div>
               <label htmlFor="answer-url" className="block text-sm font-medium text-stone-600">
@@ -329,25 +379,8 @@ function Home() {
               )}
             </div>
           )}
-
-          {/* Golden Demo secondary action */}
-          <div className="mt-6">
-            <Link
-              to="/read/golden-demo"
-              className="inline-flex items-center gap-1.5 text-sm text-stone-500 transition-colors hover:text-stone-800"
-            >
-              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-                <span
-                  aria-hidden="true"
-                  className="mr-1 inline-block h-1 w-1 rounded-full bg-amber-500"
-                />
-                更新演示
-              </span>
-              <span>阅读精选演示（无需链接）</span>
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

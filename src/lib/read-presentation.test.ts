@@ -99,6 +99,10 @@ describe("read-presentation", () => {
 
     it("returns 0 for an empty fixture", () => {
       const empty: GoldenDemoFixture = {
+        id: "test-empty",
+        displayTitle: "Test Empty",
+        topic: "testing",
+        description: "",
         provenance: {
           kind: "curated-demo",
           model: "test",
@@ -133,6 +137,10 @@ describe("read-presentation", () => {
 
     it("falls back to provenance.capturedAt for empty patches", () => {
       const empty: GoldenDemoFixture = {
+        id: "test-empty",
+        displayTitle: "Test Empty",
+        topic: "testing",
+        description: "",
         provenance: {
           kind: "curated-demo",
           model: "",

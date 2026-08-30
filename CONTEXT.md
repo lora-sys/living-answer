@@ -70,9 +70,19 @@ adapter boundaries and returns a JSON-safe discriminated union. The
 remains in process memory and tests use injected fake providers without real
 network access. `vp check`, `vp test`, and `vp build` are green.
 
+Ticket 11 verified (2026-08-31): the home page presents the three curated
+golden demos (`chatgpt-free-plus`, `create-react-app`, and
+`delayed-retirement`) and the real-answer URL workflow without replacing the
+paper/stone reading language. Each demo is addressable at
+`/read/golden-demo/$id`; the legacy `/read/golden-demo` path redirects to the
+ChatGPT demo, and an unknown id renders the normal 404 state. The CRA and
+delayed-retirement fixtures use verified primary-source quotes rather than
+placeholder evidence. `vp check`, `vp test` (513 tests), and `vp build` are
+green; browser checks covered desktop/mobile panel interaction, redirects,
+unknown ids, and no horizontal overflow at 320/375/414/768 px.
+
 ## Next decision
 
-Design the smallest user-facing excerpt flow over the verified server function,
-including request, loading, error, and no-match states. Do not add database,
-importer, or persistence code until that plan is approved. Revisit a legal
-full-body source separately.
+Prepare the public production demo without expanding product scope. Keep the
+real-answer workflow behind quota protection and failure states, then use the
+remaining time for Eval, polish, product documentation, and the demo script.
