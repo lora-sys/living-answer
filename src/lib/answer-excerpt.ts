@@ -83,7 +83,7 @@ const normalizeText = (raw: string): string => {
  * it must never be used for security, signing, or deduplication against
  * adversarial inputs.
  */
-const fnv1a64 = (data: string): [high: number, low: number] => {
+export const fnv1a64 = (data: string): [high: number, low: number] => {
   // 64-bit FNV-1a
   const FNV_OFFSET_BASIS = 14695981039346656037n;
   const fnvPrime = 1099511628211n;
