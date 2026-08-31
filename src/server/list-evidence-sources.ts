@@ -62,9 +62,17 @@ function deduplicateBySourceUrl(
 export const listEvidenceSources = createServerFn({
   method: "GET",
 }).handler(async (): Promise<ListEvidenceSourcesResponse> => {
-  const store = await Effect.runPromise(
-    makeSqliteEvidenceCandidateStore(".local/evidence-candidates.db"),
-  );
-  const records = await Effect.runPromise(store.findAll());
-  return { status: "ok", sources: deduplicateBySourceUrl(records) };
+  try {
+    const store = await Effect.runPromise(
+      makeSqliteEvidenceCandidateStore(".local/evidence-candidates.db"),
+    );
+    const records = await Effect.runPromise(store.findAll());
+    return { status: "ok", sources: deduplicateBySourceUrl(records) };
+  } catch {
+    return {
+      status: "error",
+      code: "SOURCES_STORE_ERROR",
+      message: "加载证据来源时出现异常，请稍后再试。",
+    };
+  }
 });
