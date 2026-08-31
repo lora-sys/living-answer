@@ -83,16 +83,18 @@ describe("GOLDEN_DEMOS map", () => {
 describe("goldenDemoFixture (chatgpt-free-plus)", () => {
   // ── provenance and synthetic identity ──────────────────────────────────
 
-  it("is marked as curated-demo, not a live capture", () => {
+  it("is marked as curated-demo with real Zhihu source attribution", () => {
     expect(goldenDemoFixture.provenance.kind).toBe("curated-demo");
-    expect(goldenDemoFixture.provenance.model).toContain("synthetic");
+    expect(goldenDemoFixture.provenance.model).toContain("real source");
+    expect(goldenDemoFixture.source.authorDisplayName).toBe("chengxd 达达");
   });
 
-  it("has synthetic author with no real Zhihu identity", () => {
-    const { syntheticAuthor } = goldenDemoFixture;
-    expect(syntheticAuthor.displayName).toContain("synthetic");
-    expect(syntheticAuthor.displayName).not.toMatch(/[一-鿿]/);
-    expect(syntheticAuthor.initials).toBe("ZA");
+  it("syntheticAuthor reflects the real Zhihu author", () => {
+    const { syntheticAuthor, source } = goldenDemoFixture;
+    expect(syntheticAuthor.displayName).toBe(source.authorDisplayName);
+    expect(syntheticAuthor.displayName).not.toContain("synthetic");
+    expect(syntheticAuthor.displayName).toMatch(/[一-鿿]/);
+    expect(syntheticAuthor.initials).toBe("cd");
   });
 
   it("references two OpenAI primary-source URLs in provenance", () => {
@@ -110,11 +112,12 @@ describe("goldenDemoFixture (chatgpt-free-plus)", () => {
   });
 
   it("snapshot fingerprint is stable across re-computation", () => {
+    const { snapshot } = goldenDemoFixture;
     const result = createAnswerSnapshot({
-      questionId: "573948291",
-      answerId: "1203749156",
-      capturedAt: 1_700_000_000_000,
-      body: goldenDemoFixture.snapshot.body,
+      questionId: snapshot.questionId,
+      answerId: snapshot.answerId,
+      capturedAt: snapshot.capturedAt,
+      body: snapshot.body,
     });
     const snap = expectSuccessSnapshot(result);
     expect(snap.fingerprint).toBe(goldenDemoFixture.snapshot.fingerprint);

@@ -116,9 +116,12 @@ describe("demo provenance", () => {
     }
   });
 
-  it("no fixture masquerades as a live Zhihu capture", () => {
+  it("every fixture has real source attribution, not synthetic placeholder", () => {
     for (const fixture of Object.values(GOLDEN_DEMOS)) {
-      expect(fixture.syntheticAuthor.displayName).toContain("synthetic");
+      expect(fixture.source).toBeDefined();
+      expect(fixture.source.url).toMatch(/^https:\/\/www\.zhihu\.com\/question\/\d+\/answer\/\d+$/);
+      expect(fixture.source.authorDisplayName).not.toContain("synthetic");
+      expect(fixture.syntheticAuthor.displayName).toBe(fixture.source.authorDisplayName);
     }
   });
 });

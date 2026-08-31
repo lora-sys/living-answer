@@ -14,6 +14,49 @@ import { createAnswerSnapshot, type AnswerSnapshot } from "./answer-snapshot";
 /** Patch kinds used in the demo. */
 export type GoldenDemoPatchType = "UPDATE" | "CORRECTION" | "CONDITION" | "BETTER_WAY";
 
+/** Source provenance for a curated-from-search-summary golden demo. */
+export interface GoldenDemoSource {
+  readonly url: string;
+  readonly questionId: string;
+  readonly answerId: string;
+  readonly authorDisplayName: string;
+  readonly questionTitle: string;
+  readonly sourceKind: "curated-from-search-summary";
+  readonly capturedAt: number;
+}
+
+/**
+ * Top-level fixture record.
+ *
+ * Extended with route-addressable metadata (id, displayTitle, topic, description)
+ * and a `source` block for real-source provenance, without changing the immutable
+ * snapshot / patch domain shape.
+ *
+ * `syntheticAuthor` is retained as a presentation alias: `initials` is derived
+ * from the real author name and `displayName` uses the real author name.
+ */
+export interface GoldenDemoFixture {
+  readonly provenance: GoldenDemoFixtureProvenance;
+  readonly snapshot: AnswerSnapshot;
+  readonly syntheticAuthor: {
+    readonly displayName: string;
+    readonly initials: string;
+  };
+  readonly capturedAt: number;
+  readonly patches: readonly GoldenDemoPatch[];
+  readonly paragraphs: readonly string[];
+  /** Stable id for the parameterized route and the GOLDEN_DEMOS map key. */
+  readonly id: string;
+  /** Display title shown on the landing page and the reader page header. */
+  readonly displayTitle: string;
+  /** Topic label (e.g. "AI 产品", "React 生态", "社会政策"). */
+  readonly topic: string;
+  /** One-sentence description for the landing page entry. */
+  readonly description: string;
+  /** Real-source provenance derived from a public Zhihu search summary. */
+  readonly source: GoldenDemoSource;
+}
+
 /** Evidence fields needed for the EvidenceCard presentation. */
 export interface GoldenDemoEvidence {
   readonly title: string;
@@ -112,6 +155,7 @@ function makeFixture(
     provenance: Object.freeze(fixture.provenance),
     snapshot: fixture.snapshot,
     syntheticAuthor: Object.freeze(fixture.syntheticAuthor),
+    source: Object.freeze(fixture.source),
     paragraphs: Object.freeze(fixture.paragraphs),
     patches: Object.freeze(fixture.patches.map(makePatch)),
   });
@@ -129,9 +173,9 @@ const NPC_DECISION_URL = "https://www.gov.cn/yaowen/liebiao/202409/content_69742
 // ── ChatGPT Free / Plus fixture ──────────────────────────────────────────────
 
 const chatgptSnapshotResult = createAnswerSnapshot({
-  questionId: "573948291",
-  answerId: "1203749156",
-  capturedAt: 1_700_000_000_000,
+  questionId: "655951342",
+  answerId: "3498259423",
+  capturedAt: 1_715_679_954_000,
   body: [
     "ChatGPT 的免费用户与付费（Plus）用户之间存在几个关键差异。这些差异会影响模型访问权限、使用频率和功能可用性，了解这些区分有助于根据自身需求选择合适的档位。",
     "在消息数量方面，免费用户在使用 GPT-4 模型时存在每小时限制。在该系统限定下，用户每小时只能发送有限条数的消息，超出后需要等待重置才能继续使用。Plus 用户则享有更高的使用配额，基本不受这一限制的约束。",
@@ -175,17 +219,26 @@ export const goldenDemoFixture: GoldenDemoFixture = makeFixture({
   description: "ChatGPT 免费与付费档位的差异如何随着 2024 年 GPT-4o 发布而变化。",
   provenance: Object.freeze({
     kind: "curated-demo",
-    model: "ChatGPT Free / Plus (Golden Demo, synthetic)",
-    capturedAt: 1_700_000_000_000,
-    note: "Manually curated demo fixture using synthetic author and ID metadata. Not a live Zhihu capture.",
+    model: "ChatGPT Free / Plus (Golden Demo, real source: chengxd 达达)",
+    capturedAt: 1_715_679_954_000,
+    note: "读体是从真实知乎回答的公开搜索摘要人工整理的，不是实时抓取，没有存储全文。",
     openaiPrimarySources: [OPENAI_PRICING_URL, OPENAI_RATE_LIMITS_URL] as const,
+  }),
+  source: Object.freeze({
+    url: "https://www.zhihu.com/question/655951342/answer/3498259423",
+    questionId: "655951342",
+    answerId: "3498259423",
+    authorDisplayName: "chengxd 达达",
+    questionTitle: "为什么 OpenAI 突然把 GPT-4o 免费了?",
+    sourceKind: "curated-from-search-summary",
+    capturedAt: 1_715_679_954_000,
   }),
   snapshot: CHATGPT_SNAPSHOT,
   syntheticAuthor: Object.freeze({
-    displayName: "zhihu-demo-author-synthetic",
-    initials: "ZA",
+    displayName: "chengxd 达达",
+    initials: "cd",
   }),
-  capturedAt: 1_700_000_000_000,
+  capturedAt: 1_715_679_954_000,
   patches: [
     {
       id: "patch-1-msg-limit",
@@ -220,9 +273,9 @@ export const goldenDemoFixture: GoldenDemoFixture = makeFixture({
 // ── Create React App fixture ──────────────────────────────────────────────────
 
 const craSnapshotResult = createAnswerSnapshot({
-  questionId: "625483971",
-  answerId: "384726105",
-  capturedAt: 1_735_000_000_000,
+  questionId: "265479404",
+  answerId: "1932577682752767964",
+  capturedAt: 1_753_544_170_000,
   body: [
     "Create React App（CRA）长期以来是 React 官方推荐的创建新项目的首选方式。它将构建工具封装在底层，提供开箱即用的开发服务器和打包配置，让初学者无需单独配置即可开始编写 React 组件。",
     "CRA 的零配置理念是其核心优势。开发者只需运行一个命令即可初始化项目，剩下的事情由 CRA 的内部封装处理。这种设计降低了入门门槛，使前端工程师能够专注于业务逻辑和界面实现，而不用过早陷入构建工具的复杂性中。",
@@ -279,16 +332,25 @@ const createReactAppFixture: GoldenDemoFixture = makeFixture({
   description: "2025 年 React 官方正式停止维护 CRA 并转向推荐 Next.js、React Router 等现代框架。",
   provenance: Object.freeze({
     kind: "curated-demo",
-    model: "Create React App sunset — React ecosystem (Golden Demo, synthetic)",
-    capturedAt: 1_735_000_000_000,
-    note: "Manually curated demo fixture using synthetic author and ID metadata. Not a live Zhihu capture.",
+    model: "Create React App sunset — React ecosystem (Golden Demo, real source: 空山新雨后)",
+    capturedAt: 1_753_544_170_000,
+    note: "读体是从真实知乎回答的公开搜索摘要人工整理的，不是实时抓取，没有存储全文。",
+  }),
+  source: Object.freeze({
+    url: "https://www.zhihu.com/question/265479404/answer/1932577682752767964",
+    questionId: "265479404",
+    answerId: "1932577682752767964",
+    authorDisplayName: "空山新雨后",
+    questionTitle: "怎么学习React?",
+    sourceKind: "curated-from-search-summary",
+    capturedAt: 1_753_544_170_000,
   }),
   snapshot: CRA_SNAPSHOT,
   syntheticAuthor: Object.freeze({
-    displayName: "zhihu-demo-author-synthetic",
-    initials: "ZA",
+    displayName: "空山新雨后",
+    initials: "空",
   }),
-  capturedAt: 1_735_000_000_000,
+  capturedAt: 1_753_544_170_000,
   patches: [
     {
       id: "patch-1-cra-sunset",
@@ -323,9 +385,9 @@ const createReactAppFixture: GoldenDemoFixture = makeFixture({
 // ── Delayed Retirement fixture ──────────────────────────────────────────────
 
 const retirementSnapshotResult = createAnswerSnapshot({
-  questionId: "388271654",
-  answerId: "514209683",
-  capturedAt: 1_720_000_000_000,
+  questionId: "8433630300",
+  answerId: "69130072250",
+  capturedAt: 1_735_722_820_000,
   body: [
     "根据现行规定，中国男性的法定退休年龄为六十周岁，女性干部（管理岗位）为五十五周岁，女性工人为五十周岁。这些退休年龄标准已在长期实践中稳定执行，是职工规划职业生涯和养老金领取时间的基本依据。",
     "法定退休年龄的确定与劳动力市场和社会福利制度密切相关。当前标准反映了历史上对劳动强度、岗位性质和社会角色的不同考量，公众在讨论退休政策时常常将此视为不可变动的基本制度框架。",
@@ -372,16 +434,25 @@ const delayedRetirementFixture: GoldenDemoFixture = makeFixture({
   description: "2025 年起中国实施渐进式延迟退休，原法定退休年龄已随政策同步调整。",
   provenance: Object.freeze({
     kind: "curated-demo",
-    model: "Delayed retirement policy — NPC 2024 (Golden Demo, synthetic)",
-    capturedAt: 1_720_000_000_000,
-    note: "Manually curated demo fixture using synthetic author and ID metadata. Not a live Zhihu capture.",
+    model: "Delayed retirement policy — NPC 2024 (Golden Demo, real source: 北海皆非)",
+    capturedAt: 1_735_722_820_000,
+    note: "读体是从真实知乎回答的公开搜索摘要人工整理的，不是实时抓取，没有存储全文。",
+  }),
+  source: Object.freeze({
+    url: "https://www.zhihu.com/question/8433630300/answer/69130072250",
+    questionId: "8433630300",
+    answerId: "69130072250",
+    authorDisplayName: "北海皆非",
+    questionTitle: "《实施弹性退休制度暂行办法》发布,2025年1月1日起实施,哪些内容值得关注?",
+    sourceKind: "curated-from-search-summary",
+    capturedAt: 1_735_722_820_000,
   }),
   snapshot: RETIREMENT_SNAPSHOT,
   syntheticAuthor: Object.freeze({
-    displayName: "zhihu-demo-author-synthetic",
-    initials: "ZA",
+    displayName: "北海皆非",
+    initials: "北",
   }),
-  capturedAt: 1_720_000_000_000,
+  capturedAt: 1_735_722_820_000,
   patches: [
     {
       id: "patch-1-retirement-ages",
