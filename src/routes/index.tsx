@@ -15,6 +15,10 @@ import {
   type ExtractAnswerClaimsResponse,
   extractAnswerClaims,
 } from "../server/extract-answer-claims";
+import {
+  type RetrieveEvidenceResponse,
+  retrieveEvidenceCandidatesFn,
+} from "../server/retrieve-evidence-candidates";
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
 import { RealResultRead } from "../components/analysis/RealResultRead";
 
@@ -42,6 +46,7 @@ function Home() {
   const boundResolve = useServerFn(resolveAnswerExcerpt);
   const boundAnalyze = useServerFn(analyzePatch);
   const boundExtractClaims = useServerFn(extractAnswerClaims);
+  const boundRetrieveEvidence = useServerFn(retrieveEvidenceCandidatesFn);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -73,6 +78,10 @@ function Home() {
   const [claimsLoading, setClaimsLoading] = useState(false);
   const [claimsRetryKey, setClaimsRetryKey] = useState(0);
 
+  // ── Evidence candidates state ───────────────────────────────────────────────
+  const [evidenceResult, setEvidenceResult] = useState<RetrieveEvidenceResponse | null>(null);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+
   // ── Excerpt handler ────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +102,8 @@ function Home() {
     setClaimsResult(null);
     setClaimsLoading(false);
     setClaimsRetryKey(0);
+    setEvidenceResult(null);
+    setEvidenceLoading(false);
     setLoading(true);
 
     const response = await boundResolve({ data: { url: trimmed } }).catch(() => null);
@@ -152,6 +163,7 @@ function Home() {
 
     setClaimsLoading(true);
     setClaimsResult(null);
+    setEvidenceResult(null);
 
     boundExtractClaims({ data: { url: url.trim() } })
       .then((response) => {
@@ -172,6 +184,31 @@ function Home() {
     };
     // Re-run when excerpt succeeds or retry key increments
   }, [boundExtractClaims, claimsRetryKey, serverResult, url]);
+
+  // ── Evidence candidate retrieval ────────────────────────────────────────────
+
+  const retrieveEvidence = (): void => {
+    if (claimsResult?.status !== "ok" || evidenceLoading) return;
+
+    const claims = claimsResult.claims.slice(0, 3).map((c) => ({
+      claimFingerprint: c.claimFingerprint,
+      claimText: c.claimText,
+      excerptFingerprint: c.excerptFingerprint,
+    }));
+
+    setEvidenceLoading(true);
+    setEvidenceResult(null);
+
+    boundRetrieveEvidence({ data: { claims } })
+      .then((response) => {
+        setEvidenceResult(response);
+        setEvidenceLoading(false);
+      })
+      .catch(() => {
+        setEvidenceResult({ status: "error", code: "RETRIEVAL_FAILED", message: "请求失败" });
+        setEvidenceLoading(false);
+      });
+  };
 
   // ── Demo fixtures ──────────────────────────────────────────────────────────
 
@@ -500,6 +537,15 @@ function Home() {
 
             {/* ── Claims extraction section ───────────────────────────────── */}
             <ClaimsSection loading={claimsLoading} result={claimsResult} onRetry={retryClaims} />
+
+            {/* ── Evidence candidates section ──────────────────────────────── */}
+            {claimsResult?.status === "ok" && claimsResult.claims.length > 0 && (
+              <EvidenceCandidatesSection
+                loading={evidenceLoading}
+                result={evidenceResult}
+                onRetrieve={retrieveEvidence}
+              />
+            )}
           </form>
 
           {/* Maintenance context and analysis — available after successful excerpt */}
@@ -683,4 +729,118 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
 
   // Idle — not loading and no result yet (brief moment before effect fires)
   return null;
+}
+
+// ── Evidence candidates section sub-component ──────────────────────────────────
+
+interface EvidenceCandidatesSectionProps {
+  readonly loading: boolean;
+  readonly result: RetrieveEvidenceResponse | null;
+  readonly onRetrieve: () => void;
+}
+
+function EvidenceCandidatesSection({
+  loading,
+  result,
+  onRetrieve,
+}: EvidenceCandidatesSectionProps) {
+  if (loading) {
+    return (
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+        <span
+          aria-hidden="true"
+          className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
+        />
+        <p className="text-sm text-ink-subtle">正在检索候选证据…</p>
+      </div>
+    );
+  }
+
+  if (result?.status === "error") {
+    return (
+      <div className="mt-4 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+        <div className="flex items-baseline gap-x-3">
+          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
+        </div>
+        <p className="mt-2 text-sm text-muted">检索未完成。请稍后重试，或检查网络和凭证配置。</p>
+      </div>
+    );
+  }
+
+  if (result?.status === "ok") {
+    const allCandidates = result.claims.flatMap((c) => c.candidates);
+
+    return (
+      <div className="mt-4">
+        <div className="flex items-baseline gap-x-3">
+          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
+          {result.isPartial && <span className="text-xs text-warning">部分检索未完成</span>}
+        </div>
+
+        {allCandidates.length === 0 ? (
+          <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+            <p className="text-sm text-muted">未找到候选证据。这不代表前提正确或过时。</p>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {result.claims.map((claimResult) => {
+              if (claimResult.candidates.length === 0) return null;
+              return (
+                <div key={claimResult.claimFingerprint}>
+                  <div className="space-y-2">
+                    {claimResult.candidates.map((candidate) => (
+                      <div
+                        key={candidate.candidateFingerprint}
+                        className="rounded-xl border border-rule bg-paper-2 px-5 py-4"
+                      >
+                        <a
+                          href={candidate.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-accent hover:underline"
+                        >
+                          {candidate.title}
+                        </a>
+                        <p className="mt-1.5 break-words text-xs text-muted">
+                          {candidate.contentPreview}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                          <span>
+                            来源{" "}
+                            <span className="font-medium text-ink-subtle">
+                              {candidate.sourceLabel}
+                            </span>
+                          </span>
+                          <span>
+                            类型{" "}
+                            <span className="font-medium text-ink-subtle">
+                              {candidate.authorityHint}
+                            </span>
+                          </span>
+                          <span>捕获 {formatTimestamp(candidate.capturedAt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Idle — show the retrieve button
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={onRetrieve}
+        className="rounded-xl border border-rule bg-paper-2 px-5 py-3 text-sm font-medium text-ink-subtle transition-colors hover:bg-paper hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        检索候选证据
+      </button>
+    </div>
+  );
 }
