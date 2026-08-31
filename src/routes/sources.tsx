@@ -79,6 +79,22 @@ function SourcesPage() {
           </div>
         )}
 
+        {!loading && !result && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+          >
+            <p className="text-sm font-semibold text-ink">无法加载来源</p>
+            <p className="mt-1 text-sm text-ink-subtle">数据加载失败，请稍后重试。</p>
+            <Link
+              to="/"
+              className="mt-3 inline-block text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+            >
+              返回首页
+            </Link>
+          </div>
+        )}
+
         {!loading && result?.status === "error" && (
           <div
             role="alert"
