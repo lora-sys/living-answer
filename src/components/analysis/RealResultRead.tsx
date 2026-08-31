@@ -40,6 +40,10 @@ export interface RealResultReadProps {
   readonly contextText?: string;
   /** Called after the user asks to dispute the currently visible patch. */
   readonly onDispute?: () => void;
+  /** Called after the user marks the patch as resolved. */
+  readonly onResolve?: () => void;
+  /** Called after the user withdraws the patch. */
+  readonly onWithdraw?: () => void;
   /** Called after the user asks to rerun the current analysis. */
   readonly onRecheck?: () => void;
   /** True while the dispute request is in flight. */
@@ -183,6 +187,8 @@ function DisputedPatchView() {
 const lifecycleStatusLabel = (status: PatchLifecycleStatus): string => {
   if (status === "DISPUTED") return "已暂停";
   if (status === "SUPERSEDED") return "已被新检查替代";
+  if (status === "RESOLVED") return "已解决";
+  if (status === "WITHDRAWN") return "已撤回";
   return "当前可见";
 };
 
@@ -190,6 +196,8 @@ interface LifecycleViewProps {
   readonly lifecycle?: PatchLifecycleSummary;
   readonly history?: readonly PatchLifecycleHistorySummary[];
   readonly onDispute?: () => void;
+  readonly onResolve?: () => void;
+  readonly onWithdraw?: () => void;
   readonly onRecheck?: () => void;
   readonly isDisputePending?: boolean;
   readonly disputeError?: AnalyzePatchServerFailureCode | null;
@@ -199,6 +207,8 @@ function LifecycleView({
   lifecycle,
   history,
   onDispute,
+  onResolve,
+  onWithdraw,
   onRecheck,
   isDisputePending,
   disputeError,
@@ -208,6 +218,9 @@ function LifecycleView({
   }
 
   const canDispute = lifecycle?.status === "VISIBLE" && onDispute !== undefined;
+  const canResolve = lifecycle?.status === "VISIBLE" && onResolve !== undefined;
+  const canWithdraw = lifecycle?.status === "VISIBLE" && onWithdraw !== undefined;
+  const hasActions = canDispute || canResolve || canWithdraw || onRecheck !== undefined;
 
   return (
     <div
@@ -224,7 +237,7 @@ function LifecycleView({
           )}
         </div>
 
-        {(canDispute || onRecheck !== undefined) && (
+        {hasActions && (
           <div className="flex flex-wrap items-center gap-2">
             {canDispute && (
               <button
@@ -234,6 +247,26 @@ function LifecycleView({
                 className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
               >
                 标记有争议
+              </button>
+            )}
+            {canResolve && (
+              <button
+                type="button"
+                onClick={onResolve}
+                disabled={isDisputePending}
+                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+              >
+                标记已解决
+              </button>
+            )}
+            {canWithdraw && (
+              <button
+                type="button"
+                onClick={onWithdraw}
+                disabled={isDisputePending}
+                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+              >
+                撤回补丁
               </button>
             )}
             {onRecheck !== undefined && (
@@ -287,6 +320,8 @@ export function RealResultRead({
   result,
   contextText,
   onDispute,
+  onResolve,
+  onWithdraw,
   onRecheck,
   isDisputePending,
   disputeError,
@@ -324,6 +359,8 @@ export function RealResultRead({
         lifecycle={result.lifecycle}
         history={result.history}
         onDispute={onDispute}
+        onResolve={onResolve}
+        onWithdraw={onWithdraw}
         onRecheck={onRecheck}
         isDisputePending={isDisputePending}
         disputeError={disputeError}

@@ -1,6 +1,6 @@
 import { fnv1a64 } from "./answer-excerpt";
 
-export type PatchLifecycleStatus = "VISIBLE" | "DISPUTED" | "SUPERSEDED";
+export type PatchLifecycleStatus = "VISIBLE" | "DISPUTED" | "SUPERSEDED" | "RESOLVED" | "WITHDRAWN";
 
 export interface PatchEvidenceSummary {
   readonly fingerprint: string;

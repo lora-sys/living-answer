@@ -72,6 +72,8 @@ const makeLifecycleStore = (): {
         return saved.length;
       }),
     dispute: () => Effect.succeed(false),
+    resolve: () => Effect.succeed(false),
+    withdraw: () => Effect.succeed(false),
     findCurrentByExcerptFingerprint: () => Effect.succeed(null),
     findHistoryByAnswer: () =>
       Effect.sync(() => saved.map(({ input: _input, ...record }) => record)),

@@ -28,6 +28,14 @@ export interface PatchLifecycleStore {
     recordFingerprint: string,
     eventAt: number,
   ) => Effect.Effect<boolean, PatchLifecycleStoreError>;
+  readonly resolve: (
+    recordFingerprint: string,
+    eventAt: number,
+  ) => Effect.Effect<boolean, PatchLifecycleStoreError>;
+  readonly withdraw: (
+    recordFingerprint: string,
+    eventAt: number,
+  ) => Effect.Effect<boolean, PatchLifecycleStoreError>;
   readonly findCurrentByExcerptFingerprint: (
     excerptFingerprint: string,
   ) => Effect.Effect<PatchLifecycleRecordWithStatus | null, PatchLifecycleStoreError>;
@@ -157,7 +165,10 @@ const DEFAULT_DB_PATH = ".local/patch-lifecycle.db";
 type LifecycleRow = Record<string, unknown>;
 
 const parseLifecycleStatus = (value: unknown): PatchLifecycleStatus => {
-  return value === "DISPUTED" || value === "SUPERSEDED" ? value : "VISIBLE";
+  const valid: readonly string[] = ["VISIBLE", "DISPUTED", "SUPERSEDED", "RESOLVED", "WITHDRAWN"];
+  return typeof value === "string" && valid.includes(value)
+    ? (value as PatchLifecycleStatus)
+    : "VISIBLE";
 };
 
 const optionalText = (value: unknown): string | undefined =>
@@ -356,6 +367,54 @@ export const makeSqlitePatchLifecycleStore = (
           }),
       });
 
+    const resolve = (
+      recordFingerprint: string,
+      eventAt: number,
+    ): Effect.Effect<boolean, PatchLifecycleStoreError> =>
+      Effect.try({
+        try: () => {
+          const transaction = database.transaction((): boolean => {
+            const row = findByRecordStmt.get(recordFingerprint) as
+              | (LifecycleRow & { id: number })
+              | undefined;
+            if (!row || parseLifecycleStatus(row.status) !== "VISIBLE") {
+              return false;
+            }
+            appendEvent(Number(row.id), recordFingerprint, "RESOLVED", eventAt);
+            return true;
+          });
+          return transaction();
+        },
+        catch: (error: unknown) =>
+          new PatchLifecycleStoreError({
+            reason: `resolve failed: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
+    const withdraw = (
+      recordFingerprint: string,
+      eventAt: number,
+    ): Effect.Effect<boolean, PatchLifecycleStoreError> =>
+      Effect.try({
+        try: () => {
+          const transaction = database.transaction((): boolean => {
+            const row = findByRecordStmt.get(recordFingerprint) as
+              | (LifecycleRow & { id: number })
+              | undefined;
+            if (!row || parseLifecycleStatus(row.status) !== "VISIBLE") {
+              return false;
+            }
+            appendEvent(Number(row.id), recordFingerprint, "WITHDRAWN", eventAt);
+            return true;
+          });
+          return transaction();
+        },
+        catch: (error: unknown) =>
+          new PatchLifecycleStoreError({
+            reason: `withdraw failed: ${error instanceof Error ? error.message : String(error)}`,
+          }),
+      });
+
     const findCurrentByExcerptFingerprint = (
       excerptFingerprint: string,
     ): Effect.Effect<PatchLifecycleRecordWithStatus | null, PatchLifecycleStoreError> =>
@@ -389,6 +448,8 @@ export const makeSqlitePatchLifecycleStore = (
       saveVisible,
       supersedeByExcerptFingerprint,
       dispute,
+      resolve,
+      withdraw,
       findCurrentByExcerptFingerprint,
       findHistoryByAnswer,
     };

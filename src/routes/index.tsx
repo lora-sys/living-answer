@@ -15,6 +15,8 @@ import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
 import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
+import { resolvePatchLifecycle } from "../server/resolve-patch-lifecycle";
+import { withdrawPatchLifecycle } from "../server/withdraw-patch-lifecycle";
 import {
   type SearchAnswerCandidatesResponse,
   searchAnswerCandidates,
@@ -57,6 +59,8 @@ function Home() {
   const boundExtractClaims = useServerFn(extractAnswerClaims);
   const boundRetrieveEvidence = useServerFn(retrieveEvidenceCandidatesFn);
   const boundSearchCandidates = useServerFn(searchAnswerCandidates);
+  const boundResolvePatch = useServerFn(resolvePatchLifecycle);
+  const boundWithdrawPatch = useServerFn(withdrawPatchLifecycle);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -90,6 +94,9 @@ function Home() {
   const [contextText, setContextText] = useState("");
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [disputeError, setDisputeError] = useState<AnalyzePatchServerFailureCode | null>(null);
+  const [lifecycleAction, setLifecycleAction] = useState<"dispute" | "resolve" | "withdraw" | null>(
+    null,
+  );
 
   // ── Claims state ─────────────────────────────────────────────────────────────
   const [claimsResult, setClaimsResult] = useState<ExtractAnswerClaimsResponse | null>(null);
@@ -213,7 +220,7 @@ function Home() {
     }
 
     const recordFingerprint = analysisResult.lifecycle.recordFingerprint;
-    setDisputeLoading(true);
+    setLifecycleAction("dispute");
     setDisputeError(null);
 
     const response = await boundDisputePatch({ data: { recordFingerprint } }).catch(() => null);
@@ -248,7 +255,58 @@ function Home() {
     }
 
     setDisputeLoading(false);
+    setLifecycleAction(null);
   };
+
+  const handleLifecycleTransition = async (action: "resolve" | "withdraw"): Promise<void> => {
+    if (
+      disputeLoading ||
+      analysisResult?.status !== "ok" ||
+      analysisResult.lifecycle?.status !== "VISIBLE"
+    ) {
+      return;
+    }
+
+    const recordFingerprint = analysisResult.lifecycle.recordFingerprint;
+    setLifecycleAction(action);
+    setDisputeError(null);
+
+    const boundFn = action === "resolve" ? boundResolvePatch : boundWithdrawPatch;
+    const response = await boundFn({ data: { recordFingerprint } }).catch(() => null);
+
+    if (response?.status === "ok") {
+      const newStatus = action === "resolve" ? "RESOLVED" : "WITHDRAWN";
+      const eventAt = Date.now();
+      setAnalysisResult((current) => {
+        if (
+          current?.status !== "ok" ||
+          current.lifecycle?.recordFingerprint !== response.recordFingerprint
+        ) {
+          return current;
+        }
+        return {
+          ...current,
+          lifecycle: {
+            ...current.lifecycle,
+            status: newStatus,
+            eventAt,
+          },
+          history: current.history?.map((record) =>
+            record.recordFingerprint === response.recordFingerprint
+              ? { ...record, status: newStatus, eventAt }
+              : record,
+          ),
+        };
+      });
+    } else {
+      setDisputeError("DISPUTE_PATCH_STORE_ERROR");
+    }
+
+    setLifecycleAction(null);
+  };
+
+  const handleResolve = (): Promise<void> => handleLifecycleTransition("resolve");
+  const handleWithdraw = (): Promise<void> => handleLifecycleTransition("withdraw");
 
   // ── Claims extraction ────────────────────────────────────────────────────────
 
@@ -850,8 +908,10 @@ function Home() {
                   result={analysisResult}
                   contextText={contextText}
                   onDispute={handleDispute}
+                  onResolve={handleResolve}
+                  onWithdraw={handleWithdraw}
                   onRecheck={handleRetry}
-                  isDisputePending={disputeLoading}
+                  isDisputePending={disputeLoading || lifecycleAction !== null}
                   disputeError={disputeError}
                 />
               ) : (

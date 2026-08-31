@@ -12,6 +12,8 @@ const FAILED_STORE = {
   supersedeByExcerptFingerprint: () =>
     Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
   dispute: () => Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
+  resolve: () => Effect.succeed(false),
+  withdraw: () => Effect.succeed(false),
   findCurrentByExcerptFingerprint: () =>
     Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
   findHistoryByAnswer: () => Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
@@ -20,6 +22,8 @@ const FAILED_STORE = {
 const makeStore = (disputeResult: boolean): PatchLifecycleStore => ({
   ...FAILED_STORE,
   dispute: () => Effect.succeed(disputeResult),
+  resolve: () => Effect.succeed(false),
+  withdraw: () => Effect.succeed(false),
 });
 
 const call = (

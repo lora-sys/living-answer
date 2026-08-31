@@ -230,9 +230,7 @@ describe("patch-analysis-workflow", () => {
       const decision = await runDecision(analyzePatch(deps)(buildInput()));
 
       expect(decision._tag).toBe(tag);
-      expect((decision as { reason: string }).reason).toBe(
-        `Advisory ${tag.toLowerCase()} note.`,
-      );
+      expect((decision as { reason: string }).reason).toBe(`Advisory ${tag.toLowerCase()} note.`);
     });
   }
 
