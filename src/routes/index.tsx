@@ -5,12 +5,16 @@ import { useEffect, useState } from "react";
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
-import type { AnalyzePatchResponse } from "../server/analyze-patch-response";
+import type {
+  AnalyzePatchResponse,
+  AnalyzePatchServerFailureCode,
+} from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
 import { formatEvidenceLine, truncatePreview } from "../lib/golden-demo-preview";
 import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
+import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
 import {
   type ExtractAnswerClaimsResponse,
   extractAnswerClaims,
@@ -45,6 +49,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const boundResolve = useServerFn(resolveAnswerExcerpt);
   const boundAnalyze = useServerFn(analyzePatch);
+  const boundDisputePatch = useServerFn(disputePatchLifecycle);
   const boundExtractClaims = useServerFn(extractAnswerClaims);
   const boundRetrieveEvidence = useServerFn(retrieveEvidenceCandidatesFn);
 
@@ -72,6 +77,8 @@ function Home() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [contextText, setContextText] = useState("");
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [disputeError, setDisputeError] = useState<AnalyzePatchServerFailureCode | null>(null);
 
   // ── Claims state ─────────────────────────────────────────────────────────────
   const [claimsResult, setClaimsResult] = useState<ExtractAnswerClaimsResponse | null>(null);
@@ -86,7 +93,7 @@ function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || disputeLoading) return;
     const trimmed = url.trim();
 
     if (trimmed === "") {
@@ -99,6 +106,8 @@ function Home() {
     setAnalysisResult(null);
     setAnalysisLoading(false);
     setAnalysisError(null);
+    setDisputeLoading(false);
+    setDisputeError(null);
     setClaimsResult(null);
     setClaimsLoading(false);
     setClaimsRetryKey(0);
@@ -121,6 +130,7 @@ function Home() {
     setAnalysisResult(null);
     setAnalysisError(null);
     setAnalysisLoading(true);
+    setDisputeError(null);
 
     const trimmedUrl = url.trim();
     const trimmedContext = contextText.trim();
@@ -148,6 +158,53 @@ function Home() {
 
   const handleRetry = async (): Promise<void> => {
     await runAnalysis();
+  };
+
+  const handleDispute = async (): Promise<void> => {
+    if (
+      disputeLoading ||
+      analysisResult?.status !== "ok" ||
+      analysisResult.lifecycle?.status !== "VISIBLE"
+    ) {
+      return;
+    }
+
+    const recordFingerprint = analysisResult.lifecycle.recordFingerprint;
+    setDisputeLoading(true);
+    setDisputeError(null);
+
+    const response = await boundDisputePatch({ data: { recordFingerprint } }).catch(() => null);
+
+    if (response?.status === "ok") {
+      setAnalysisResult((current) => {
+        if (
+          current?.status !== "ok" ||
+          current.lifecycle?.recordFingerprint !== response.recordFingerprint
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          lifecycle: {
+            ...current.lifecycle,
+            status: "DISPUTED",
+            eventAt: response.disputedAt,
+          },
+          history: current.history?.map((record) =>
+            record.recordFingerprint === response.recordFingerprint
+              ? { ...record, status: "DISPUTED", eventAt: response.disputedAt }
+              : record,
+          ),
+        };
+      });
+    } else if (response?.status === "error") {
+      setDisputeError(response.code);
+    } else {
+      setDisputeError("DISPUTE_PATCH_STORE_ERROR");
+    }
+
+    setDisputeLoading(false);
   };
 
   // ── Claims extraction ────────────────────────────────────────────────────────
@@ -458,7 +515,7 @@ function Home() {
                   if (errorState) setErrorState(null);
                 }}
                 placeholder="https://www.zhihu.com/question/42/answer/100"
-                disabled={isPending}
+                disabled={isPending || disputeLoading}
                 autoComplete="off"
                 className={
                   "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
@@ -473,7 +530,7 @@ function Home() {
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || disputeLoading}
                   className={
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
@@ -571,7 +628,7 @@ function Home() {
                   }}
                   placeholder="描述您在维护中了解到的前提变化…"
                   rows={3}
-                  disabled={analysisLoading}
+                  disabled={analysisLoading || disputeLoading}
                   className={
                     "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
@@ -586,7 +643,7 @@ function Home() {
                 <button
                   type="button"
                   onClick={handleAnalyze}
-                  disabled={analysisLoading}
+                  disabled={analysisLoading || disputeLoading}
                   className={
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
@@ -605,6 +662,10 @@ function Home() {
                   excerpt={resultData.excerpt}
                   result={analysisResult}
                   contextText={contextText}
+                  onDispute={handleDispute}
+                  onRecheck={handleRetry}
+                  isDisputePending={disputeLoading}
+                  disputeError={disputeError}
                 />
               ) : (
                 <AnalysisResultPanel

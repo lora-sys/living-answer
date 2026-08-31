@@ -30,6 +30,7 @@ const renderRead = (overrides?: Partial<RealResultReadProps>): string => {
     excerpt: overrides?.excerpt ?? EXCERPT,
     result: overrides?.result ?? UPDATE_RESULT,
     contextText: overrides?.contextText ?? undefined,
+    ...overrides,
   };
   return h(React.createElement(RealResultRead, props));
 };
@@ -64,6 +65,36 @@ const UPDATE_RESULT: AnalyzePatchResponse = Object.freeze({
       },
     ],
   },
+});
+
+const LIFECYCLE_HISTORY = Object.freeze([
+  {
+    recordFingerprint: "v1:1111111111111111",
+    status: "VISIBLE" as const,
+    capturedAt: 1700000000000,
+    eventAt: 1700000001000,
+    reason: MEMOIZED_REASON,
+  },
+]);
+
+const VISIBLE_LIFECYCLE = {
+  recordFingerprint: "v1:1111111111111111",
+  status: "VISIBLE" as const,
+  capturedAt: 1700000000000,
+  eventAt: 1700000001000,
+};
+
+const updateWithLifecycle = (status: "VISIBLE" | "DISPUTED"): AnalyzePatchResponse => ({
+  ...UPDATE_RESULT,
+  lifecycle: {
+    ...VISIBLE_LIFECYCLE,
+    status,
+  },
+  history: LIFECYCLE_HISTORY.map((record) =>
+    record.recordFingerprint === VISIBLE_LIFECYCLE.recordFingerprint
+      ? { ...record, status }
+      : record,
+  ),
 });
 
 const NO_PATCH_RESULT: AnalyzePatchResponse = Object.freeze({
@@ -193,6 +224,56 @@ describe("RealResultRead", () => {
     it("omits context section when contextText is empty", () => {
       const html = renderRead({ result: NO_PATCH_RESULT, contextText: "" });
       expect(html).not.toContain("维护备注");
+    });
+  });
+
+  // ── Lifecycle actions and history ─────────────────────────────────────────
+
+  describe("lifecycle actions and history", () => {
+    it("shows the current status, history, and available actions", () => {
+      const html = renderRead({
+        result: updateWithLifecycle("VISIBLE"),
+        onDispute: () => {},
+        onRecheck: () => {},
+      });
+
+      expect(html).toContain("变更状态");
+      expect(html).toContain("当前可见");
+      expect(html).toContain("变更历史");
+      expect(html).toContain("标记有争议");
+      expect(html).toContain("重新检查");
+      expect(html).toContain(MEMOIZED_REASON);
+    });
+
+    it("pauses advisory details when the patch is disputed", () => {
+      const html = renderRead({ result: updateWithLifecycle("DISPUTED") });
+
+      expect(html).toContain("已暂停");
+      expect(html).toContain("当前不再作为有效提示显示");
+      expect(html).not.toContain("参考来源");
+      expect(html).not.toContain("匹配证据");
+      expect(html).not.toContain("标记有争议");
+    });
+
+    it("disables actions while a dispute request is pending", () => {
+      const html = renderRead({
+        result: updateWithLifecycle("VISIBLE"),
+        onDispute: () => {},
+        onRecheck: () => {},
+        isDisputePending: true,
+      });
+
+      expect(html).toContain("disabled");
+    });
+
+    it("shows a stable dispute error without changing the status", () => {
+      const html = renderRead({
+        result: updateWithLifecycle("VISIBLE"),
+        disputeError: "DISPUTE_PATCH_STORE_ERROR",
+      });
+
+      expect(html).toContain("暂停变更时出现异常，请稍后再试。");
+      expect(html).toContain("当前可见");
     });
   });
 

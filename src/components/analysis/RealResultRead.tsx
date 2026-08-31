@@ -21,7 +21,12 @@ import type {
   AnalyzePatchNoPatchResponse,
   AnalyzePatchUnknownResponse,
   AnalyzePatchResponse,
+  PatchLifecycleHistorySummary,
+  PatchLifecycleSummary,
 } from "../../server/analyze-patch-response";
+import { failureMessage, formatTimestamp } from "../../lib/failure-messages";
+import type { PatchLifecycleStatus } from "../../lib/patch-lifecycle";
+import type { AnalyzePatchServerFailureCode } from "../../lib/failure-messages";
 import { UpdateAdvisoryCard } from "./UpdateAdvisoryCard";
 
 // ── Types ────────────────────────────────────────────────────────────────────────
@@ -33,6 +38,14 @@ export interface RealResultReadProps {
   readonly result: AnalyzePatchResponse;
   /** Optional maintenance context the user supplied before analysis. */
   readonly contextText?: string;
+  /** Called after the user asks to dispute the currently visible patch. */
+  readonly onDispute?: () => void;
+  /** Called after the user asks to rerun the current analysis. */
+  readonly onRecheck?: () => void;
+  /** True while the dispute request is in flight. */
+  readonly isDisputePending?: boolean;
+  /** Stable failure code for a rejected dispute request. */
+  readonly disputeError?: AnalyzePatchServerFailureCode | null;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
@@ -144,9 +157,140 @@ function UnknownView({ decision }: UnknownViewProps) {
   );
 }
 
+// ── Disputed patch view ─────────────────────────────────────────────────────────
+
+function DisputedPatchView() {
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+          已暂停
+        </span>
+        <span className="text-xs text-stone-500">变更提示有争议</span>
+      </div>
+      <p className="mt-4 text-base leading-7 text-stone-700">
+        这条补充提示已被标记为有争议，当前不再作为有效提示显示。
+      </p>
+      <p className="mt-3 text-xs text-stone-500">
+        重新检查后会形成新的变更状态，历史记录不会被删除。
+      </p>
+    </div>
+  );
+}
+
+// ── Lifecycle and history view ─────────────────────────────────────────────────
+
+const lifecycleStatusLabel = (status: PatchLifecycleStatus): string => {
+  if (status === "DISPUTED") return "已暂停";
+  if (status === "SUPERSEDED") return "已被新检查替代";
+  return "当前可见";
+};
+
+interface LifecycleViewProps {
+  readonly lifecycle?: PatchLifecycleSummary;
+  readonly history?: readonly PatchLifecycleHistorySummary[];
+  readonly onDispute?: () => void;
+  readonly onRecheck?: () => void;
+  readonly isDisputePending?: boolean;
+  readonly disputeError?: AnalyzePatchServerFailureCode | null;
+}
+
+function LifecycleView({
+  lifecycle,
+  history,
+  onDispute,
+  onRecheck,
+  isDisputePending,
+  disputeError,
+}: LifecycleViewProps) {
+  if (lifecycle === undefined && (history === undefined || history.length === 0)) {
+    return null;
+  }
+
+  const canDispute = lifecycle?.status === "VISIBLE" && onDispute !== undefined;
+
+  return (
+    <div
+      aria-busy={isDisputePending}
+      className="rounded-2xl border border-stone-200 bg-white px-5 py-4 sm:px-6"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-stone-700">变更状态</p>
+          {lifecycle !== undefined && (
+            <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+              {lifecycleStatusLabel(lifecycle.status)}
+            </span>
+          )}
+        </div>
+
+        {(canDispute || onRecheck !== undefined) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {canDispute && (
+              <button
+                type="button"
+                onClick={onDispute}
+                disabled={isDisputePending}
+                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+              >
+                标记有争议
+              </button>
+            )}
+            {onRecheck !== undefined && (
+              <button
+                type="button"
+                onClick={onRecheck}
+                disabled={isDisputePending}
+                className="inline-flex items-center rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+              >
+                重新检查
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {disputeError !== undefined && disputeError !== null && (
+        <p aria-live="polite" className="mt-3 text-sm font-medium text-stone-700">
+          {failureMessage(disputeError)}
+        </p>
+      )}
+
+      {history !== undefined && history.length > 0 && (
+        <div className="mt-4 border-t border-stone-200 pt-3">
+          <p className="text-xs font-medium text-stone-500">变更历史</p>
+          <ul className="mt-2 space-y-2" role="list">
+            {history.slice(0, 5).map((record) => (
+              <li key={record.recordFingerprint} className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-xs font-medium text-stone-600">
+                    {lifecycleStatusLabel(record.status)}
+                  </span>
+                  <span className="text-xs text-stone-400">{formatTimestamp(record.eventAt)}</span>
+                </div>
+                <p className="mt-0.5 break-words text-xs leading-5 text-stone-500">
+                  {record.reason}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────────
 
-export function RealResultRead({ excerpt, result, contextText }: RealResultReadProps) {
+export function RealResultRead({
+  excerpt,
+  result,
+  contextText,
+  onDispute,
+  onRecheck,
+  isDisputePending,
+  disputeError,
+}: RealResultReadProps) {
   // Defensive: if the caller passes an error response, render nothing.
   // The route is responsible for handling error results with
   // AnalysisResultPanel.
@@ -155,6 +299,7 @@ export function RealResultRead({ excerpt, result, contextText }: RealResultReadP
   }
 
   const decision = result.decision;
+  const isDisputed = result.lifecycle?.status === "DISPUTED";
 
   return (
     <div className="space-y-4">
@@ -165,13 +310,24 @@ export function RealResultRead({ excerpt, result, contextText }: RealResultReadP
       <ExcerptView excerpt={excerpt} />
 
       {/* Analysis result */}
-      {decision.verdict === "UPDATE" && (
+      {decision.verdict === "UPDATE" && !isDisputed && (
         <AdvisoryView decision={decision} excerptText={excerpt.excerpt} />
       )}
+
+      {decision.verdict === "UPDATE" && isDisputed && <DisputedPatchView />}
 
       {decision.verdict === "NO_PATCH" && <NoPatchView decision={decision} />}
 
       {decision.verdict === "UNKNOWN" && <UnknownView decision={decision} />}
+
+      <LifecycleView
+        lifecycle={result.lifecycle}
+        history={result.history}
+        onDispute={onDispute}
+        onRecheck={onRecheck}
+        isDisputePending={isDisputePending}
+        disputeError={disputeError}
+      />
     </div>
   );
 }

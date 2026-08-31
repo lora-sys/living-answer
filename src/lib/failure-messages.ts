@@ -43,7 +43,9 @@ export type AnalyzePatchServerFailureCode =
   | "ANALYSIS_INVARIANT_VIOLATION"
   | "CLAIM_STORE_ERROR"
   | "EVIDENCE_STORE_ERROR"
-  | "LIFECYCLE_STORE_ERROR";
+  | "LIFECYCLE_STORE_ERROR"
+  | "DISPUTE_PATCH_NOT_FOUND"
+  | "DISPUTE_PATCH_STORE_ERROR";
 
 // ── Mapping ─────────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,8 @@ const FAILURE_MESSAGES: Readonly<Record<AnalyzePatchServerFailureCode, string>> 
   CLAIM_STORE_ERROR: "保存分析结果时出现异常，请稍后再试。",
   EVIDENCE_STORE_ERROR: "检索证据时出现异常，请稍后再试。",
   LIFECYCLE_STORE_ERROR: "记录变更状态时出现异常，请稍后再试。",
+  DISPUTE_PATCH_NOT_FOUND: "该变更记录不存在或已更新，请重新检查。",
+  DISPUTE_PATCH_STORE_ERROR: "暂停变更时出现异常，请稍后再试。",
 };
 
 // ── Pure functions ─────────────────────────────────────────────────────────────
