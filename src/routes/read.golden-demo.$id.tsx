@@ -58,10 +58,7 @@ function ReadGoldenDemo() {
   const closePanel = () => {
     setOpenParagraphId(null);
     setActivePatchId(null);
-    if (triggeringMarkerRef.current) {
-      triggeringMarkerRef.current.focus();
-      triggeringMarkerRef.current = null;
-    }
+    triggeringMarkerRef.current = null;
   };
 
   useEffect(() => {
@@ -100,10 +97,9 @@ function ReadGoldenDemo() {
       </div>
 
       <div
-        className={[
-          "w-full mx-auto max-w-5xl",
-          openParagraphId ? "flex flex-col lg:flex-row" : "",
-        ].join(" ")}
+        className={["mx-auto max-w-5xl", openParagraphId ? "flex flex-col lg:flex-row" : ""].join(
+          " ",
+        )}
       >
         <article className="min-w-0 flex-1">
           <AnswerHeader fixture={fixture} />

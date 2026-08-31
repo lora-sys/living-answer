@@ -124,7 +124,21 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
                 >
                   {ev.sourceLabel}
                 </a>
-                <span className="ml-2 text-xs text-stone-400">{truncate(ev.sourceUrl, 48)}</span>
+                <span className="ml-2 inline-flex items-center text-xs text-stone-400">
+                  <svg
+                    aria-hidden="true"
+                    className="mr-0.5 h-3 w-3"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 9h7M8 4l3 3-3 3" />
+                  </svg>
+                  {truncate(ev.sourceUrl, 36)}
+                </span>
               </li>
             ))}
           </ul>

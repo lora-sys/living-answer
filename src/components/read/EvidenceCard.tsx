@@ -27,9 +27,22 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
             href={evidence.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 text-xs font-medium text-accent transition-colors hover:text-accent-hover"
+            aria-label={`${evidence.title}（在新标签页中打开）`}
+            className="shrink-0 inline-flex items-center gap-0.5 text-xs font-medium text-accent transition-colors hover:text-accent-hover"
           >
             原文
+            <svg
+              aria-hidden="true"
+              className="ml-0.5 h-3 w-3"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 9h7M8 4l3 3-3 3" />
+            </svg>
           </a>
         )}
       </div>

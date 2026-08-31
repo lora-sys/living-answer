@@ -448,18 +448,18 @@ function Home() {
           <p className="mt-4 max-w-2xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
             {PRODUCT_TAGLINE}
           </p>
-          {/* product invariant fields */}
+          {/* product invariant commitments */}
           <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-rule pt-5 sm:grid-cols-3">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">边界</p>
+              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
               <p className="text-sm leading-6 text-ink-subtle">不替换原文</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">弱证据</p>
+              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
               <p className="text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">来源</p>
+              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
               <p className="text-sm leading-6 text-ink-subtle">每条变化可以回到一手来源</p>
             </div>
           </div>
@@ -786,14 +786,14 @@ function Home() {
           <h2 id="demo-heading" className="text-sm font-medium text-muted">
             先看示例
           </h2>
-          <p className="mt-1.5 text-xs text-muted/70">先看两个真实案例，了解补丁如何呈现</p>
-
+          <p className="mt-2 text-xs text-muted/70">先看两个真实案例，了解补丁如何呈现</p>
+          <hr className="mt-6 border-stone-200" />
           {/* ── Featured case file ─────────────────────────────────────────── */}
           <Link
             to={
               `/read/golden-demo/${featuredDemo.id}` as unknown as Parameters<typeof Link>[0]["to"]
             }
-            className="mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
+            className="group mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
           >
             {/* left column: provenance, title, description, CTA */}
             <div className="p-6 sm:p-8">
@@ -1133,7 +1133,7 @@ function EvidenceCandidatesSection({
         <div className="flex items-baseline gap-x-3">
           <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 第 2 步</h3>
           {result.isPartial && (
-            <span className="text-xs text-warning">
+            <span className="text-xs text-update-amber">
               {partialRetrievalMessage(result.partialState)}
             </span>
           )}
