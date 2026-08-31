@@ -5,8 +5,13 @@ import {
 } from "../lib/zhihu-search-adapter";
 import {
   makeAnswerExcerptProvider,
+  AnswerExcerptProviderError,
+  QuotaExceededProviderError,
   type AnswerExcerptProvider,
+  type AnswerExcerptItemsFetcher,
 } from "../lib/answer-excerpt-provider";
+import { makeDailyQuotaGuard, QuotaExceededError, type DailyQuotaGuard } from "../lib/daily-quota";
+import { makeSqliteDailyQuotaStore } from "../lib/sqlite-daily-quota-store";
 import {
   errorResponse,
   okResponse,
@@ -92,34 +97,64 @@ export const createResolveAnswerExcerptHandler =
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const FIVE_SECONDS_MS = 5_000 as const;
+const DAILY_QUOTA_LIMIT_PER_DAY = 1000;
+
+const withDailyQuota =
+  (fetchItems: AnswerExcerptItemsFetcher, quotaGuard: DailyQuotaGuard): AnswerExcerptItemsFetcher =>
+  (request) =>
+    quotaGuard.consume("zhihu_search").pipe(
+      Effect.mapError((error) =>
+        error instanceof QuotaExceededError
+          ? new QuotaExceededProviderError()
+          : new AnswerExcerptProviderError({ reason: "quota guard unavailable" }),
+      ),
+      Effect.flatMap(() => fetchItems(request)),
+    );
 
 /**
  * Lazy singleton store + provider for the server process.
  */
 let storeInstance: Promise<ExcerptStore> | null = null;
 let cachedProvider: Promise<AnswerExcerptProvider> | null = null;
+let quotaGuardInstance: Promise<DailyQuotaGuard> | null = null;
 
-const getOrCreateProvider = async (secret: string): Promise<AnswerExcerptProvider> => {
+const getOrCreateProvider = async (
+  secret: string,
+  quotaGuard: DailyQuotaGuard,
+): Promise<AnswerExcerptProvider> => {
   if (!storeInstance) {
     storeInstance = Effect.runPromise(makeSqliteExcerptStore());
   }
   if (!cachedProvider) {
     const store = await storeInstance;
+    const unguardedFetchItems = makeZhihuSearchItemsFetcher({
+      accessSecret: secret,
+      transport: makeFetchZhihuSearchTransport({
+        fetch: fetch,
+        timeoutMs: FIVE_SECONDS_MS,
+      }),
+    });
     cachedProvider = Effect.runPromise(
       makeAnswerExcerptProvider({
-        fetchItems: makeZhihuSearchItemsFetcher({
-          accessSecret: secret,
-          transport: makeFetchZhihuSearchTransport({
-            fetch: fetch,
-            timeoutMs: FIVE_SECONDS_MS,
-          }),
-        }),
+        fetchItems: withDailyQuota(unguardedFetchItems, quotaGuard),
         ttl: 60_000,
         store,
       }),
     );
   }
   return cachedProvider;
+};
+
+const getOrCreateQuotaGuard = async (): Promise<DailyQuotaGuard> => {
+  if (!quotaGuardInstance) {
+    quotaGuardInstance = Effect.runPromise(
+      Effect.map(makeSqliteDailyQuotaStore(".local/provider-quota.db"), (store) =>
+        makeDailyQuotaGuard({ store, limitPerDay: DAILY_QUOTA_LIMIT_PER_DAY }),
+      ),
+    );
+  }
+
+  return quotaGuardInstance;
 };
 
 const parseInput = (input: unknown): ResolveAnswerExcerptInput => {
@@ -144,6 +179,6 @@ export const resolveAnswerExcerpt = createServerFn({
   .handler(async ({ data }) => {
     return createResolveAnswerExcerptHandler({
       getSecret: () => process.env.ZHIHU_ACCESS_SECRET,
-      createProvider: getOrCreateProvider,
+      createProvider: async (secret) => getOrCreateProvider(secret, await getOrCreateQuotaGuard()),
     })(data);
   });

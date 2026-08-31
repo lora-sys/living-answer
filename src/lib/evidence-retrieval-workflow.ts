@@ -25,7 +25,11 @@ export class EvidenceRetrievalError extends Data.TaggedError("EvidenceRetrievalE
   readonly claimFingerprint?: string;
 }> {}
 
-export type ProviderFetchFailureReason = "RATE_LIMITED" | "FETCH_FAILED" | "MALFORMED_RESPONSE";
+export type ProviderFetchFailureReason =
+  | "RATE_LIMITED"
+  | "QUOTA_EXCEEDED"
+  | "FETCH_FAILED"
+  | "MALFORMED_RESPONSE";
 
 /**
  * A normalized provider failure. A concrete adapter maps provider Code=30001,
@@ -74,7 +78,7 @@ export interface EvidenceRetrievalWorkflowDeps {
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
-export type RetrievalAttemptState = "complete" | "rate_limited" | "failed";
+export type RetrievalAttemptState = "complete" | "rate_limited" | "quota_exceeded" | "failed";
 
 export interface ProviderRetrievalResult {
   readonly state: RetrievalAttemptState;
@@ -94,7 +98,7 @@ export interface ClaimRetrievalResult {
 export interface SuccessfulRetrievalResult {
   readonly _tag: "success";
   readonly isPartial: boolean;
-  readonly partialState: "none" | "rate_limited" | "failed";
+  readonly partialState: "none" | "rate_limited" | "quota_exceeded" | "failed";
   readonly claims: readonly ClaimRetrievalResult[];
 }
 
@@ -343,6 +347,10 @@ const fetchRawItems = (
 // ── Public workflow ───────────────────────────────────────────────────────────
 
 const completeResult = (claims: readonly ClaimRetrievalResult[]): SuccessfulRetrievalResult => {
+  const hasQuota = claims.some(
+    (claim) =>
+      claim.zhihu.state === "quota_exceeded" || claim.globalSearch.state === "quota_exceeded",
+  );
   const hasRateLimit = claims.some(
     (claim) => claim.zhihu.state === "rate_limited" || claim.globalSearch.state === "rate_limited",
   );
@@ -352,8 +360,14 @@ const completeResult = (claims: readonly ClaimRetrievalResult[]): SuccessfulRetr
 
   return {
     _tag: "success",
-    isPartial: hasRateLimit || hasFailure,
-    partialState: hasRateLimit ? "rate_limited" : hasFailure ? "failed" : "none",
+    isPartial: hasQuota || hasRateLimit || hasFailure,
+    partialState: hasQuota
+      ? "quota_exceeded"
+      : hasRateLimit
+        ? "rate_limited"
+        : hasFailure
+          ? "failed"
+          : "none",
     claims,
   };
 };
@@ -449,15 +463,22 @@ export const retrieveEvidenceCandidates =
 
             if (fetchResult._tag === "Left") {
               const error = fetchResult.left;
-              if (error.reason === "RATE_LIMITED") {
-                yield* Ref.set(rateLimitRef, true);
+              if (error.reason === "RATE_LIMITED" || error.reason === "QUOTA_EXCEEDED") {
+                if (error.reason === "RATE_LIMITED") {
+                  yield* Ref.set(rateLimitRef, true);
+                }
+
                 return {
                   ...pair,
-                  result: providerResult("rate_limited", "RATE_LIMITED", {
-                    candidates: [],
-                    droppedCount: 0,
-                    existingCount: 0,
-                  }),
+                  result: providerResult(
+                    error.reason === "RATE_LIMITED" ? "rate_limited" : "quota_exceeded",
+                    error.reason,
+                    {
+                      candidates: [],
+                      droppedCount: 0,
+                      existingCount: 0,
+                    },
+                  ),
                 };
               }
 

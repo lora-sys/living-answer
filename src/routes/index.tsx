@@ -205,7 +205,11 @@ function Home() {
         setEvidenceLoading(false);
       })
       .catch(() => {
-        setEvidenceResult({ status: "error", code: "RETRIEVAL_FAILED", message: "请求失败" });
+        setEvidenceResult({
+          status: "error",
+          code: "RETRIEVAL_ERROR",
+          message: "检索候选证据时出现异常，请稍后再试。",
+        });
         setEvidenceLoading(false);
       });
   };
@@ -739,6 +743,25 @@ interface EvidenceCandidatesSectionProps {
   readonly onRetrieve: () => void;
 }
 
+const evidenceFailureMessage = (code: string): string => {
+  switch (code) {
+    case "MISSING_CREDENTIAL":
+      return "服务暂时不可用，请稍后再试。";
+    case "INVALID_CLAIMS":
+      return "候选前提无效，请重新分析回答。";
+    case "EVIDENCE_STORE_ERROR":
+      return "证据记录暂不可用，请稍后再试。";
+    default:
+      return "检索候选证据时出现异常，请稍后再试。";
+  }
+};
+
+const partialRetrievalMessage = (state: string): string => {
+  if (state === "quota_exceeded") return "今日部分来源额度已用完";
+  if (state === "rate_limited") return "部分来源暂时受限";
+  return "部分来源未完成";
+};
+
 function EvidenceCandidatesSection({
   loading,
   result,
@@ -762,7 +785,7 @@ function EvidenceCandidatesSection({
         <div className="flex items-baseline gap-x-3">
           <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
         </div>
-        <p className="mt-2 text-sm text-muted">检索未完成。请稍后重试，或检查网络和凭证配置。</p>
+        <p className="mt-2 text-sm text-muted">{evidenceFailureMessage(result.code)}</p>
       </div>
     );
   }
@@ -774,12 +797,20 @@ function EvidenceCandidatesSection({
       <div className="mt-4">
         <div className="flex items-baseline gap-x-3">
           <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
-          {result.isPartial && <span className="text-xs text-warning">部分检索未完成</span>}
+          {result.isPartial && (
+            <span className="text-xs text-warning">
+              {partialRetrievalMessage(result.partialState)}
+            </span>
+          )}
         </div>
 
         {allCandidates.length === 0 ? (
           <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-            <p className="text-sm text-muted">未找到候选证据。这不代表前提正确或过时。</p>
+            <p className="text-sm text-muted">
+              {result.isPartial
+                ? `${partialRetrievalMessage(result.partialState)}。已有结果不代表前提正确或过时。`
+                : "未找到候选证据。这不代表前提正确或过时。"}
+            </p>
           </div>
         ) : (
           <div className="mt-3 space-y-3">

@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import type { AnswerClaim } from "../lib/answer-claim";
+import { makeDailyQuotaGuard, QuotaExceededError, type DailyQuotaGuard } from "../lib/daily-quota";
 import type { EvidenceCandidate, Provider } from "../lib/evidence-candidate";
 import {
   makeSqliteEvidenceCandidateStore,
@@ -12,8 +13,10 @@ import {
   EvidenceRetrievalError,
   retrieveEvidenceCandidates,
   type ClaimRetrievalResult,
+  type ProviderFetcher,
   type SuccessfulRetrievalResult,
 } from "../lib/evidence-retrieval-workflow";
+import { makeSqliteDailyQuotaStore } from "../lib/sqlite-daily-quota-store";
 import {
   fetchSearchItems,
   makeFetchSearchTransport,
@@ -57,7 +60,17 @@ export type RetrieveEvidenceResponse =
       readonly partialState: string;
       readonly claims: readonly JsonSafeClaimRetrieval[];
     }
-  | { readonly status: "error"; readonly code: string; readonly message: string };
+  | {
+      readonly status: "error";
+      readonly code: RetrieveEvidenceFailureCode;
+      readonly message: string;
+    };
+
+export type RetrieveEvidenceFailureCode =
+  | "MISSING_CREDENTIAL"
+  | "INVALID_CLAIMS"
+  | "EVIDENCE_STORE_ERROR"
+  | "RETRIEVAL_ERROR";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Input
@@ -101,6 +114,17 @@ const validateInput = (input: unknown): RetrieveEvidenceInput => {
 
 const FIVE_SECONDS_MS = 5000;
 
+const DAILY_QUOTA_LIMIT_PER_DAY = 1000;
+
+const safeErrorResponse = (
+  code: RetrieveEvidenceFailureCode,
+  message: string,
+): RetrieveEvidenceResponse => ({ status: "error", code, message });
+
+const allowAllQuotaGuard: DailyQuotaGuard = {
+  consume: () => Effect.void,
+};
+
 const mapFetchError = (provider: Provider, error: unknown): ProviderFetchError => {
   if (error instanceof SearchTransportError) {
     if (error.reason === "HTTP_STATUS" && error.status === 429) {
@@ -109,6 +133,12 @@ const mapFetchError = (provider: Provider, error: unknown): ProviderFetchError =
     return new ProviderFetchError({ provider, reason: "FETCH_FAILED" });
   }
   if (error instanceof SearchError) {
+    if (error.reason === "API_RATE_LIMITED") {
+      return new ProviderFetchError({ provider, reason: "RATE_LIMITED" });
+    }
+    if (error.reason === "API_QUOTA_EXCEEDED") {
+      return new ProviderFetchError({ provider, reason: "QUOTA_EXCEEDED" });
+    }
     if (error.reason === "NON_ZERO_CODE") {
       return new ProviderFetchError({ provider, reason: "FETCH_FAILED" });
     }
@@ -120,6 +150,7 @@ const mapFetchError = (provider: Provider, error: unknown): ProviderFetchError =
 const makeProviderFetcher =
   (
     accessSecret: string,
+    quotaGuard: DailyQuotaGuard,
   ): ((
     provider: Provider,
   ) => (options: {
@@ -129,12 +160,21 @@ const makeProviderFetcher =
   }) => Effect.Effect<readonly unknown[], ProviderFetchError>) =>
   (provider) =>
   (options) =>
-    fetchSearchItems({
-      provider: options.provider,
-      query: options.query,
-      accessSecret,
-      transport: makeFetchSearchTransport({ fetch, timeoutMs: FIVE_SECONDS_MS }),
-    }).pipe(Effect.mapError((e) => mapFetchError(provider, e)));
+    quotaGuard.consume(provider).pipe(
+      Effect.mapError((error) =>
+        error instanceof QuotaExceededError
+          ? new ProviderFetchError({ provider, reason: "QUOTA_EXCEEDED" })
+          : new ProviderFetchError({ provider, reason: "FETCH_FAILED" }),
+      ),
+      Effect.flatMap(() =>
+        fetchSearchItems({
+          provider: options.provider,
+          query: options.query,
+          accessSecret,
+          transport: makeFetchSearchTransport({ fetch, timeoutMs: FIVE_SECONDS_MS }),
+        }).pipe(Effect.mapError((error) => mapFetchError(provider, error))),
+      ),
+    );
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // JSON-safe mapping
@@ -179,6 +219,11 @@ const toSafeResult = (result: SuccessfulRetrievalResult): RetrieveEvidenceRespon
 export interface RetrieveEvidenceDeps {
   readonly getSecret: () => string | undefined;
   readonly createStore: () => Promise<EvidenceCandidateStore>;
+  readonly createProviderFetchers?: () => {
+    readonly zhihuFetcher: ProviderFetcher;
+    readonly globalFetcher: ProviderFetcher;
+  };
+  readonly createQuotaGuard?: () => Promise<DailyQuotaGuard>;
 }
 
 export const createRetrieveEvidenceHandler =
@@ -186,19 +231,11 @@ export const createRetrieveEvidenceHandler =
   async (input: RetrieveEvidenceInput): Promise<RetrieveEvidenceResponse> => {
     const secret = deps.getSecret();
     if (!secret || secret.trim() === "") {
-      return {
-        status: "error",
-        code: "MISSING_CREDENTIAL",
-        message: "Zhihu access secret is not configured.",
-      };
+      return safeErrorResponse("MISSING_CREDENTIAL", "服务暂时不可用，请稍后再试。");
     }
 
     if (input.claims.length === 0 || input.claims.length > 3) {
-      return {
-        status: "error",
-        code: "INVALID_CLAIMS",
-        message: "Provide 1-3 claims to retrieve evidence for.",
-      };
+      return safeErrorResponse("INVALID_CLAIMS", "候选前提无效，请重新分析回答。");
     }
 
     const answerClaims: AnswerClaim[] = input.claims.map((c) => ({
@@ -221,8 +258,12 @@ export const createRetrieveEvidenceHandler =
 
     try {
       const store = await deps.createStore();
-      const zhihuFetcher = makeProviderFetcher(secret)("zhihu_search");
-      const globalFetcher = makeProviderFetcher(secret)("global_search");
+      const quotaGuard = deps.createQuotaGuard ? await deps.createQuotaGuard() : allowAllQuotaGuard;
+      const defaultFetchers = () => ({
+        zhihuFetcher: makeProviderFetcher(secret, quotaGuard)("zhihu_search"),
+        globalFetcher: makeProviderFetcher(secret, quotaGuard)("global_search"),
+      });
+      const { zhihuFetcher, globalFetcher } = deps.createProviderFetchers?.() ?? defaultFetchers();
 
       const workflow = retrieveEvidenceCandidates({
         store: {
@@ -263,7 +304,19 @@ export const createRetrieveEvidenceHandler =
         retryDelayMs: 1000,
       });
 
-      const result = await Effect.runPromise(workflow({ claims: answerClaims }));
+      const workflowExit = await Effect.runPromiseExit(workflow({ claims: answerClaims }));
+      if (workflowExit._tag === "Failure") {
+        if (workflowExit.cause._tag === "Fail") {
+          const error = workflowExit.cause.error;
+          if (error instanceof EvidenceRetrievalError && error.reason === "INVALID_CLAIMS_INPUT") {
+            return safeErrorResponse("INVALID_CLAIMS", "候选前提无效，请重新分析回答。");
+          }
+        }
+
+        return safeErrorResponse("EVIDENCE_STORE_ERROR", "证据记录暂不可用，请稍后再试。");
+      }
+
+      const result = workflowExit.value;
 
       // Persist retrieval events and candidates
       for (const claimResult of result.claims) {
@@ -289,34 +342,48 @@ export const createRetrieveEvidenceHandler =
 
         for (const [eventFingerprint, group] of byEvent) {
           const first = group[0]!;
-          await Effect.runPromise(
-            store.saveRetrieval(
-              excerptFp,
-              claimResult.claimFingerprint,
-              eventFingerprint,
-              first.provider,
-              claimResult.searchQuery,
-              Math.floor(Date.now() / 1000),
+          const persistExit = await Effect.runPromiseExit(
+            Effect.flatMap(
+              store.saveRetrieval(
+                excerptFp,
+                claimResult.claimFingerprint,
+                eventFingerprint,
+                first.provider,
+                claimResult.searchQuery,
+                Math.floor(Date.now() / 1000),
+              ),
+              () => store.saveCandidates(eventFingerprint, group),
             ),
           );
-          await Effect.runPromise(store.saveCandidates(eventFingerprint, group));
+          if (persistExit._tag === "Failure") {
+            return safeErrorResponse("EVIDENCE_STORE_ERROR", "证据记录暂不可用，请稍后再试。");
+          }
         }
       }
 
       return toSafeResult(result);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      return {
-        status: "error",
-        code: "RETRIEVAL_FAILED",
-        message: `Evidence retrieval failed: ${message}`,
-      };
+    } catch {
+      return safeErrorResponse("RETRIEVAL_ERROR", "检索候选证据时出现异常，请稍后再试。");
     }
   };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Server function
 // ═══════════════════════════════════════════════════════════════════════════════
+
+let quotaGuardInstance: Promise<DailyQuotaGuard> | null = null;
+
+const getOrCreateQuotaGuard = async (): Promise<DailyQuotaGuard> => {
+  if (!quotaGuardInstance) {
+    quotaGuardInstance = Effect.runPromise(
+      Effect.map(makeSqliteDailyQuotaStore(".local/provider-quota.db"), (store) =>
+        makeDailyQuotaGuard({ store, limitPerDay: DAILY_QUOTA_LIMIT_PER_DAY }),
+      ),
+    );
+  }
+
+  return quotaGuardInstance;
+};
 
 export const retrieveEvidenceCandidatesFn = createServerFn({
   method: "POST",
@@ -327,5 +394,6 @@ export const retrieveEvidenceCandidatesFn = createServerFn({
       getSecret: () => process.env.ZHIHU_ACCESS_SECRET,
       createStore: () =>
         Effect.runPromise(makeSqliteEvidenceCandidateStore(".local/evidence-candidates.db")),
+      createQuotaGuard: getOrCreateQuotaGuard,
     })(data);
   });

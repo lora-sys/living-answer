@@ -2,16 +2,16 @@
 
 ## Status
 
-Ready.  The P0 chain now reaches Patch, but provider failures still mix local
-store problems, transport failures, rate limits, and quota exhaustion.  This
+Ready. The P0 chain now reaches Patch, but provider failures still mix local
+store problems, transport failures, rate limits, and quota exhaustion. This
 ticket makes those states observable without exposing internal details and adds
 a durable daily cap before real provider calls.
 
 ## Problem
 
 The provider search API documents `Code=30001` for rate limiting and
-`Code=30002` for quota exhaustion.  Current boundaries collapse both into
-generic non-zero-code failures.  Evidence retrieval also converts every caught
+`Code=30002` for quota exhaustion. Current boundaries collapse both into
+generic non-zero-code failures. Evidence retrieval also converts every caught
 exception into `RETRIEVAL_FAILED` and includes the underlying error message.
 
 At the same time, repeated users can spend the shared provider account quota.
@@ -28,7 +28,7 @@ daily counter stops a burst once cache and persistence both miss.
   or unavailable.
 - User-facing failures never expose credentials, headers, raw payloads, stack
   traces, database paths, or error causes.
-- Until OAuth exists, the durable cap protects the shared service account.  It
+- Until OAuth exists, the durable cap protects the shared service account. It
   is not a per-browser-user identity system.
 
 ## Design
@@ -42,7 +42,7 @@ API_RATE_LIMITED   — provider Code 30001
 API_QUOTA_EXCEEDED — provider Code 30002
 ```
 
-Map HTTP 429 to rate limiting.  Map the answer-excerpt adapter's provider
+Map HTTP 429 to rate limiting. Map the answer-excerpt adapter's provider
 failures to distinct provider failures and server codes:
 
 ```text
@@ -50,13 +50,13 @@ PROVIDER_RATE_LIMITED     — temporary, user can retry later
 PROVIDER_QUOTA_EXCEEDED   — daily service quota is gone
 ```
 
-Keep generic provider failures unchanged.  Messages remain calm, Chinese, and
+Keep generic provider failures unchanged. Messages remain calm, Chinese, and
 safe to display.
 
 ### Evidence retrieval states
 
-Add `quota_exceeded` as a per-provider and partial-run state.  A quota stop
-remains a partial success when some providers or claims have results.  The
+Add `quota_exceeded` as a per-provider and partial-run state. A quota stop
+remains a partial success when some providers or claims have results. The
 JSON-safe response preserves the state so the UI can distinguish:
 
 ```text
@@ -66,7 +66,7 @@ failed          — provider or source attempt failed
 ```
 
 Server-level failures remain reserved for invalid input, missing credentials,
-or local workflow/store failures.  Provider fetch failures normally become
+or local workflow/store failures. Provider fetch failures normally become
 partial results, not a whole-request error.
 
 ### Durable daily quota guard
@@ -83,11 +83,11 @@ store failure        — QuotaStoreError, fail closed
 ```
 
 The SQLite adapter records only provider, UTC day, and attempts in ignored
-`.local/provider-quota.db`.  It uses an atomic transaction so concurrent
-requests cannot exceed the configured limit.  It is intentionally not a user,
+`.local/provider-quota.db`. It uses an atomic transaction so concurrent
+requests cannot exceed the configured limit. It is intentionally not a user,
 session, billing, or analytics system.
 
-The evidence server wraps each provider fetcher with the guard.  The excerpt
+The evidence server wraps each provider fetcher with the guard. The excerpt
 server wraps only the underlying items fetcher, so in-memory and SQLite excerpt
 hits can still resolve without consuming quota.
 
@@ -95,12 +95,12 @@ hits can still resolve without consuming quota.
 
 ### Slice 1 - Structured provider failures
 
-Update the shared search boundary and adapter mappings.  Cover provider codes
+Update the shared search boundary and adapter mappings. Cover provider codes
 30001/30002, HTTP 429, safe server-code mapping, and failure messages.
 
 ### Slice 2 - Durable daily quota
 
-Add the quota store boundary, UTC day policy, SQLite adapter, and guard.  Cover
+Add the quota store boundary, UTC day policy, SQLite adapter, and guard. Cover
 allowance, exhaustion, day rollover, provider separation, and fail-closed
 errors.
 

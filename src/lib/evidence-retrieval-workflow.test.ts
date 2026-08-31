@@ -273,6 +273,24 @@ describe("evidence retrieval workflow", () => {
     expect(result.claims[1].globalSearch.state).toBe("rate_limited");
   });
 
+  it("does not stop the other provider after one provider's quota is exhausted", async () => {
+    const zhihu = makeFetcher(() =>
+      Effect.fail(new ProviderFetchError({ provider: "zhihu_search", reason: "QUOTA_EXCEEDED" })),
+    );
+    const global = makeFetcher(() => Effect.succeed([makeRawItem()]));
+    const result = await runSuccess(
+      makeDeps({ zhihuFetcher: zhihu.fetcher, globalFetcher: global.fetcher }),
+      [makeClaim()],
+    );
+
+    expect(zhihu.calls).toHaveLength(1);
+    expect(global.calls).toHaveLength(1);
+    expect(result.isPartial).toBe(true);
+    expect(result.partialState).toBe("quota_exceeded");
+    expect(result.claims[0].zhihu.state).toBe("quota_exceeded");
+    expect(result.claims[0].globalSearch.state).toBe("complete");
+  });
+
   it("retries only transient fetch failures", async () => {
     let calls = 0;
     const zhihu: ProviderFetcher = () =>
