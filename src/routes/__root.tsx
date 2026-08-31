@@ -2,6 +2,8 @@ import { HeadContent, Link, Scripts, createRootRoute } from "@tanstack/react-rou
 
 import appCss from "../styles.css?url";
 
+import { SiteNav } from "../components/layout/SiteNav";
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -55,6 +57,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
+        <SiteNav />
         {children}
 
         <Scripts />

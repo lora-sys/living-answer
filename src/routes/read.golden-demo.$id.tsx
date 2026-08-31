@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
+import { PATCH_TYPE_LABELS, formatDateYYYYMMDD } from "../lib/read-presentation";
 import { AnswerHeader } from "../components/read/AnswerHeader";
 import { InlinePatchMarker } from "../components/read/InlinePatchMarker";
 import { PatchPanel } from "../components/read/PatchPanel";
@@ -106,15 +107,40 @@ function ReadGoldenDemo() {
           <AnswerHeader fixture={fixture} />
 
           <section className="rounded-[14px] border border-rule bg-paper-2 p-7 shadow-[var(--shadow-card)] sm:p-10">
-            <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
-              {fixture.displayTitle}
-            </h1>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+                {fixture.displayTitle}
+              </h1>
+              <span className="inline-flex items-center rounded-full border border-update/30 bg-update-soft px-2.5 py-1 text-xs font-semibold text-update">
+                {fixture.patches.length} 处补丁
+              </span>
+            </div>
 
             <p className="mt-3 inline-flex items-center rounded-full border border-rule bg-paper px-3 py-1 text-xs font-medium text-ink-subtle">
               {fixture.topic}
             </p>
 
             <p className="mt-4 text-sm leading-6 text-ink-subtle">{fixture.description}</p>
+
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-rule pt-5">
+              {fixture.patches.map((patch, index) => (
+                <button
+                  key={patch.id}
+                  type="button"
+                  onClick={() => openPatch(patch.paragraphId, patch.id)}
+                  className={[
+                    "inline-flex min-h-11 items-center rounded-[8px] border border-rule bg-paper px-3 py-2",
+                    "text-left text-xs font-medium text-ink-subtle transition-colors hover:border-accent/35 hover:text-ink",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  ].join(" ")}
+                >
+                  <span className="mr-1.5 font-mono text-[11px] text-muted">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {PATCH_TYPE_LABELS[patch.type]} · {formatDateYYYYMMDD(patch.asOf)}
+                </button>
+              ))}
+            </div>
 
             <div className="mt-8 space-y-6 text-base leading-7 text-ink-subtle sm:leading-8">
               {fixture.paragraphs.map((paragraph, index) => {
@@ -156,7 +182,10 @@ function ReadGoldenDemo() {
         </article>
 
         {openParagraphId && (
-          <aside ref={desktopPanelRef} className="hidden lg:block lg:w-[380px] shrink-0">
+          <aside
+            ref={desktopPanelRef}
+            className="sticky top-24 hidden h-fit lg:block lg:w-[380px] shrink-0"
+          >
             <PatchPanel
               patches={fixture.patches}
               activePatchId={activePatchId}

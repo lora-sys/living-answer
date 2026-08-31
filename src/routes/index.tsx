@@ -10,7 +10,6 @@ import type {
   AnalyzePatchServerFailureCode,
 } from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
-import { formatEvidenceLine, truncatePreview } from "../lib/golden-demo-preview";
 import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
@@ -31,6 +30,7 @@ import {
 } from "../server/retrieve-evidence-candidates";
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
 import { RealResultRead } from "../components/analysis/RealResultRead";
+import { GoldenDemoPreviewCard } from "../components/demo/GoldenDemoPreviewCard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -172,6 +172,13 @@ function Home() {
     setEntryMode("url");
     setSearchResult(null);
     setSearchQuery("");
+    setErrorState(null);
+    setServerResult(null);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+    setClaimsResult(null);
+    setEvidenceResult(null);
+    evidenceRequestKeyRef.current = null;
   };
 
   // ── Analysis handler ───────────────────────────────────────────────────────
@@ -402,13 +409,12 @@ function Home() {
 
   // ── Demo fixtures ──────────────────────────────────────────────────────────
 
-  const featuredDemo = GOLDEN_DEMOS["chatgpt-free-plus"];
-  const firstPatch = featuredDemo.patches[0];
-
-  const compactDemos: GoldenDemoFixture[] = [
+  const goldenDemos: GoldenDemoFixture[] = [
+    GOLDEN_DEMOS["chatgpt-free-plus"],
     GOLDEN_DEMOS["create-react-app"],
     GOLDEN_DEMOS["delayed-retirement"],
   ];
+  const supportingDemos = goldenDemos.slice(1);
 
   // ── Derive display state ───────────────────────────────────────────────────
 
@@ -440,49 +446,66 @@ function Home() {
   return (
     <main className="flex min-h-screen items-start bg-paper px-5 py-12 text-ink sm:px-8">
       <div className="mx-auto w-full max-w-4xl space-y-14">
-        {/* ═══ Restrained hero ═══════════════════════════════════════════════════ */}
-        <section>
-          <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-[38px] lg:text-[54px]">
-            {APP_NAME}
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
-            {PRODUCT_TAGLINE}
-          </p>
-          {/* product invariant commitments */}
-          <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-rule pt-5 sm:grid-cols-3">
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">原文边界</p>
-              <p className="text-sm leading-6 text-ink-subtle">不替换原文</p>
+        {/* ═══ Hero and product preview ═══════════════════════════════════════ */}
+        <section className="grid gap-8 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] lg:items-start lg:gap-12">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-text">
+              知乎回答维护阅读器
+            </p>
+            <h1 className="mt-4 text-[38px] font-semibold leading-[1.08] tracking-[-0.03em] text-ink lg:text-[54px]">
+              {APP_NAME}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
+              {PRODUCT_TAGLINE}
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/sources"
+                className="inline-flex h-11 items-center rounded-full border border-rule bg-paper-2 px-6 text-sm font-semibold text-ink transition-colors hover:border-accent/35 hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                查看证据来源
+              </Link>
+              <Link
+                to="/changes"
+                className="inline-flex h-11 items-center rounded-full px-6 text-sm font-semibold text-accent-text transition-colors hover:text-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                查看变更时间线
+              </Link>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">证据门槛</p>
-              <p className="text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">来源可查</p>
-              <p className="text-sm leading-6 text-ink-subtle">每条变化可以回到一手来源</p>
-            </div>
+
+            <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-rule pt-6 sm:grid-cols-3">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                  原文边界
+                </dt>
+                <dd className="mt-1 text-sm leading-6 text-ink-subtle">不替换原文</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                  证据门槛
+                </dt>
+                <dd className="mt-1 text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                  来源可查
+                </dt>
+                <dd className="mt-1 text-sm leading-6 text-ink-subtle">每条变化回到一手来源</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              产品预览 · 精选演示
+            </p>
+            <GoldenDemoPreviewCard demo={goldenDemos[0]} variant="hero" />
           </div>
         </section>
 
-        {/* ═══ sources nav ═══════════════════════════════════════════════════════ */}
-        <nav className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link
-            to="/sources"
-            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
-          >
-            查看所有证据来源 &rarr;
-          </Link>
-          <Link
-            to="/changes"
-            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
-          >
-            查看变更时间线 &rarr;
-          </Link>
-        </nav>
-
         {/* ═══ Dual entry: URL or search ═════════════════════════════════════════ */}
-        <section className="border-t border-rule pt-10">
+        <section id="answer-entry" className="border-t border-rule pt-10">
           <h2 className="text-sm font-medium text-ink-subtle">找到要检索的回答</h2>
 
           {/* ── Segmented control ─────────────────────────────────────────── */}
@@ -503,8 +526,8 @@ function Home() {
                   "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   entryMode === mode
-                    ? "bg-paper-2 text-ink shadow-sm"
-                    : "text-muted hover:text-ink-subtle",
+                    ? "border border-rule-strong bg-paper-2 text-ink"
+                    : "border border-transparent text-muted hover:text-ink-subtle",
                 ].join(" ")}
               >
                 {mode === "url" ? "粘贴链接" : "搜索问题"}
@@ -544,7 +567,7 @@ function Home() {
                     type="submit"
                     disabled={isPending || disputeLoading}
                     className={
-                      "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                      "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
                       "bg-accent hover:bg-accent-hover " +
                       "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                       "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
@@ -654,7 +677,7 @@ function Home() {
                   type="submit"
                   disabled={searchLoading || disputeLoading}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                     "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
@@ -745,7 +768,7 @@ function Home() {
                   onClick={handleAnalyze}
                   disabled={analysisDisabled}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                     "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
@@ -781,169 +804,27 @@ function Home() {
           )}
         </section>
 
-        {/* ═══ 精选案例 — evidence case file ═══════════════════════════════════ */}
+        {/* ═══ Patched demo archive ════════════════════════════════════════════ */}
         <section aria-labelledby="demo-heading">
-          <h2 id="demo-heading" className="text-sm font-medium text-muted">
-            先看示例
-          </h2>
-          <p className="mt-2 text-xs text-muted">先看两个真实案例，了解补丁如何呈现</p>
-          <hr className="mt-6 border-rule" />
-          {/* ── Featured case file ─────────────────────────────────────────── */}
-          <Link
-            to={
-              `/read/golden-demo/${featuredDemo.id}` as unknown as Parameters<typeof Link>[0]["to"]
-            }
-            className="group mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
-          >
-            {/* left column: provenance, title, description, CTA */}
-            <div className="p-6 sm:p-8">
-              {/* provenance tag */}
-              <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                {featuredDemo.topic}
-              </span>
-              <span className="ml-2 inline-flex items-center rounded-full border border-rule bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                精选演示 · 真实知乎来源
-              </span>
-
-              {/* title */}
-              <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
-                {featuredDemo.displayTitle}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-ink-subtle">{featuredDemo.description}</p>
-
-              {/* compact CTA */}
-              <span className="mt-6 inline-flex items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
-                阅读原文与旁证
-                <span
-                  aria-hidden="true"
-                  className="ml-1 transition-transform group-hover:translate-x-0.5"
-                >
-                  &rarr;
-                </span>
-              </span>
-            </div>
-
-            {/* right column: evidence fields */}
-            <div className="lg:border-l lg:border-rule">
-              <p className="border-t border-rule px-6 pt-3.5 pb-2 text-xs text-muted sm:px-8">
-                证据关系
-              </p>
-
-              {/* original premise */}
-              <div aria-label="原文前提" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">原文前提</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.originalExcerpt)}
-                </p>
-              </div>
-
-              {/* current change — amber only here */}
-              <div
-                aria-label="现在变化"
-                className="border-t border-update/30 bg-update-soft px-6 py-3.5 sm:px-8"
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2
+                id="demo-heading"
+                className="text-[30px] font-semibold leading-9 tracking-[-0.02em] text-ink"
               >
-                <span className="text-xs font-medium text-update">现在变化</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.currentChange)}
-                </p>
-              </div>
-
-              {/* impact */}
-              <div aria-label="影响" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">影响</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.impact)}
-                </p>
-              </div>
-
-              {/* evidence provenance */}
-              <div aria-label="证据来源" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">证据来源</span>
-                <ul className="mt-1.5 space-y-1.5">
-                  {firstPatch.evidence.map((ev) => {
-                    const evDate = new Date(ev.publishedAt);
-                    const year = evDate.getUTCFullYear();
-                    const month = String(evDate.getUTCMonth() + 1).padStart(2, "0");
-                    return (
-                      <li
-                        key={ev.sourceUrl}
-                        className="flex flex-wrap items-baseline gap-x-2 text-sm"
-                      >
-                        <span className="font-medium text-ink-subtle">{ev.organization}</span>
-                        <span className="inline-flex items-center rounded-full bg-paper px-2 py-0.5 text-xs text-muted">
-                          {ev.sourceType} · {year}-{month}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                补丁档案
+              </h2>
+              <p className="mt-2 max-w-2xl text-base leading-7 text-ink-subtle">
+                三个完整示例展示同一套阅读方式：保留作者原答，标注今天需要核对的前提，并给出可查证来源。
+              </p>
             </div>
-          </Link>
+          </div>
 
-          {/* ── Two compact demos ─────────────────────────────────────────── */}
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2" role="list">
-            {compactDemos.map((entry) => {
-              const patch = entry.patches[0];
-              const evidence = patch.evidence[0];
-              const evidenceLine = formatEvidenceLine(
-                evidence.organization,
-                evidence.sourceType,
-                evidence.publishedAt,
-              );
-
-              return (
-                <li key={entry.id}>
-                  <Link
-                    to={
-                      `/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]
-                    }
-                    className={[
-                      "group block min-w-0 rounded-xl border border-rule bg-paper-2 p-4 sm:p-5",
-                      "transition-colors hover:border-accent/30",
-                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
-                    ].join(" ")}
-                  >
-                    {/* topic + title row */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                        {entry.topic}
-                      </span>
-                      <span className="inline-flex items-center rounded-full border border-rule bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                        真实来源
-                      </span>
-                    </div>
-
-                    {/* title + one-line change */}
-                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
-                      <h3 className="text-sm font-semibold tracking-tight text-ink sm:text-base">
-                        {entry.displayTitle}
-                      </h3>
-                      <p className="break-words text-sm leading-5 text-ink-subtle">
-                        {truncatePreview(patch.currentChange)}
-                      </p>
-                    </div>
-
-                    {/* evidence + CTA row */}
-                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                      <span className="break-words text-xs text-muted">
-                        <span className="font-medium text-ink-subtle">证据</span> {evidenceLine}
-                      </span>
-                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
-                        阅读原文与旁证
-                        <span
-                          aria-hidden="true"
-                          className="ml-1 transition-transform group-hover:translate-x-0.5"
-                        >
-                          &rarr;
-                        </span>
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {supportingDemos.map((demo) => (
+              <GoldenDemoPreviewCard key={demo.id} demo={demo} />
+            ))}
+          </div>
         </section>
 
         {/* ═══ Closing statement ═════════════════════════════════════════════════ */}
@@ -985,7 +866,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 text-xs font-semibold text-text-on-accent bg-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 text-xs font-semibold text-on-accent bg-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           >
             重试
           </button>
@@ -1115,7 +996,7 @@ function EvidenceCandidatesSection({
           <button
             type="button"
             onClick={onRetrieve}
-            className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           >
             重试
           </button>
