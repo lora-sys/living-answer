@@ -4,6 +4,7 @@ import type {
   PatchAnalysisUpdateDecision,
 } from "../lib/patch-analysis-workflow";
 import type { PatchEvidence } from "../lib/patch-evidence";
+import type { PatchLifecycleStatus } from "../lib/patch-lifecycle";
 import type { AnalyzePatchServerFailureCode } from "../lib/failure-messages";
 
 // ── Failure codes (serializable strings) ──────────────────────────────────────
@@ -27,6 +28,21 @@ export interface MatchedEvidenceRecord {
   readonly sourceLabel: string;
   readonly sourceUrl: string;
   readonly quote: string;
+}
+
+export interface PatchLifecycleSummary {
+  readonly recordFingerprint: string;
+  readonly status: PatchLifecycleStatus;
+  readonly capturedAt: number;
+  readonly eventAt: number;
+}
+
+export interface PatchLifecycleHistorySummary {
+  readonly recordFingerprint: string;
+  readonly status: PatchLifecycleStatus;
+  readonly capturedAt: number;
+  readonly eventAt: number;
+  readonly reason: string;
 }
 
 // ── Advisory-only UPDATE decision ───────────────────────────────────────────────
@@ -65,7 +81,12 @@ export type AnalyzePatchDecisionResponse =
 // ── Response union ─────────────────────────────────────────────────────────────
 
 export type AnalyzePatchResponse =
-  | { readonly status: "ok"; readonly decision: AnalyzePatchDecisionResponse }
+  | {
+      readonly status: "ok";
+      readonly decision: AnalyzePatchDecisionResponse;
+      readonly lifecycle?: PatchLifecycleSummary;
+      readonly history?: readonly PatchLifecycleHistorySummary[];
+    }
   | { readonly status: "error"; readonly code: AnalyzePatchServerFailureCode };
 
 // ── Mapper: PatchAnalysisError → server failure code ───────────────────────────
@@ -174,9 +195,13 @@ export const mapDecisionToResponse = (
 export const okResponse = (
   decision: PatchAnalysisDecision,
   evidence: readonly PatchEvidence[],
+  lifecycle?: PatchLifecycleSummary,
+  history?: readonly PatchLifecycleHistorySummary[],
 ): AnalyzePatchResponse => ({
   status: "ok",
   decision: mapDecisionToResponse(decision, evidence),
+  ...(lifecycle !== undefined ? { lifecycle } : {}),
+  ...(history !== undefined ? { history } : {}),
 });
 
 export const errorResponse = (code: AnalyzePatchServerFailureCode): AnalyzePatchResponse => ({

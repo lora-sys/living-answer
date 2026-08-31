@@ -77,7 +77,10 @@ const isValidOptionalText = (value: string | undefined, maxLength: number): bool
   if (value === undefined) return true;
   const normalized = normalizeText(value);
   if (normalized === "" || normalized.length > maxLength) return false;
-  return normalized.search(/[\u0000-\u001f]/) === -1;
+  for (let index = 0; index < normalized.length; index += 1) {
+    if (normalized.charCodeAt(index) < 0x20) return false;
+  }
+  return true;
 };
 
 const buildRecordFingerprint = (record: PatchLifecycleRecord): string => {

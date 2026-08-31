@@ -37,6 +37,12 @@ import {
 } from "../lib/evidence-candidate-store";
 
 import {
+  makeSqlitePatchLifecycleStore,
+  type PatchLifecycleRecordWithStatus,
+  type PatchLifecycleStore,
+} from "../lib/patch-lifecycle-store";
+
+import {
   errorResponse,
   okResponse,
   type AnalyzePatchServerFailureCode,
@@ -92,6 +98,12 @@ export interface AnalyzePatchDeps {
    * Create an EvidenceCandidateStore instance for looking up evidence candidates.
    */
   readonly createEvidenceStore: () => Promise<EvidenceCandidateStore>;
+
+  /**
+   * Store lifecycle events for advisory update decisions.  Tests that only
+   * exercise analysis behavior may omit this dependency.
+   */
+  readonly createLifecycleStore?: () => Promise<PatchLifecycleStore>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -399,6 +411,46 @@ export const createAnalyzePatchHandler =
     }
 
     if (gateShortCircuit !== null) {
+      if (deps.createLifecycleStore !== undefined) {
+        let lifecycleStore: PatchLifecycleStore;
+        try {
+          lifecycleStore = await deps.createLifecycleStore();
+        } catch {
+          return errorResponse("LIFECYCLE_STORE_ERROR");
+        }
+
+        const eventAt = Date.now();
+        const supersedeOutcome = await Effect.runPromise(
+          Effect.either(lifecycleStore.supersedeByExcerptFingerprint(excerpt.fingerprint, eventAt)),
+        );
+        if (supersedeOutcome._tag === "Left") {
+          return errorResponse("LIFECYCLE_STORE_ERROR");
+        }
+
+        const historyOutcome = await Effect.runPromise(
+          Effect.either(lifecycleStore.findHistoryByAnswer(excerpt.questionId, excerpt.answerId)),
+        );
+        if (historyOutcome._tag === "Left") {
+          return errorResponse("LIFECYCLE_STORE_ERROR");
+        }
+
+        return okResponse(
+          {
+            _tag: gateShortCircuit._tag === "gate_no_patch" ? "NO_PATCH" : "UNKNOWN",
+            reason: gateShortCircuit.reason,
+          } as never,
+          gateEvidence,
+          undefined,
+          historyOutcome.right.map((record) => ({
+            recordFingerprint: record.recordFingerprint,
+            status: record.status,
+            capturedAt: record.capturedAt,
+            eventAt: record.eventAt,
+            reason: record.reason,
+          })),
+        );
+      }
+
       if (gateShortCircuit._tag === "gate_no_patch") {
         return okResponse({ _tag: "NO_PATCH", reason: gateShortCircuit.reason } as never, []);
       }
@@ -426,8 +478,91 @@ export const createAnalyzePatchHandler =
       return errorResponse("ANALYSIS_INVARIANT_VIOLATION");
     }
 
-    // ── Step 7: map decision to JSON-safe response ───────────────────────────
-    return okResponse(workflowExit.value, gateEvidence);
+    // ── Step 7: persist lifecycle state and map decision to JSON-safe response ─
+    if (deps.createLifecycleStore === undefined) {
+      return okResponse(workflowExit.value, gateEvidence);
+    }
+
+    let lifecycleStore: PatchLifecycleStore;
+    try {
+      lifecycleStore = await deps.createLifecycleStore();
+    } catch {
+      return errorResponse("LIFECYCLE_STORE_ERROR");
+    }
+
+    const eventAt = Date.now();
+    const decision = workflowExit.value;
+    let lifecycleRecord: PatchLifecycleRecordWithStatus | undefined;
+
+    if (decision._tag === "UPDATE") {
+      const savedOutcome = await Effect.runPromise(
+        Effect.either(
+          lifecycleStore.saveVisible({
+            questionId: excerpt.questionId,
+            answerId: excerpt.answerId,
+            excerptFingerprint: excerpt.fingerprint,
+            reason: decision.reason,
+            selectedEvidenceFingerprints: decision.selectedEvidenceFingerprints,
+            evidence: gateEvidence.map((item) => ({
+              fingerprint: item.fingerprint,
+              sourceLabel: item.sourceLabel,
+              sourceUrl: item.sourceUrl,
+              quote: item.quote,
+            })),
+            ...(decision.affectedWording !== undefined
+              ? { affectedWording: decision.affectedWording }
+              : {}),
+            ...(decision.currentState !== undefined ? { currentState: decision.currentState } : {}),
+            ...(decision.impactOnAnswer !== undefined
+              ? { impactOnAnswer: decision.impactOnAnswer }
+              : {}),
+            capturedAt: excerpt.capturedAt,
+            eventAt,
+          }),
+        ),
+      );
+
+      if (savedOutcome._tag === "Left") {
+        return errorResponse("LIFECYCLE_STORE_ERROR");
+      }
+      lifecycleRecord = savedOutcome.right;
+    } else {
+      const supersedeOutcome = await Effect.runPromise(
+        Effect.either(lifecycleStore.supersedeByExcerptFingerprint(excerpt.fingerprint, eventAt)),
+      );
+      if (supersedeOutcome._tag === "Left") {
+        return errorResponse("LIFECYCLE_STORE_ERROR");
+      }
+    }
+
+    const historyOutcome = await Effect.runPromise(
+      Effect.either(lifecycleStore.findHistoryByAnswer(excerpt.questionId, excerpt.answerId)),
+    );
+    if (historyOutcome._tag === "Left") {
+      return errorResponse("LIFECYCLE_STORE_ERROR");
+    }
+
+    const toHistorySummary = (record: PatchLifecycleRecordWithStatus) => ({
+      recordFingerprint: record.recordFingerprint,
+      status: record.status,
+      capturedAt: record.capturedAt,
+      eventAt: record.eventAt,
+      reason: record.reason,
+    });
+
+    return okResponse(
+      decision,
+      gateEvidence,
+      lifecycleRecord === undefined
+        ? undefined
+        : {
+            recordFingerprint: lifecycleRecord.recordFingerprint,
+            status: lifecycleRecord.status,
+            capturedAt: lifecycleRecord.capturedAt,
+            eventAt: lifecycleRecord.eventAt,
+          },
+      historyOutcome.right.map(toHistorySummary),
+    );
   };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -504,5 +639,7 @@ export const analyzePatch = createServerFn({
       createClaimStore: () => Effect.runPromise(makeSqliteClaimStore(".local/claims.db")),
       createEvidenceStore: () =>
         Effect.runPromise(makeSqliteEvidenceCandidateStore(".local/evidence-candidates.db")),
+      createLifecycleStore: () =>
+        Effect.runPromise(makeSqlitePatchLifecycleStore(".local/patch-lifecycle.db")),
     })(data);
   });
