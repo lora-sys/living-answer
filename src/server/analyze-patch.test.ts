@@ -15,6 +15,13 @@ import {
 import { OpenAiTransportError, type OpenAiChatCompletions } from "../lib/openai-adapter";
 
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
+import { StoreError, type ClaimRecord, type ClaimStore } from "../lib/claim-store";
+import {
+  EvidenceCandidateStoreError,
+  type EvidenceCandidateRecord,
+  type EvidenceCandidateStore,
+} from "../lib/evidence-candidate-store";
+import type { EvidenceCandidate } from "../lib/evidence-candidate";
 import { createPatchEvidence } from "../lib/patch-evidence";
 
 import { createAnalyzePatchHandler, type AnalyzePatchServerInput } from "./analyze-patch";
@@ -91,6 +98,12 @@ const buildHandler = (
       effectfulProvider(Effect.fail(new AnswerExcerptProviderError({ reason: "should not run" }))),
     createChat: () =>
       chat ?? makeFakeChat(() => JSON.stringify({ verdict: "NO_PATCH", reason: "N/A" })),
+    createClaimStore: async () =>
+      ({ findLatestByExcerptFingerprint: () => Effect.succeed([]) }) as unknown as ClaimStore,
+    createEvidenceStore: async () =>
+      ({
+        findCandidatesByClaimFingerprint: () => Effect.succeed([]),
+      }) as unknown as EvidenceCandidateStore,
   });
 
 /**
@@ -113,6 +126,48 @@ const EXCERPT_WITH_URL = makeExcerpt({
   excerpt: "A relevant excerpt.",
   fingerprint: "v1:abcd1234abcd1234",
 });
+
+const GATE_CLAIM_FINGERPRINT = "v1:claim0000000000";
+const GATE_CANDIDATE_FINGERPRINT = "v1:candidate000000";
+
+const makeGateClaim = (): ClaimRecord => ({
+  questionId: EXCERPT_WITH_URL.questionId,
+  answerId: EXCERPT_WITH_URL.answerId,
+  sourceContentId: EXCERPT_WITH_URL.sourceContentId,
+  sourceContentType: EXCERPT_WITH_URL.sourceContentType,
+  sourceEditTime: EXCERPT_WITH_URL.sourceEditTime,
+  excerptFingerprint: EXCERPT_WITH_URL.fingerprint,
+  claimFingerprint: GATE_CLAIM_FINGERPRINT,
+  claimText: "The answer states a fact that may have changed.",
+  anchorText: "The answer states a fact",
+  volatility: "high",
+  decisionRelevance: "primary",
+  candidateReason: "Time-sensitive statement",
+  extractedAt: EXCERPT_WITH_URL.capturedAt,
+  status: "active",
+});
+
+const makeGateCandidate = (): EvidenceCandidateRecord => {
+  const candidate: EvidenceCandidate = {
+    claimFingerprint: GATE_CLAIM_FINGERPRINT,
+    retrievalEventFingerprint: "v1:retrieval0000000",
+    provider: "global_search",
+    searchQuery: "relevant claim update",
+    sourceContentId: "789",
+    sourceContentType: "Article",
+    sourceKind: "web_source",
+    authorityHint: "official",
+    sourceLabel: "Official statistics",
+    title: "Updated statistics",
+    sourceUrl: "https://example.com/statistics",
+    contentPreview: "The official number is now 8.1 billion.",
+    capturedAt: EXCERPT_WITH_URL.capturedAt,
+    sourceAccessState: "fetched",
+    candidateFingerprint: GATE_CANDIDATE_FINGERPRINT,
+    status: "candidate",
+  };
+  return candidate;
+};
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -819,6 +874,167 @@ describe("analyze-patch", () => {
       expect(response.status).toBe("ok");
       if (response.status === "ok") {
         expect(response.decision.verdict).toBe("UNKNOWN"); // downgraded by invariant
+      }
+    });
+  });
+
+  // ── Evidence gate integration ───────────────────────────────────────────
+
+  describe("evidence gate integration", () => {
+    const buildGateHandler = (deps: {
+      readonly claimStore: ClaimStore;
+      readonly evidenceStore: EvidenceCandidateStore;
+      readonly chat: OpenAiChatCompletions;
+    }) =>
+      createAnalyzePatchHandler({
+        getSecret: () => ["openai-key", "zhihu-secret"],
+        createProvider: async () => effectfulProvider(Effect.succeed(EXCERPT_WITH_URL)),
+        createChat: () => deps.chat,
+        createClaimStore: async () => deps.claimStore,
+        createEvidenceStore: async () => deps.evidenceStore,
+      });
+
+    it("returns a store error when claim lookup fails", async () => {
+      const claimStore = {
+        findLatestByExcerptFingerprint: () =>
+          Effect.fail(new StoreError({ reason: "lookup failed" })),
+      } as unknown as ClaimStore;
+      const h = buildGateHandler({
+        claimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => {
+          throw new Error("gate must not run");
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+      expect(response).toEqual({ status: "error", code: "CLAIM_STORE_ERROR" });
+    });
+
+    it("returns a store error when candidate lookup fails", async () => {
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () =>
+            Effect.fail(new EvidenceCandidateStoreError({ reason: "lookup failed" })),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => {
+          throw new Error("gate must not run");
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+      expect(response).toEqual({ status: "error", code: "EVIDENCE_STORE_ERROR" });
+    });
+
+    it("short-circuits to NO_PATCH without the patch model when all candidates are rejected", async () => {
+      let calls = 0;
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([makeGateCandidate()]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => {
+          calls += 1;
+          return JSON.stringify({
+            classification: "reject",
+            reason: "The source does not address the claim.",
+          });
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+
+      expect(calls).toBe(1);
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision).toEqual({
+          verdict: "NO_PATCH",
+          reason: "No evidence candidate addresses this claim with enough specificity.",
+        });
+      }
+    });
+
+    it("short-circuits to UNKNOWN when candidates are insufficient", async () => {
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([makeGateCandidate()]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() =>
+          JSON.stringify({
+            classification: "insufficient",
+            reason: "The source hints at a change but lacks specifics.",
+          }),
+        ),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UNKNOWN");
+      }
+    });
+
+    it("feeds promoted candidates into the patch workflow", async () => {
+      const candidate = makeGateCandidate();
+      const evidence = createPatchEvidence({
+        sourceLabel: candidate.sourceLabel,
+        sourceUrl: candidate.sourceUrl,
+        quote: candidate.contentPreview,
+        capturedAt: candidate.capturedAt,
+      });
+      if (evidence._tag === "failure") {
+        throw new Error(`unexpected evidence failure: ${evidence.reason}`);
+      }
+
+      let calls = 0;
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([candidate]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => {
+          calls += 1;
+          if (calls === 1) {
+            return JSON.stringify({
+              classification: "promote",
+              reason: "The source gives the updated value.",
+            });
+          }
+          return JSON.stringify({
+            verdict: "UPDATE",
+            reason: "External source confirms the change.",
+            selectedEvidenceFingerprints: [evidence.evidence.fingerprint],
+          });
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+
+      expect(calls).toBe(2);
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        const decision = response.decision as AnalyzePatchUpdateResponse;
+        expect(decision.verdict).toBe("UPDATE");
+        expect(decision.evidenceSummary).toEqual([
+          {
+            fingerprint: evidence.evidence.fingerprint,
+            sourceLabel: candidate.sourceLabel,
+            sourceUrl: candidate.sourceUrl,
+          },
+        ]);
       }
     });
   });

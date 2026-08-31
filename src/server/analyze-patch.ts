@@ -27,6 +27,15 @@ import { createPatchEvidence } from "../lib/patch-evidence";
 
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
 
+import { runEvidenceGate } from "../lib/evidence-gate";
+
+import { makeSqliteClaimStore, type ClaimStore } from "../lib/claim-store";
+
+import {
+  makeSqliteEvidenceCandidateStore,
+  type EvidenceCandidateStore,
+} from "../lib/evidence-candidate-store";
+
 import {
   errorResponse,
   okResponse,
@@ -73,6 +82,16 @@ export interface AnalyzePatchDeps {
    * Create the OpenAI chat completions service, called with the API key.
    */
   readonly createChat: (apiKey: string) => OpenAiChatCompletions;
+
+  /**
+   * Create a ClaimStore instance for looking up extracted claims.
+   */
+  readonly createClaimStore: () => Promise<ClaimStore>;
+
+  /**
+   * Create an EvidenceCandidateStore instance for looking up evidence candidates.
+   */
+  readonly createEvidenceStore: () => Promise<EvidenceCandidateStore>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -313,13 +332,86 @@ export const createAnalyzePatchHandler =
     const evidence = createEvidenceRecords(excerpt, urlValidation.canonicalUrl);
     const proposal = createProposalRecord(excerpt, contextFingerprint);
 
+    // ── Step 5.5: evidence gate — replace placeholder with real candidates ────
+    let gateEvidence: typeof evidence = evidence;
+    let gateShortCircuit: {
+      readonly _tag: "gate_no_patch" | "gate_unknown";
+      readonly reason: string;
+    } | null = null;
+
+    let claimStore: ClaimStore;
+    try {
+      claimStore = await deps.createClaimStore();
+    } catch {
+      return errorResponse("CLAIM_STORE_ERROR");
+    }
+
+    let evidenceStore: EvidenceCandidateStore;
+    try {
+      evidenceStore = await deps.createEvidenceStore();
+    } catch {
+      return errorResponse("EVIDENCE_STORE_ERROR");
+    }
+
+    const claimsOutcome = await Effect.runPromise(
+      Effect.either(claimStore.findLatestByExcerptFingerprint(excerpt.fingerprint)),
+    );
+
+    if (claimsOutcome._tag === "Left") {
+      return errorResponse("CLAIM_STORE_ERROR");
+    }
+
+    const claims = claimsOutcome.right;
+
+    if (claims.length > 0) {
+      const candidatesOutcome = await Effect.runPromise(
+        Effect.either(
+          Effect.forEach(claims, (claim) =>
+            evidenceStore.findCandidatesByClaimFingerprint(claim.claimFingerprint),
+          ),
+        ),
+      );
+
+      if (candidatesOutcome._tag === "Left") {
+        return errorResponse("EVIDENCE_STORE_ERROR");
+      }
+
+      const flattened = candidatesOutcome.right.flat();
+      const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+      const gateOutcome = await Effect.runPromise(
+        Effect.either(
+          runEvidenceGate(
+            { llm: deps.createChat(openAiKey), model },
+            claims[0]!.claimText,
+            flattened.map((record) => ({ ...record, searchQuery: "" })),
+          ),
+        ),
+      );
+
+      if (gateOutcome._tag === "Right") {
+        const result = gateOutcome.right;
+        if (result._tag === "gate_passed") {
+          gateEvidence = result.evidence;
+        } else {
+          gateShortCircuit = result;
+        }
+      }
+    }
+
+    if (gateShortCircuit !== null) {
+      if (gateShortCircuit._tag === "gate_no_patch") {
+        return okResponse({ _tag: "NO_PATCH", reason: gateShortCircuit.reason } as never, []);
+      }
+      return okResponse({ _tag: "UNKNOWN", reason: gateShortCircuit.reason } as never, []);
+    }
+
     // ── Step 6: run the analysis workflow ────────────────────────────────────
     const chat = deps.createChat(openAiKey);
 
     const workflowExit = await Effect.runPromiseExit(
       runPatchAnalysis({ chat })({
         proposal,
-        evidence,
+        evidence: gateEvidence,
         context,
         excerpt,
       }),
@@ -335,7 +427,7 @@ export const createAnalyzePatchHandler =
     }
 
     // ── Step 7: map decision to JSON-safe response ───────────────────────────
-    return okResponse(workflowExit.value, evidence);
+    return okResponse(workflowExit.value, gateEvidence);
   };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -409,5 +501,8 @@ export const analyzePatch = createServerFn({
           }),
         }),
       createProvider: getOrCreateProvider,
+      createClaimStore: () => Effect.runPromise(makeSqliteClaimStore(".local/claims.db")),
+      createEvidenceStore: () =>
+        Effect.runPromise(makeSqliteEvidenceCandidateStore(".local/evidence-candidates.db")),
     })(data);
   });

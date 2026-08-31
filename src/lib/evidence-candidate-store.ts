@@ -11,16 +11,15 @@ export class EvidenceCandidateStoreError extends Data.TaggedError("EvidenceCandi
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 /**
- * A persisted evidence-candidate record matching {@link EvidenceCandidate}
- * fields (excluding `retrievalEventFingerprint` and `searchQuery`, which live
- * on the parent retrieval row).
+ * A persisted evidence-candidate row joined with its parent retrieval event.
+ * `searchQuery` is omitted because the gate and promotion path do not use it.
  */
 export interface EvidenceCandidateRecord {
   readonly claimFingerprint: string;
   readonly retrievalEventFingerprint: string;
-  readonly provider: string;
-  readonly sourceKind: string;
-  readonly authorityHint: string;
+  readonly provider: EvidenceCandidate["provider"];
+  readonly sourceKind: EvidenceCandidate["sourceKind"];
+  readonly authorityHint: EvidenceCandidate["authorityHint"];
   readonly sourceContentId: string;
   readonly sourceContentType: string;
   readonly sourceLabel: string;
@@ -29,9 +28,9 @@ export interface EvidenceCandidateRecord {
   readonly contentPreview: string;
   readonly publishedAt?: number;
   readonly capturedAt: number;
-  readonly sourceAccessState: string;
+  readonly sourceAccessState: EvidenceCandidate["sourceAccessState"];
   readonly candidateFingerprint: string;
-  readonly status: string;
+  readonly status: EvidenceCandidate["status"];
 }
 
 export interface EvidenceCandidateStore {
@@ -182,27 +181,31 @@ const DEFAULT_DB_PATH = ".local/evidence-candidates.db";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const mapRowToRecord = (row: Record<string, unknown>): EvidenceCandidateRecord => ({
-  claimFingerprint: String(row.claim_fingerprint),
-  retrievalEventFingerprint: String(row.retrieval_event_fingerprint),
-  provider: String(row.provider),
-  sourceKind: String(row.source_kind),
-  authorityHint: String(row.authority_hint),
-  sourceContentId: String(row.source_content_id),
-  sourceContentType: String(row.source_content_type),
-  sourceLabel: String(row.source_label),
-  title: String(row.title),
-  sourceUrl: String(row.source_url),
-  contentPreview: String(row.content_preview),
-  publishedAt:
-    row.published_at !== null && row.published_at !== undefined
-      ? Number(row.published_at)
-      : undefined,
-  capturedAt: Number(row.captured_at),
-  sourceAccessState: String(row.source_access_state),
-  candidateFingerprint: String(row.candidate_fingerprint),
-  status: String(row.status),
-});
+const mapRowToRecord = (row: Record<string, unknown>): EvidenceCandidateRecord => {
+  const candidate: EvidenceCandidate = {
+    claimFingerprint: String(row.claim_fingerprint),
+    retrievalEventFingerprint: String(row.retrieval_event_fingerprint),
+    provider: String(row.provider) as EvidenceCandidate["provider"],
+    searchQuery: "",
+    sourceKind: String(row.source_kind) as EvidenceCandidate["sourceKind"],
+    authorityHint: String(row.authority_hint) as EvidenceCandidate["authorityHint"],
+    sourceContentId: String(row.source_content_id),
+    sourceContentType: String(row.source_content_type),
+    sourceLabel: String(row.source_label),
+    title: String(row.title),
+    sourceUrl: String(row.source_url),
+    contentPreview: String(row.content_preview),
+    publishedAt:
+      row.published_at !== null && row.published_at !== undefined
+        ? Number(row.published_at)
+        : undefined,
+    capturedAt: Number(row.captured_at),
+    sourceAccessState: String(row.source_access_state) as EvidenceCandidate["sourceAccessState"],
+    candidateFingerprint: String(row.candidate_fingerprint),
+    status: String(row.status) as EvidenceCandidate["status"],
+  };
+  return candidate;
+};
 
 // ── Public API ─────────────────────────────────────────────────────────────────
 
