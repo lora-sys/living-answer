@@ -27,7 +27,7 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
             href={evidence.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="shrink-0 text-xs font-medium text-[#d97757] transition-colors hover:text-[#c4684a]"
+            className="shrink-0 text-xs font-medium text-accent transition-colors hover:text-accent-hover"
           >
             原文
           </a>

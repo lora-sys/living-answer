@@ -89,7 +89,7 @@ function ReadGoldenDemo() {
   }, [openParagraphId]);
 
   return (
-    <main className="min-h-screen bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
+    <main className="min-h-screen bg-paper px-5 py-12 text-stone-950 sm:px-8">
       <div className="mx-auto w-full max-w-5xl">
         <Link
           to="/"

@@ -29,7 +29,7 @@ export function InlinePatchMarker({
       className={[
         "inline-flex items-center rounded-full border border-amber-300 bg-amber-50",
         "px-2 py-0.5 text-xs font-medium text-amber-800",
-        "cursor-pointer transition-colors hover:bg-amber-100",
+        "cursor-pointer transition-colors hover:bg-amber-100 active:bg-amber-200 active:scale-[0.98]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500",
       ].join(" ")}
       aria-expanded={isOpen}
@@ -39,6 +39,18 @@ export function InlinePatchMarker({
     >
       <span aria-hidden="true" className="mr-1 inline-block h-1 w-1 rounded-full bg-amber-500" />
       {label}
+      <svg
+        aria-hidden="true"
+        className={`ml-0.5 h-3 w-3 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        viewBox="0 0 12 12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="2,4 6,8 10,4" />
+      </svg>
     </button>
   );
 }
