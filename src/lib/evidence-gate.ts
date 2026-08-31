@@ -94,8 +94,8 @@ export const runEvidenceGate = (
   Effect.gen(function* () {
     if (candidates.length === 0) {
       return {
-        _tag: "gate_no_patch" as const,
-        reason: "No evidence candidates found for this claim.",
+        _tag: "gate_unknown" as const,
+        reason: "No evidence candidates were found for this claim.",
       };
     }
 

@@ -82,11 +82,11 @@ describe("evidence-gate", () => {
     expect(result._tag).toBe("gate_unknown");
   });
 
-  it("returns gate_no_patch when no candidates exist", async () => {
+  it("returns gate_unknown when no candidates exist", async () => {
     const llm = makeLlm(JSON.stringify({ classification: "promote", reason: "N/A" }));
     const result = await Effect.runPromise(runEvidenceGate({ llm, model: "test" }, CLAIM_TEXT, []));
 
-    expect(result._tag).toBe("gate_no_patch");
+    expect(result._tag).toBe("gate_unknown");
   });
 
   it("fails with MALFORMED_MODEL_OUTPUT for invalid JSON", async () => {

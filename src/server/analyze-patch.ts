@@ -388,25 +388,58 @@ export const createAnalyzePatchHandler =
         return errorResponse("EVIDENCE_STORE_ERROR");
       }
 
-      const flattened = candidatesOutcome.right.flat();
       const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-      const gateOutcome = await Effect.runPromise(
-        Effect.either(
-          runEvidenceGate(
-            { llm: deps.createChat(openAiKey), model },
-            claims[0]!.claimText,
-            flattened.map((record) => ({ ...record, searchQuery: "" })),
-          ),
-        ),
-      );
+      const gateLlm = deps.createChat(openAiKey);
+      const promotedEvidence = new Map<string, (typeof evidence)[number]>();
+      const unknownReasons: string[] = [];
+      const noPatchReasons: string[] = [];
 
-      if (gateOutcome._tag === "Right") {
+      for (const [claimIndex, claim] of claims.entries()) {
+        const candidates = candidatesOutcome.right[claimIndex]?.map((record) => ({
+          ...record,
+          searchQuery: "",
+        }));
+
+        if (candidates === undefined) {
+          return errorResponse("EVIDENCE_STORE_ERROR");
+        }
+
+        const gateOutcome = await Effect.runPromise(
+          Effect.either(runEvidenceGate({ llm: gateLlm, model }, claim.claimText, candidates)),
+        );
+
+        if (gateOutcome._tag === "Left") {
+          return errorResponse(
+            gateOutcome.left.reason === "TRANSPORT_FAILED"
+              ? "MODEL_TRANSPORT_ERROR"
+              : "MALFORMED_MODEL_OUTPUT",
+          );
+        }
+
         const result = gateOutcome.right;
         if (result._tag === "gate_passed") {
-          gateEvidence = result.evidence;
+          for (const evidenceRecord of result.evidence) {
+            promotedEvidence.set(evidenceRecord.fingerprint, evidenceRecord);
+          }
+        } else if (result._tag === "gate_unknown") {
+          unknownReasons.push(result.reason);
         } else {
-          gateShortCircuit = result;
+          noPatchReasons.push(result.reason);
         }
+      }
+
+      if (promotedEvidence.size > 0) {
+        gateEvidence = [...promotedEvidence.values()];
+      } else if (unknownReasons.length > 0) {
+        gateShortCircuit = {
+          _tag: "gate_unknown",
+          reason: unknownReasons.join(" "),
+        };
+      } else if (noPatchReasons.length > 0) {
+        gateShortCircuit = {
+          _tag: "gate_no_patch",
+          reason: noPatchReasons.join(" "),
+        };
       }
     }
 
@@ -464,6 +497,7 @@ export const createAnalyzePatchHandler =
       runPatchAnalysis({ chat })({
         proposal,
         evidence: gateEvidence,
+        claims,
         context,
         excerpt,
       }),

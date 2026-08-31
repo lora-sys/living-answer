@@ -57,6 +57,11 @@ type AnalysisPrompt = {
     readonly sourceUrl: string | null;
     readonly quote: string;
   }>;
+  readonly claims?: ReadonlyArray<{
+    readonly claimText: string;
+    readonly volatility: string;
+    readonly decisionRelevance: string;
+  }>;
   readonly expectedResponse: {
     readonly verdict: "UPDATE" | "NO_PATCH" | "UNKNOWN";
     readonly reason: string;
@@ -111,8 +116,16 @@ export type PatchAnalysisDecision =
 export interface AnalyzePatchInput {
   readonly proposal: PatchProposal;
   readonly evidence: readonly PatchEvidence[];
+  readonly claims?: readonly PatchAnalysisClaimContext[];
   readonly context?: UserSuppliedContext;
   readonly excerpt?: AnswerExcerpt;
+}
+
+/** Claim fields safe to send to the analysis model. */
+export interface PatchAnalysisClaimContext {
+  readonly claimText: string;
+  readonly volatility: string;
+  readonly decisionRelevance: string;
 }
 
 // ── Dependency injection ───────────────────────────────────────────────────────
@@ -149,6 +162,12 @@ const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
     quote: e.quote,
   }));
 
+  const claimEntries = (input.claims ?? []).map((claim) => ({
+    claimText: claim.claimText,
+    volatility: claim.volatility,
+    decisionRelevance: claim.decisionRelevance,
+  }));
+
   const proposalEntries: Record<string, unknown> = {
     proposedBody: input.proposal.proposedBody,
     answerSnapshotFingerprint: input.proposal.answerSnapshotFingerprint,
@@ -174,6 +193,9 @@ const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
     version: "2",
     proposal: Object.freeze(proposalEntries) as AnalysisPrompt["proposal"],
     evidence: Object.freeze(evidenceEntries),
+    ...(claimEntries.length > 0
+      ? { claims: Object.freeze(claimEntries) as AnalysisPrompt["claims"] }
+      : {}),
     ...(hasAnswerContext ? { answerContext: Object.freeze(answerContext) } : {}),
     expectedResponse: Object.freeze({
       verdict: "UPDATE",

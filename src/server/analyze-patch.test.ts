@@ -12,7 +12,11 @@ import {
   type AnswerExcerptProviderFailure,
 } from "../lib/answer-excerpt-provider";
 
-import { OpenAiTransportError, type OpenAiChatCompletions } from "../lib/openai-adapter";
+import {
+  OpenAiTransportError,
+  type OpenAiChatCompletions,
+  type OpenAiChatCompletionsRequest,
+} from "../lib/openai-adapter";
 
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
 import { StoreError, type ClaimRecord, type ClaimStore } from "../lib/claim-store";
@@ -982,6 +986,152 @@ describe("analyze-patch", () => {
       expect(response.status).toBe("ok");
       if (response.status === "ok") {
         expect(response.decision.verdict).toBe("UNKNOWN");
+      }
+    });
+
+    it("short-circuits to UNKNOWN when no candidates exist for any claim", async () => {
+      let calls = 0;
+      const secondClaim = {
+        ...makeGateClaim(),
+        claimFingerprint: "v1:claim1111111111",
+        claimText: "A second answer fact that may have changed.",
+        anchorText: "A second answer fact",
+      };
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () =>
+            Effect.succeed([makeGateClaim(), secondClaim]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => {
+          calls += 1;
+          return JSON.stringify({ classification: "promote", reason: "Should not run." });
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+
+      expect(calls).toBe(0);
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.decision.verdict).toBe("UNKNOWN");
+      }
+    });
+
+    it("maps gate transport failure to a model transport error", async () => {
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([makeGateCandidate()]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() =>
+          Effect.fail(new OpenAiTransportError({ reason: "NETWORK_FAILED" })),
+        ),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+      expect(response).toEqual({ status: "error", code: "MODEL_TRANSPORT_ERROR" });
+    });
+
+    it("maps malformed gate output to a model output error", async () => {
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim()]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: () => Effect.succeed([makeGateCandidate()]),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat(() => "not-json"),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+      expect(response).toEqual({ status: "error", code: "MALFORMED_MODEL_OUTPUT" });
+    });
+
+    it("gates every claim and sends every claim to patch analysis", async () => {
+      const secondClaim = {
+        ...makeGateClaim(),
+        claimFingerprint: "v1:claim1111111111",
+        claimText: "A second answer fact that may have changed.",
+        anchorText: "A second answer fact",
+      };
+      const secondCandidate = {
+        ...makeGateCandidate(),
+        claimFingerprint: secondClaim.claimFingerprint,
+        candidateFingerprint: "v1:candidate11111",
+        sourceUrl: "https://example.com/second-source",
+        contentPreview: "The second fact has a specific update.",
+      };
+
+      const promoted = createPatchEvidence({
+        sourceLabel: secondCandidate.sourceLabel,
+        sourceUrl: secondCandidate.sourceUrl,
+        quote: secondCandidate.contentPreview,
+        capturedAt: secondCandidate.capturedAt,
+      });
+      if (promoted._tag === "failure") {
+        throw new Error(`unexpected evidence failure: ${promoted.reason}`);
+      }
+
+      let calls = 0;
+      const modelRequests: OpenAiChatCompletionsRequest[] = [];
+      const h = buildGateHandler({
+        claimStore: {
+          findLatestByExcerptFingerprint: () =>
+            Effect.succeed([makeGateClaim(), secondClaim]),
+        } as unknown as ClaimStore,
+        evidenceStore: {
+          findCandidatesByClaimFingerprint: (fingerprint: string) =>
+            Effect.succeed(
+              fingerprint === makeGateClaim().claimFingerprint
+                ? [makeGateCandidate()]
+                : [secondCandidate],
+            ),
+        } as unknown as EvidenceCandidateStore,
+        chat: makeFakeChat((request) => {
+          calls += 1;
+          if (calls === 1) {
+            return JSON.stringify({
+              classification: "reject",
+              reason: "First candidate does not address the claim.",
+            });
+          }
+          if (calls === 2) {
+            return JSON.stringify({
+              classification: "promote",
+              reason: "The source gives the updated second value.",
+            });
+          }
+          modelRequests.push(request);
+          return JSON.stringify({
+            verdict: "UPDATE",
+            reason: "The second claim has external confirmation.",
+            selectedEvidenceFingerprints: [promoted.evidence.fingerprint],
+          });
+        }),
+      });
+
+      const response = await call(h, { url: VALID_URL });
+
+      expect(calls).toBe(3);
+      expect(modelRequests).toHaveLength(1);
+      const prompt = JSON.parse(modelRequests[0]!.messages[0]!.content) as {
+        claims?: Array<{ claimText: string }>;
+      };
+      expect(prompt.claims?.map((claim) => claim.claimText)).toEqual([
+        makeGateClaim().claimText,
+        secondClaim.claimText,
+      ]);
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        const decision = response.decision as AnalyzePatchUpdateResponse;
+        expect(decision.verdict).toBe("UPDATE");
+        expect(decision.evidenceSummary[0]?.sourceUrl).toBe(secondCandidate.sourceUrl);
       }
     });
 
