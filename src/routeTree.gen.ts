@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChangesRouteImport } from './routes/changes'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as ReadGoldenDemoRouteImport } from './routes/read.golden-demo'
 import { Route as ReadGoldenDemoIdRouteImport } from './routes/read.golden-demo.$id'
@@ -17,6 +18,11 @@ import { Route as ReadGoldenDemoIdRouteImport } from './routes/read.golden-demo.
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChangesRoute = ChangesRouteImport.update({
+  id: '/changes',
+  path: '/changes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SourcesRoute = SourcesRouteImport.update({
@@ -37,12 +43,14 @@ const ReadGoldenDemoIdRoute = ReadGoldenDemoIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/changes': typeof ChangesRoute
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/changes': typeof ChangesRoute
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
@@ -50,18 +58,30 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/changes': typeof ChangesRoute
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sources' | '/read/golden-demo' | '/read/golden-demo/$id'
+  fullPaths:
+    | '/'
+    | '/changes'
+    | '/sources'
+    | '/read/golden-demo'
+    | '/read/golden-demo/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sources' | '/read/golden-demo' | '/read/golden-demo/$id'
+  to:
+    | '/'
+    | '/changes'
+    | '/sources'
+    | '/read/golden-demo'
+    | '/read/golden-demo/$id'
   id:
     | '__root__'
     | '/'
+    | '/changes'
     | '/sources'
     | '/read/golden-demo'
     | '/read/golden-demo/$id'
@@ -69,6 +89,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChangesRoute: typeof ChangesRoute
   SourcesRoute: typeof SourcesRoute
   ReadGoldenDemoRoute: typeof ReadGoldenDemoRouteWithChildren
 }
@@ -80,6 +101,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/changes': {
+      id: '/changes'
+      path: '/changes'
+      fullPath: '/changes'
+      preLoaderRoute: typeof ChangesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sources': {
@@ -120,6 +148,7 @@ const ReadGoldenDemoRouteWithChildren = ReadGoldenDemoRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChangesRoute: ChangesRoute,
   SourcesRoute: SourcesRoute,
   ReadGoldenDemoRoute: ReadGoldenDemoRouteWithChildren,
 }

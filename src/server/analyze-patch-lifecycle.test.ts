@@ -77,6 +77,7 @@ const makeLifecycleStore = (): {
     findCurrentByExcerptFingerprint: () => Effect.succeed(null),
     findHistoryByAnswer: () =>
       Effect.sync(() => saved.map(({ input: _input, ...record }) => record)),
+    findAll: () => Effect.succeed([]),
   };
   return {
     store,

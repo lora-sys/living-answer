@@ -17,6 +17,7 @@ const FAILED_STORE = {
   findCurrentByExcerptFingerprint: () =>
     Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
   findHistoryByAnswer: () => Effect.fail(new PatchLifecycleStoreError({ reason: "unused" })),
+  findAll: () => Effect.succeed([]),
 } satisfies PatchLifecycleStore;
 
 const makeStore = (disputeResult: boolean): PatchLifecycleStore => ({

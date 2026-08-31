@@ -466,12 +466,18 @@ function Home() {
         </section>
 
         {/* ═══ sources nav ═══════════════════════════════════════════════════════ */}
-        <nav>
+        <nav className="flex flex-wrap gap-x-6 gap-y-2">
           <Link
             to="/sources"
             className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
           >
             查看所有证据来源 &rarr;
+          </Link>
+          <Link
+            to="/changes"
+            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+          >
+            查看变更时间线 &rarr;
           </Link>
         </nav>
 

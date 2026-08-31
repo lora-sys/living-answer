@@ -19,6 +19,9 @@ const config = defineConfig({
     include: ["src/**/*.test.ts"],
   },
   resolve: { tsconfigPaths: true },
+  ssr: {
+    external: ["better-sqlite3"],
+  },
   plugins: lazyPlugins(() => [tanstackStart(), viteReact(), tailwindcss()]),
 });
 

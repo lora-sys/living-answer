@@ -1,5 +1,11 @@
 import { Data, Effect } from "effect";
 
+import { createRequire } from "node:module";
+
+// Use createRequire for reliable CommonJS loading of better-sqlite3 (native addon)
+// in ESM/SSR contexts where the global require may be unavailable.
+const require = createRequire(import.meta.url);
+
 import {
   buildLifecycleEventFingerprint,
   createPatchLifecycleRecord,
@@ -43,6 +49,7 @@ export interface PatchLifecycleStore {
     questionId: string,
     answerId: string,
   ) => Effect.Effect<readonly PatchLifecycleRecordWithStatus[], PatchLifecycleStoreError>;
+  readonly findAll: () => Effect.Effect<readonly PatchLifecycleRecordWithStatus[], never>;
 }
 
 const SCHEMA_SQL = `
@@ -114,6 +121,27 @@ FROM patch_lifecycle_decisions d
 ${LATEST_STATUS_JOIN_SQL}
 WHERE d.question_id = ? AND d.answer_id = ?
 ORDER BY d.event_at DESC, d.id DESC
+`;
+
+const FIND_ALL_SQL = `
+SELECT d.id,
+       d.question_id,
+       d.answer_id,
+       d.excerpt_fingerprint,
+       d.record_fingerprint,
+       d.reason,
+       d.selected_evidence_fingerprints,
+       d.evidence_summary,
+       d.affected_wording,
+       d.current_state,
+       d.impact_on_answer,
+       d.captured_at,
+       d.event_at,
+       le.status
+FROM patch_lifecycle_decisions d
+JOIN patch_lifecycle_events le ON le.decision_id = d.id
+WHERE le.id IN (SELECT MAX(id) FROM patch_lifecycle_events GROUP BY decision_id)
+ORDER BY le.event_at DESC
 `;
 
 const FIND_ACTIVE_BY_EXCERPT_SQL = `
@@ -236,6 +264,7 @@ export const makeSqlitePatchLifecycleStore = (
     });
 
     const findHistoryStmt = database.prepare(FIND_HISTORY_SQL);
+    const findAllStmt = database.prepare(FIND_ALL_SQL);
     const findActiveStmt = database.prepare(FIND_ACTIVE_BY_EXCERPT_SQL);
     const findCurrentStmt = database.prepare(FIND_CURRENT_BY_EXCERPT_SQL);
     const findByRecordStmt = database.prepare(FIND_BY_RECORD_FINGERPRINT_SQL);
@@ -444,6 +473,16 @@ export const makeSqlitePatchLifecycleStore = (
           }),
       });
 
+    const findAll = (): Effect.Effect<readonly PatchLifecycleRecordWithStatus[], never> =>
+      Effect.sync(() => {
+        try {
+          const rows = findAllStmt.all() as ReadonlyArray<LifecycleRow>;
+          return rows.map(mapRowToRecord);
+        } catch {
+          return [];
+        }
+      });
+
     return {
       saveVisible,
       supersedeByExcerptFingerprint,
@@ -452,5 +491,6 @@ export const makeSqlitePatchLifecycleStore = (
       withdraw,
       findCurrentByExcerptFingerprint,
       findHistoryByAnswer,
+      findAll,
     };
   });
