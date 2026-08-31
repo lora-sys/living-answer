@@ -30,7 +30,7 @@ export interface AnswerExcerptProviderRequest {
  */
 export type AnswerExcerptItemsFetcher = (
   request: AnswerExcerptProviderRequest,
-) => Effect.Effect<readonly unknown[], AnswerExcerptProviderError>;
+) => Effect.Effect<readonly unknown[], AnswerExcerptProviderFailure>;
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
 
@@ -41,6 +41,10 @@ export class UnsupportedAnswerUrlError extends Data.TaggedError("UnsupportedAnsw
 export class AnswerExcerptProviderError extends Data.TaggedError("AnswerExcerptProviderError")<{
   readonly reason: string;
 }> {}
+
+export class RateLimitedProviderError extends Data.TaggedError("RateLimitedProviderError") {}
+
+export class QuotaExceededProviderError extends Data.TaggedError("QuotaExceededProviderError") {}
 
 export class AnswerNotFoundProviderError extends Data.TaggedError("AnswerNotFoundProviderError") {}
 
@@ -68,6 +72,8 @@ export type InvalidProviderAnswerReason =
 export type AnswerExcerptProviderFailure =
   | UnsupportedAnswerUrlError
   | AnswerExcerptProviderError
+  | RateLimitedProviderError
+  | QuotaExceededProviderError
   | AnswerNotFoundProviderError
   | AmbiguousAnswerProviderError
   | InvalidProviderAnswerError;
@@ -230,6 +236,8 @@ export const makeAnswerExcerptProvider = (
   const isProviderFailure = (value: unknown): value is AnswerExcerptProviderFailure =>
     value instanceof UnsupportedAnswerUrlError ||
     value instanceof AnswerExcerptProviderError ||
+    value instanceof RateLimitedProviderError ||
+    value instanceof QuotaExceededProviderError ||
     value instanceof AnswerNotFoundProviderError ||
     value instanceof AmbiguousAnswerProviderError ||
     value instanceof InvalidProviderAnswerError;

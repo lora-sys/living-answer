@@ -3,6 +3,8 @@ import {
   AnswerExcerptProviderError,
   AnswerNotFoundProviderError,
   InvalidProviderAnswerError,
+  QuotaExceededProviderError,
+  RateLimitedProviderError,
   UnsupportedAnswerUrlError,
 } from "../lib/answer-excerpt-provider";
 
@@ -17,7 +19,9 @@ export type AnswerExcerptServerFailureCode =
   | "ANSWER_NOT_FOUND"
   | "AMBIGUOUS_ANSWER"
   | "INVALID_PROVIDER_ANSWER"
-  | "PROVIDER_ERROR";
+  | "PROVIDER_ERROR"
+  | "PROVIDER_RATE_LIMITED"
+  | "PROVIDER_QUOTA_EXCEEDED";
 
 // ── Response union ─────────────────────────────────────────────────────────────
 
@@ -44,6 +48,12 @@ export const toServerFailureCode = (error: unknown): AnswerExcerptServerFailureC
   }
   if (error instanceof InvalidProviderAnswerError) {
     return "INVALID_PROVIDER_ANSWER";
+  }
+  if (error instanceof RateLimitedProviderError) {
+    return "PROVIDER_RATE_LIMITED";
+  }
+  if (error instanceof QuotaExceededProviderError) {
+    return "PROVIDER_QUOTA_EXCEEDED";
   }
   if (error instanceof AnswerExcerptProviderError) {
     return "PROVIDER_ERROR";

@@ -7,6 +7,8 @@ import {
   AnswerExcerptProviderError,
   AnswerNotFoundProviderError,
   InvalidProviderAnswerError,
+  QuotaExceededProviderError,
+  RateLimitedProviderError,
   UnsupportedAnswerUrlError,
   type AnswerExcerptProvider,
   type AnswerExcerptProviderFailure,
@@ -242,6 +244,26 @@ describe("resolve-answer-excerpt", () => {
       expect(response.status).toBe("error");
       if (response.status === "error") {
         expect(response.code).toBe("PROVIDER_ERROR");
+      }
+    });
+
+    it("RateLimitedProviderError maps to PROVIDER_RATE_LIMITED", async () => {
+      const provider = effectfulProvider(Effect.fail(new RateLimitedProviderError()));
+      const response = await call(buildHandler("secret", provider), { url: VALID_URL });
+
+      expect(response.status).toBe("error");
+      if (response.status === "error") {
+        expect(response.code).toBe("PROVIDER_RATE_LIMITED");
+      }
+    });
+
+    it("QuotaExceededProviderError maps to PROVIDER_QUOTA_EXCEEDED", async () => {
+      const provider = effectfulProvider(Effect.fail(new QuotaExceededProviderError()));
+      const response = await call(buildHandler("secret", provider), { url: VALID_URL });
+
+      expect(response.status).toBe("error");
+      if (response.status === "error") {
+        expect(response.code).toBe("PROVIDER_QUOTA_EXCEEDED");
       }
     });
 

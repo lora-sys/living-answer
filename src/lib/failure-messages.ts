@@ -24,7 +24,9 @@ export type AnswerExcerptServerFailureCode =
   | "ANSWER_NOT_FOUND"
   | "AMBIGUOUS_ANSWER"
   | "INVALID_PROVIDER_ANSWER"
-  | "PROVIDER_ERROR";
+  | "PROVIDER_ERROR"
+  | "PROVIDER_RATE_LIMITED"
+  | "PROVIDER_QUOTA_EXCEEDED";
 
 /**
  * All server failure codes returned by the patch-analysis flow.
@@ -55,6 +57,8 @@ const FAILURE_MESSAGES: Readonly<Record<AnalyzePatchServerFailureCode, string>> 
   AMBIGUOUS_ANSWER: "找到多个可能的回答，请提供更精确的链接。",
   INVALID_PROVIDER_ANSWER: "获取到的回答数据不完整，请稍后再试。",
   PROVIDER_ERROR: "获取回答摘录时出现异常，请稍后再试。",
+  PROVIDER_RATE_LIMITED: "当前访问过于频繁，请稍后再试。",
+  PROVIDER_QUOTA_EXCEEDED: "今日服务额度已用完，请明天再试。",
   MISSING_OPENAI_KEY: "AI 服务暂时不可用，请稍后再试。",
   MODEL_TRANSPORT_ERROR: "模型服务暂时不可用，请稍后再试。",
   MALFORMED_MODEL_OUTPUT: "模型响应异常，请稍后再试。",

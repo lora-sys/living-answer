@@ -50,6 +50,8 @@ export type SearchErrorReason =
   | "BLANK_QUERY"
   | "ENVELOPE_NOT_OBJECT"
   | "MISSING_CODE"
+  | "API_RATE_LIMITED"
+  | "API_QUOTA_EXCEEDED"
   | "NON_ZERO_CODE"
   | "DATA_NOT_OBJECT"
   | "ITEMS_NOT_ARRAY";
@@ -134,7 +136,13 @@ function validateEnvelope(result: unknown): EnvelopeValidation {
   }
 
   if (envelope.Code !== 0) {
-    return { _tag: "failure" as const, error: new SearchError({ reason: "NON_ZERO_CODE" }) };
+    const reason: SearchErrorReason =
+      envelope.Code === 30001
+        ? "API_RATE_LIMITED"
+        : envelope.Code === 30002
+          ? "API_QUOTA_EXCEEDED"
+          : "NON_ZERO_CODE";
+    return { _tag: "failure" as const, error: new SearchError({ reason }) };
   }
 
   const data = envelope.Data;

@@ -1,7 +1,12 @@
 import { Clock, Data, Duration, Effect } from "effect";
 
 import type { AnswerExcerptItemsFetcher } from "./answer-excerpt-provider";
-import { AnswerExcerptProviderError } from "./answer-excerpt-provider";
+import {
+  AnswerExcerptProviderError,
+  QuotaExceededProviderError,
+  RateLimitedProviderError,
+  type AnswerExcerptProviderFailure,
+} from "./answer-excerpt-provider";
 
 // ── Transport types ─────────────────────────────────────────────────────────────
 
@@ -57,7 +62,7 @@ const hasItems = (
   result: unknown,
 ):
   | { readonly _tag: "success"; readonly items: readonly unknown[] }
-  | { readonly _tag: "failure"; readonly error: AnswerExcerptProviderError } => {
+  | { readonly _tag: "failure"; readonly error: AnswerExcerptProviderFailure } => {
   if (typeof result !== "object" || result === null || Array.isArray(result)) {
     return {
       _tag: "failure" as const,
@@ -79,6 +84,13 @@ const hasItems = (
   }
 
   if (envelope.Code !== 0) {
+    if (envelope.Code === 30001) {
+      return { _tag: "failure" as const, error: new RateLimitedProviderError() };
+    }
+    if (envelope.Code === 30002) {
+      return { _tag: "failure" as const, error: new QuotaExceededProviderError() };
+    }
+
     return {
       _tag: "failure" as const,
       error: new AnswerExcerptProviderError({
@@ -119,9 +131,8 @@ const DEFAULT_BASE_URL = "https://developer.zhihu.com";
  * Zhihu `zhihu_search` request.
  *
  * The adapter owns request construction and envelope validation.  All
- * transport-level and API-level failures are mapped to
- * {@link AnswerExcerptProviderError} — the public provider failure
- * taxonomy does not widen.
+ * transport-level and API-level failures are mapped to the public provider
+ * failure taxonomy. Rate limiting and quota exhaustion remain distinct.
  */
 export const makeZhihuSearchItemsFetcher = (
   options: ZhihuSearchAdapterOptions,
@@ -132,7 +143,7 @@ export const makeZhihuSearchItemsFetcher = (
     ? undefined
     : (Effect.fail(
         new AnswerExcerptProviderError({ reason: "accessSecret must not be blank" }),
-      ) as Effect.Effect<never, AnswerExcerptProviderError>);
+      ) as Effect.Effect<never, AnswerExcerptProviderFailure>);
 
   return (request) =>
     blankCredentialFailure ??
@@ -150,10 +161,12 @@ export const makeZhihuSearchItemsFetcher = (
         .pipe(
           // Map transport-level errors to the public provider error type.
           Effect.mapError(
-            (transportError: ZhihuSearchTransportError) =>
-              new AnswerExcerptProviderError({
-                reason: `transport ${transportError.reason}${transportError.status !== undefined ? ` (status: ${transportError.status})` : ""}`,
-              }),
+            (transportError: ZhihuSearchTransportError): AnswerExcerptProviderFailure =>
+              transportError.reason === "HTTP_STATUS" && transportError.status === 429
+                ? new RateLimitedProviderError()
+                : new AnswerExcerptProviderError({
+                    reason: `transport ${transportError.reason}${transportError.status !== undefined ? ` (status: ${transportError.status})` : ""}`,
+                  }),
           ),
         )
         .pipe(

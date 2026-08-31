@@ -17,6 +17,8 @@ const EXCERPT_CODES: readonly AnswerExcerptServerFailureCode[] = [
   "AMBIGUOUS_ANSWER",
   "INVALID_PROVIDER_ANSWER",
   "PROVIDER_ERROR",
+  "PROVIDER_RATE_LIMITED",
+  "PROVIDER_QUOTA_EXCEEDED",
 ];
 
 const ANALYZE_PATCH_CODES: readonly AnalyzePatchServerFailureCode[] = [
@@ -86,6 +88,16 @@ describe("failure-messages", () => {
         label: "INVALID_PROVIDER_ANSWER → corrupted data",
         code: "INVALID_PROVIDER_ANSWER",
         expected: "获取到的回答数据不完整，请稍后再试。",
+      },
+      {
+        label: "PROVIDER_RATE_LIMITED → temporary rate limit",
+        code: "PROVIDER_RATE_LIMITED",
+        expected: "当前访问过于频繁，请稍后再试。",
+      },
+      {
+        label: "PROVIDER_QUOTA_EXCEEDED → daily quota exhausted",
+        code: "PROVIDER_QUOTA_EXCEEDED",
+        expected: "今日服务额度已用完，请明天再试。",
       },
     ];
 

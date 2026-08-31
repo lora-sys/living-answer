@@ -7,6 +7,9 @@ import {
   AnswerExcerptProviderError,
   AnswerNotFoundProviderError,
   makeAnswerExcerptProvider,
+  QuotaExceededProviderError,
+  RateLimitedProviderError,
+  type AnswerExcerptProviderFailure,
 } from "./answer-excerpt-provider";
 
 import type {
@@ -27,8 +30,8 @@ const VALID_URL = "https://www.zhihu.com/question/42/answer/100";
 const runSuccess = <A>(effect: Effect.Effect<A, unknown>): Promise<A> => Effect.runPromise(effect);
 
 const runFailure = async (
-  effect: Effect.Effect<readonly unknown[], AnswerExcerptProviderError>,
-): Promise<AnswerExcerptProviderError> => {
+  effect: Effect.Effect<readonly unknown[], AnswerExcerptProviderFailure>,
+): Promise<AnswerExcerptProviderFailure> => {
   const exit = await Effect.runPromiseExit(effect);
   if (exit._tag !== "Failure") throw new Error("Expected provider failure");
   if (exit.cause._tag !== "Fail") throw new Error("Expected a failed effect");
@@ -207,6 +210,36 @@ describe("zhihu-search-adapter", () => {
 
       expect(err).toBeInstanceOf(AnswerExcerptProviderError);
       expect((err as AnswerExcerptProviderError).reason).toMatch(/non-zero code/);
+    });
+
+    it("maps API rate limit code 30001 to a typed rate-limit failure", async () => {
+      const fetcher = makeFetcher(makeFakeTransport(() => ({ Code: 30001, Data: null })));
+      const error = await runFailure(
+        fetcher({ questionId: "42", answerId: "100", canonicalUrl: VALID_URL }),
+      );
+
+      expect(error).toBeInstanceOf(RateLimitedProviderError);
+    });
+
+    it("maps HTTP 429 to a typed rate-limit failure", async () => {
+      const transport = makeFakeTransport(() =>
+        Effect.fail(new ZhihuSearchTransportError({ reason: "HTTP_STATUS", status: 429 })),
+      );
+      const fetcher = makeFetcher(transport);
+      const error = await runFailure(
+        fetcher({ questionId: "42", answerId: "100", canonicalUrl: VALID_URL }),
+      );
+
+      expect(error).toBeInstanceOf(RateLimitedProviderError);
+    });
+
+    it("maps API quota code 30002 to a typed quota failure", async () => {
+      const fetcher = makeFetcher(makeFakeTransport(() => ({ Code: 30002, Data: null })));
+      const error = await runFailure(
+        fetcher({ questionId: "42", answerId: "100", canonicalUrl: VALID_URL }),
+      );
+
+      expect(error).toBeInstanceOf(QuotaExceededProviderError);
     });
 
     it("maps a non-object JSON envelope to AnswerExcerptProviderError", async () => {

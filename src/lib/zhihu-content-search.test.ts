@@ -311,6 +311,28 @@ describe("zhihu-content-search", () => {
       expect((error as SearchError).reason).toBe("NON_ZERO_CODE");
     });
 
+    it("fails with API_RATE_LIMITED when Code is 30001", async () => {
+      const error = await runFailure(
+        fetchSearchItems({
+          ...defaultOptions(),
+          transport: makeFakeTransport(() => ({ Code: 30001, Data: null })),
+        }),
+      );
+      expect(error).toBeInstanceOf(SearchError);
+      expect((error as SearchError).reason).toBe("API_RATE_LIMITED");
+    });
+
+    it("fails with API_QUOTA_EXCEEDED when Code is 30002", async () => {
+      const error = await runFailure(
+        fetchSearchItems({
+          ...defaultOptions(),
+          transport: makeFakeTransport(() => ({ Code: 30002, Data: null })),
+        }),
+      );
+      expect(error).toBeInstanceOf(SearchError);
+      expect((error as SearchError).reason).toBe("API_QUOTA_EXCEEDED");
+    });
+
     it("fails with NON_ZERO_CODE when Code is negative", async () => {
       const error = await runFailure(
         fetchSearchItems({
