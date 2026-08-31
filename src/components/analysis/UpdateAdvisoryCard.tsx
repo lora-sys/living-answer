@@ -32,22 +32,22 @@ const truncate = (text: string, max: number): string =>
 
 export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCardProps) {
   return (
-    <div className="rounded-2xl border border-[#d97757]/30 bg-[#fdf6f3] px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5 sm:px-6">
       {/* Badge */}
 
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+        <span className="inline-flex items-center rounded-full bg-update-soft px-2.5 py-0.5 text-xs font-medium text-update">
           信息已更新
         </span>
-        <span className="text-xs text-stone-500">前提变化提示</span>
+        <span className="text-xs text-muted">前提变化提示</span>
       </div>
 
       {/* 原文受影响前提 */}
 
       {decision.affectedWording !== undefined && (
-        <div className="mt-4 rounded-xl border border-[#d97757]/20 bg-white/60 px-4 py-3">
-          <p className="text-xs font-medium text-[#d97757]">原文受影响前提</p>
-          <p className="mt-1 text-sm leading-6 text-stone-800">
+        <div className="mt-4 rounded-xl border border-update/20 bg-paper-2 px-4 py-3">
+          <p className="text-xs font-medium text-update">原文受影响前提</p>
+          <p className="mt-1 text-sm leading-6 text-ink">
             {excerptText !== undefined ? (
               <>
                 &ldquo;<span className="font-medium">{truncate(decision.affectedWording, 80)}</span>
@@ -64,8 +64,8 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.currentState !== undefined && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-stone-500">当前状况</p>
-          <p className="mt-1 text-sm leading-6 text-stone-800">{decision.currentState}</p>
+          <p className="text-xs font-medium text-muted">当前状况</p>
+          <p className="mt-1 text-sm leading-6 text-ink">{decision.currentState}</p>
         </div>
       )}
 
@@ -73,32 +73,32 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.impactOnAnswer !== undefined && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-stone-500">对回答的影响</p>
-          <p className="mt-1 text-sm leading-6 text-stone-800">{decision.impactOnAnswer}</p>
+          <p className="text-xs font-medium text-muted">对回答的影响</p>
+          <p className="mt-1 text-sm leading-6 text-ink">{decision.impactOnAnswer}</p>
         </div>
       )}
 
       {/* Generic reason (always shown) */}
 
-      <p className="mt-4 text-base leading-7 text-stone-800">{decision.reason}</p>
+      <p className="mt-4 text-base leading-7 text-ink">{decision.reason}</p>
 
       {/* 匹配证据 */}
 
       {decision.matchedEvidence !== undefined && decision.matchedEvidence.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-500">匹配证据</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">匹配证据</p>
           <ul className="space-y-2">
             {decision.matchedEvidence.map((ev) => (
               <li
                 key={ev.fingerprint}
-                className="rounded-lg border border-stone-200 bg-white/70 px-3 py-2"
+                className="rounded-lg border border-rule bg-paper-2 px-3 py-2"
               >
-                <p className="text-xs leading-5 text-stone-600">{ev.quote}</p>
+                <p className="text-xs leading-5 text-ink-subtle">{ev.quote}</p>
                 <a
                   href={ev.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1.5 inline-block text-xs text-[#d97757] underline underline-offset-2 transition-colors hover:text-[#c4684a]"
+                  className="mt-1.5 inline-block text-xs text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
                 >
                   {ev.sourceLabel}
                 </a>
@@ -112,7 +112,7 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.evidenceSummary.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-500">参考来源</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">参考来源</p>
           <ul className="space-y-1.5">
             {decision.evidenceSummary.map((ev) => (
               <li key={ev.fingerprint}>
@@ -120,11 +120,11 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
                   href={ev.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-[#d97757] underline underline-offset-2 transition-colors hover:text-[#c4684a]"
+                  className="text-sm text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
                 >
                   {ev.sourceLabel}
                 </a>
-                <span className="ml-2 inline-flex items-center text-xs text-stone-400">
+                <span className="ml-2 inline-flex items-center text-xs text-faint">
                   <svg
                     aria-hidden="true"
                     className="mr-0.5 h-3 w-3"
@@ -147,7 +147,7 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {/* Advisory disclaimer (always shown) */}
 
-      <p className="mt-4 text-xs text-stone-500">
+      <p className="mt-4 text-xs text-muted">
         前提说明已经发生变化，建议结合最新信息综合判断。&nbsp; AI
         生成的上下文摘要作为辅助参考，内容由外部来源提供，请核对原始引用。
       </p>

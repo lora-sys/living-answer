@@ -19,27 +19,27 @@ or shadows.
 ```css
 @theme {
   /* Background and surfaces */
-  --color-paper: #f5f5f2;      /* page canvas */
-  --color-paper-2: #fbfbf8;    /* raised panel / card / input */
-  --color-paper-3: #ffffff;    /* optional high-contrast embedded surface */
+  --color-paper: #f5f5f2; /* page canvas */
+  --color-paper-2: #fbfbf8; /* raised panel / card / input */
+  --color-paper-3: #ffffff; /* optional high-contrast embedded surface */
 
   /* Text */
-  --color-ink: #171717;        /* headings and primary body */
+  --color-ink: #171717; /* headings and primary body */
   --color-ink-subtle: #434343; /* secondary body */
-  --color-muted: #666666;      /* supporting text */
-  --color-faint: #8c8c8c;      /* timestamps and disabled labels only */
+  --color-muted: #666666; /* supporting text */
+  --color-faint: #8c8c8c; /* timestamps and disabled labels only */
 
   /* Rules and chrome */
-  --color-rule: #e3e3dc;       /* default hairline */
+  --color-rule: #e3e3dc; /* default hairline */
   --color-rule-strong: #d2d2ca;
 
   /* Orange accent */
-  --color-accent: #ff6730;       /* filled controls and small marks */
+  --color-accent: #ff6730; /* filled controls and small marks */
   --color-accent-hover: #f05a22;
   --color-accent-active: #dd4a19;
-  --color-accent-text: #d1501e;  /* links and text-level accent */
+  --color-accent-text: #d1501e; /* links and text-level accent */
   --color-accent-soft: #fff1e9;
-  --color-on-accent: #171717;    /* black on orange for contrast */
+  --color-on-accent: #171717; /* black on orange for contrast */
 
   /* Semantic status */
   --color-update: #b45309;
@@ -72,8 +72,8 @@ or shadows.
 ## Typography
 
 ```css
---font-sans: Inter, ui-sans-serif, system-ui, -apple-system,
-  BlinkMacSystemFont, "Segoe UI", sans-serif;
+--font-sans:
+  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 ```
 
@@ -81,17 +81,17 @@ Use `font-sans` as the base. Use `font-mono` for IDs, fingerprints, field codes,
 timestamps in data rows, and compact operational labels. Do not add another
 display face.
 
-| Role | Mobile | Desktop | Weight | Line height | Tracking |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Display H1 | 38/44 | 54/58 | 600 | tight | -0.03em |
-| Page H1 | 30/38 | 38/44 | 600 | tight | -0.03em |
-| Section H2 | 24/32 | 30/36 | 600 | tight | -0.02em |
-| Card H3 | 18/26 | 20/28 | 600 | normal | -0.01em |
-| Body large | 16/28 | 17/30 | 400 | normal | 0 |
-| Body | 15/26 | 16/28 | 400 | normal | 0 |
-| Secondary | 14/22 | 14/22 | 400 | normal | 0 |
-| Label | 12/16 | 12/16 | 500-600 | none | 0.06-0.08em |
-| Mono data | 12/18 | 13/20 | 400-500 | normal | 0 |
+| Role       | Mobile | Desktop |  Weight | Line height |    Tracking |
+| ---------- | -----: | ------: | ------: | ----------: | ----------: |
+| Display H1 |  38/44 |   54/58 |     600 |       tight |     -0.03em |
+| Page H1    |  30/38 |   38/44 |     600 |       tight |     -0.03em |
+| Section H2 |  24/32 |   30/36 |     600 |       tight |     -0.02em |
+| Card H3    |  18/26 |   20/28 |     600 |      normal |     -0.01em |
+| Body large |  16/28 |   17/30 |     400 |      normal |           0 |
+| Body       |  15/26 |   16/28 |     400 |      normal |           0 |
+| Secondary  |  14/22 |   14/22 |     400 |      normal |           0 |
+| Label      |  12/16 |   12/16 | 500-600 |        none | 0.06-0.08em |
+| Mono data  |  12/18 |   13/20 | 400-500 |      normal |           0 |
 
 Rules:
 
@@ -106,17 +106,17 @@ Rules:
 Use a 4-pt scale. Keep spacing deliberate and uneven only where hierarchy needs
 it.
 
-| Context | Mobile | Desktop |
-| --- | ---: | ---: |
-| Page horizontal padding | 20px | 32px |
-| Page top / bottom | 64px / 80px | 96px / 112px |
-| Main content max width | 100% | 1120px |
-| Narrow content max width | 100% | 880px |
-| Section gap | 56px | 88px |
-| Card to card gap | 16px | 24px |
-| Card padding | 20px | 28-32px |
-| Element gap | 8 / 12 / 16px | 12 / 16 / 24px |
-| Label to value | 4px | 6px |
+| Context                  |        Mobile |        Desktop |
+| ------------------------ | ------------: | -------------: |
+| Page horizontal padding  |          20px |           32px |
+| Page top / bottom        |   64px / 80px |   96px / 112px |
+| Main content max width   |          100% |         1120px |
+| Narrow content max width |          100% |          880px |
+| Section gap              |          56px |           88px |
+| Card to card gap         |          16px |           24px |
+| Card padding             |          20px |        28-32px |
+| Element gap              | 8 / 12 / 16px | 12 / 16 / 24px |
+| Label to value           |           4px |            6px |
 
 Rules:
 
@@ -131,40 +131,35 @@ Rules:
 ## Shape, Border, Shadow
 
 ```css
---radius-control: 8px;   /* segmented controls and compact controls */
+--radius-control: 8px; /* segmented controls and compact controls */
 --radius-input: 10px;
 --radius-card: 14px;
 --radius-panel: 18px;
 --radius-pill: 999px;
 
 --shadow-card:
-  0 0 0 1px rgba(23, 23, 23, 0.04),
-  0 1px 2px rgba(23, 23, 23, 0.04),
-  0 16px 40px rgba(23, 23, 23, 0.05),
-  inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  0 0 0 1px rgba(23, 23, 23, 0.04), 0 1px 2px rgba(23, 23, 23, 0.04),
+  0 16px 40px rgba(23, 23, 23, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.72);
 
 --shadow-panel:
-  0 0 0 1px rgba(23, 23, 23, 0.05),
-  0 2px 4px rgba(23, 23, 23, 0.05),
-  0 24px 64px rgba(23, 23, 23, 0.08),
-  inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  0 0 0 1px rgba(23, 23, 23, 0.05), 0 2px 4px rgba(23, 23, 23, 0.05),
+  0 24px 64px rgba(23, 23, 23, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 
 --shadow-pop:
-  0 0 0 1px rgba(23, 23, 23, 0.06),
-  0 8px 16px rgba(23, 23, 23, 0.08),
+  0 0 0 1px rgba(23, 23, 23, 0.06), 0 8px 16px rgba(23, 23, 23, 0.08),
   0 32px 80px rgba(23, 23, 23, 0.12);
 ```
 
 Tailwind mapping:
 
-| Component | Classes |
-| --- | --- |
-| Standard card | `rounded-[14px] border border-rule bg-paper-2 shadow-[var(--shadow-card)]` |
-| Large result panel | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-panel)]` |
-| Popover / modal | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-pop)]` |
-| Input / textarea | `rounded-[10px] border border-rule bg-paper-2` |
-| Badge / tag | `rounded-full border border-rule bg-paper` |
-| Compact segmented control | `rounded-[8px]` |
+| Component                 | Classes                                                                     |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Standard card             | `rounded-[14px] border border-rule bg-paper-2 shadow-[var(--shadow-card)]`  |
+| Large result panel        | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-panel)]` |
+| Popover / modal           | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-pop)]`   |
+| Input / textarea          | `rounded-[10px] border border-rule bg-paper-2`                              |
+| Badge / tag               | `rounded-full border border-rule bg-paper`                                  |
+| Compact segmented control | `rounded-[8px]`                                                             |
 
 Do not use `rounded-3xl`, `rounded-[2rem]`, Tailwind `shadow-lg/xl/2xl`, or
 `backdrop-blur` for ordinary cards.
@@ -260,16 +255,16 @@ action is irreversible.
 
 ## State Matrix
 
-| State | Required treatment |
-| --- | --- |
-| Default | Semantic token style |
-| Hover | Subtle background/border or text transition; no scale jump |
-| Focus visible | 2px `outline-focus` ring, 2px offset |
-| Active | One-pixel press or slightly deeper color |
-| Disabled | Reduced contrast and no pointer affordance |
-| Loading | Disabled control + accessible status + stable layout |
-| Error | `danger` tokens, inline message, retry path when possible |
-| Success | `success` tokens or quiet confirmation; no confetti/toast inflation |
+| State         | Required treatment                                                  |
+| ------------- | ------------------------------------------------------------------- |
+| Default       | Semantic token style                                                |
+| Hover         | Subtle background/border or text transition; no scale jump          |
+| Focus visible | 2px `outline-focus` ring, 2px offset                                |
+| Active        | One-pixel press or slightly deeper color                            |
+| Disabled      | Reduced contrast and no pointer affordance                          |
+| Loading       | Disabled control + accessible status + stable layout                |
+| Error         | `danger` tokens, inline message, retry path when possible           |
+| Success       | `success` tokens or quiet confirmation; no confetti/toast inflation |
 
 ## Layout Composition
 

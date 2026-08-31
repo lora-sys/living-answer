@@ -56,12 +56,12 @@ export interface AnalysisResultPanelProps {
 
 function LoadingView() {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+    <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper-2 px-5 py-4">
       <span
         aria-hidden="true"
-        className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-[#d97757]"
+        className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
       />
-      <p className="text-sm text-stone-600">正在分析前提变化…</p>
+      <p className="text-sm text-ink-subtle">正在分析前提变化…</p>
     </div>
   );
 }
@@ -77,10 +77,10 @@ function ErrorView({ message, isFormError }: ErrorViewProps) {
   return (
     <div
       className={`rounded-2xl border px-5 py-4 ${
-        isFormError ? "border-red-200 bg-red-50" : "border-stone-200 bg-stone-50"
+        isFormError ? "border-danger/30 bg-danger-soft" : "border-rule bg-paper-2"
       }`}
     >
-      <p className={`text-sm font-medium ${isFormError ? "text-red-700" : "text-stone-700"}`}>
+      <p className={`text-sm font-medium ${isFormError ? "text-danger" : "text-ink-subtle"}`}>
         {message}
       </p>
     </div>
@@ -103,14 +103,14 @@ interface NoPatchViewProps {
 
 function NoPatchView({ decision }: NoPatchViewProps) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
           前提未变化
         </span>
       </div>
-      <p className="mt-4 text-base leading-7 text-stone-700">{decision.reason}</p>
-      <p className="mt-3 text-xs text-stone-500">未检测到需要更新回答的关键前提。</p>
+      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+      <p className="mt-3 text-xs text-muted">未检测到需要更新回答的关键前提。</p>
     </div>
   );
 }
@@ -121,14 +121,14 @@ interface UnknownViewProps {
 
 function UnknownView({ decision }: UnknownViewProps) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
           无法确定
         </span>
       </div>
-      <p className="mt-4 text-base leading-7 text-stone-700">{decision.reason}</p>
-      <p className="mt-3 text-xs text-stone-500">
+      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+      <p className="mt-3 text-xs text-muted">
         当前可获取的信息不足以形成明确结论。建议查阅更多来源或稍后再试。
       </p>
     </div>
@@ -169,7 +169,7 @@ export function AnalysisResultPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-stone-500">分析完成</p>
+      <p className="text-sm text-muted">分析完成</p>
 
       {resultDecision.verdict === "UPDATE" && <UpdateView decision={resultDecision} />}
 
@@ -181,7 +181,7 @@ export function AnalysisResultPanel({
         <button
           type="button"
           onClick={onRetry}
-          className="text-sm text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-800"
+          className="text-sm text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
         >
           重新分析
         </button>

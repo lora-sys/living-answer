@@ -171,15 +171,15 @@ describe("RealResultRead", () => {
       expect(html).toContain("No evidence of premise changes");
     });
 
-    it("uses stone/neutral styling", () => {
+    it("uses paper-2/rule neutral styling", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
-      expect(html).toContain("bg-stone-50");
+      expect(html).toContain("bg-paper-2");
     });
 
-    it("does not render amber styling for NO_PATCH", () => {
+    it("does not render update styling for NO_PATCH", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
-      expect(html).not.toContain("bg-amber-100");
-      expect(html).not.toContain("bg-[#fdf6f3]");
+      expect(html).not.toContain("bg-update-soft");
+      expect(html).not.toContain("bg-update-soft");
     });
   });
 
@@ -191,15 +191,15 @@ describe("RealResultRead", () => {
       expect(html).toContain("insufficient or inconclusive");
     });
 
-    it("uses stone/neutral styling", () => {
+    it("uses paper-2/rule neutral styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-stone-50");
+      expect(html).toContain("bg-paper-2");
     });
 
     it("does not render amber styling for UNKNOWN", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
-      expect(html).not.toContain("bg-amber-100");
-      expect(html).not.toContain("bg-[#fdf6f3]");
+      expect(html).not.toContain("bg-update-soft");
+      expect(html).not.toContain("bg-update-soft");
     });
   });
 
@@ -399,7 +399,7 @@ describe("RealResultRead", () => {
       expect(html).not.toContain("原文受影响前提");
       expect(html).not.toContain("匹配证据");
       expect(html).not.toContain("proposedBody");
-      expect(html).toContain("bg-[#fdf6f3]");
+      expect(html).toContain("bg-update-soft");
     });
 
     it("never renders proposedBody in any UPDATE variant", () => {
@@ -412,14 +412,14 @@ describe("RealResultRead", () => {
   // ── Styling invariants ──────────────────────────────────────────────────────
 
   describe("styling invariants", () => {
-    it("UPDATE uses amber styling", () => {
+    it("UPDATE uses update styling", () => {
       const html = renderRead({ result: UPDATE_RESULT });
-      expect(html).toContain("bg-[#fdf6f3]");
-      expect(html).toContain("border-[#d97757]");
-      expect(html).toContain("bg-amber-100");
+      expect(html).toContain("bg-update-soft");
+      expect(html).toContain("border-update/30");
+      expect(html).toContain("bg-update-soft");
     });
 
-    it("UPDATE with matchedEvidence renders amber styling", () => {
+    it("UPDATE with matchedEvidence renders update styling", () => {
       const result: AnalyzePatchResponse = {
         status: "ok",
         decision: {
@@ -444,20 +444,20 @@ describe("RealResultRead", () => {
           result,
         }),
       );
-      expect(html).toContain("bg-[#fdf6f3]");
-      expect(html).toContain("border-[#d97757]");
+      expect(html).toContain("bg-update-soft");
+      expect(html).toContain("border-update/30");
     });
 
-    it("NO_PATCH uses stone (neutral) styling", () => {
+    it("NO_PATCH uses paper-2/rule (neutral) styling", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
-      expect(html).toContain("bg-stone-50");
-      expect(html).toContain("border-stone-200");
+      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("border-rule");
     });
 
-    it("UNKNOWN uses stone (neutral) styling", () => {
+    it("UNKNOWN uses paper-2/rule (neutral) styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-stone-50");
-      expect(html).toContain("border-stone-200");
+      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("border-rule");
     });
   });
 });

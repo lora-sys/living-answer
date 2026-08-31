@@ -82,7 +82,7 @@ function SourcesPage() {
         {!loading && !result && (
           <div
             role="alert"
-            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+            className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载来源</p>
             <p className="mt-1 text-sm text-ink-subtle">数据加载失败，请稍后重试。</p>
@@ -98,7 +98,7 @@ function SourcesPage() {
         {!loading && result?.status === "error" && (
           <div
             role="alert"
-            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+            className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载来源</p>
             <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
@@ -163,7 +163,7 @@ function SourcesPage() {
                       <span>发布于 {formatTimestamp(s.publishedAt)}</span>
                     )}
                     <span>检索于 {formatTimestamp(s.capturedAt)}</span>
-                    <span className="text-accent">查看来源 &rarr;</span>
+                    <span className="text-accent-text">查看来源 &rarr;</span>
                   </div>
                 </a>
               </li>

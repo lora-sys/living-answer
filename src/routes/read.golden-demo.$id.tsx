@@ -87,11 +87,11 @@ function ReadGoldenDemo() {
   }, [openParagraphId]);
 
   return (
-    <main className="min-h-screen bg-paper px-5 py-12 text-stone-950 sm:px-8">
+    <main className="min-h-screen bg-paper px-5 py-12 text-ink sm:px-8">
       <div className="mx-auto w-full max-w-5xl">
         <Link
           to="/"
-          className="mb-8 inline-flex items-center gap-1 text-sm text-stone-600 transition-colors hover:text-stone-800"
+          className="mb-8 inline-flex items-center gap-1 text-sm text-accent-text transition-colors hover:text-accent-active"
         >
           <span aria-hidden="true">&larr;</span> 返回首页
         </Link>
@@ -105,18 +105,18 @@ function ReadGoldenDemo() {
         <article className="min-w-0 flex-1">
           <AnswerHeader fixture={fixture} />
 
-          <section className="rounded-[2rem] border border-stone-300/80 bg-white/80 p-7 shadow-[0_24px_80px_rgba(71,60,48,0.12)] backdrop-blur sm:p-10">
-            <h1 className="text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">
+          <section className="rounded-[14px] border border-rule bg-paper-2 p-7 shadow-[var(--shadow-card)] sm:p-10">
+            <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
               {fixture.displayTitle}
             </h1>
 
-            <p className="mt-3 inline-flex items-center rounded-full border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+            <p className="mt-3 inline-flex items-center rounded-full border border-rule bg-paper px-3 py-1 text-xs font-medium text-ink-subtle">
               {fixture.topic}
             </p>
 
-            <p className="mt-4 text-sm leading-6 text-stone-600">{fixture.description}</p>
+            <p className="mt-4 text-sm leading-6 text-ink-subtle">{fixture.description}</p>
 
-            <div className="mt-8 space-y-6 text-base leading-7 text-stone-800 sm:leading-8">
+            <div className="mt-8 space-y-6 text-base leading-7 text-ink-subtle sm:leading-8">
               {fixture.paragraphs.map((paragraph, index) => {
                 const pid = `p-${index}`;
                 const paragraphPatches = fixture.patches.filter((p) => p.paragraphId === pid);
@@ -129,10 +129,10 @@ function ReadGoldenDemo() {
                     id={pid}
                     className={[
                       "scroll-mt-24",
-                      isOpen ? "ring-2 ring-amber-200 ring-offset-2 rounded-lg" : "",
+                      isOpen ? "ring-2 ring-update-soft ring-offset-2 rounded-lg" : "",
                     ].join(" ")}
                   >
-                    <p className="text-stone-800">{paragraph}</p>
+                    <p className="text-ink-subtle">{paragraph}</p>
 
                     {hasPatches && (
                       <div className="mt-3 flex flex-wrap gap-2">

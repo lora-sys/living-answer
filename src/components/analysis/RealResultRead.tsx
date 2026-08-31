@@ -71,25 +71,25 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
   const paragraphs = splitParagraphs(excerpt.excerpt);
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="space-y-4">
         {paragraphs.map((para, i) => (
-          <p key={i} className="text-base leading-7 text-stone-800 sm:text-lg sm:leading-8">
+          <p key={i} className="text-base leading-7 text-ink sm:text-lg sm:leading-8">
             {para}
           </p>
         ))}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-stone-500">
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
         <span>
-          知乎问题 <span className="font-medium text-stone-700">#{excerpt.questionId}</span>
+          知乎问题 <span className="font-medium text-ink-subtle">#{excerpt.questionId}</span>
         </span>
         <span>
-          回答 <span className="font-medium text-stone-700">#{excerpt.answerId}</span>
+          回答 <span className="font-medium text-ink-subtle">#{excerpt.answerId}</span>
         </span>
         <span>摘录时间 {new Date(excerpt.capturedAt).toLocaleDateString("zh-CN")}</span>
       </div>
-      <p className="mt-1 text-sm text-stone-500">
+      <p className="mt-1 text-sm text-muted">
         来源编辑时间 {new Date(excerpt.sourceEditTime).toLocaleDateString("zh-CN")}
       </p>
     </div>
@@ -101,9 +101,9 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
 function ContextView({ text }: { readonly text: string }) {
   if (text.trim() === "") return null;
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
-      <p className="text-xs font-medium text-stone-500">维护备注</p>
-      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700">{text}</p>
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-4">
+      <p className="text-xs font-medium text-muted">维护备注</p>
+      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink-subtle">{text}</p>
     </div>
   );
 }
@@ -127,14 +127,14 @@ interface NoPatchViewProps {
 
 function NoPatchView({ decision }: NoPatchViewProps) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
           前提未变化
         </span>
       </div>
-      <p className="mt-4 text-base leading-7 text-stone-700">{decision.reason}</p>
-      <p className="mt-3 text-xs text-stone-500">未检测到需要更新回答的关键前提。</p>
+      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+      <p className="mt-3 text-xs text-muted">未检测到需要更新回答的关键前提。</p>
     </div>
   );
 }
@@ -147,14 +147,14 @@ interface UnknownViewProps {
 
 function UnknownView({ decision }: UnknownViewProps) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
           无法确定
         </span>
       </div>
-      <p className="mt-4 text-base leading-7 text-stone-700">{decision.reason}</p>
-      <p className="mt-3 text-xs text-stone-500">
+      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+      <p className="mt-3 text-xs text-muted">
         当前可获取的信息不足以形成明确结论。建议查阅更多来源或稍后再试。
       </p>
     </div>
@@ -165,19 +165,17 @@ function UnknownView({ decision }: UnknownViewProps) {
 
 function DisputedPatchView() {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6">
+    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
           已暂停
         </span>
-        <span className="text-xs text-stone-500">变更提示有争议</span>
+        <span className="text-xs text-muted">变更提示有争议</span>
       </div>
-      <p className="mt-4 text-base leading-7 text-stone-700">
+      <p className="mt-4 text-base leading-7 text-ink-subtle">
         这条补充提示已被标记为有争议，当前不再作为有效提示显示。
       </p>
-      <p className="mt-3 text-xs text-stone-500">
-        重新检查后会形成新的变更状态，历史记录不会被删除。
-      </p>
+      <p className="mt-3 text-xs text-muted">重新检查后会形成新的变更状态，历史记录不会被删除。</p>
     </div>
   );
 }
@@ -225,13 +223,13 @@ function LifecycleView({
   return (
     <div
       aria-busy={isDisputePending}
-      className="rounded-2xl border border-stone-200 bg-white px-5 py-4 sm:px-6"
+      className="rounded-2xl border border-rule bg-paper-2 px-5 py-4 sm:px-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-stone-700">变更状态</p>
+          <p className="text-sm font-medium text-ink-subtle">变更状态</p>
           {lifecycle !== undefined && (
-            <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+            <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
               {lifecycleStatusLabel(lifecycle.status)}
             </span>
           )}
@@ -244,7 +242,7 @@ function LifecycleView({
                 type="button"
                 onClick={onDispute}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 标记有争议
               </button>
@@ -254,7 +252,7 @@ function LifecycleView({
                 type="button"
                 onClick={onResolve}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 标记已解决
               </button>
@@ -264,7 +262,7 @@ function LifecycleView({
                 type="button"
                 onClick={onWithdraw}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 撤回补丁
               </button>
@@ -274,7 +272,7 @@ function LifecycleView({
                 type="button"
                 onClick={onRecheck}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500 disabled:cursor-not-allowed disabled:text-stone-400"
+                className="inline-flex items-center rounded-full border border-rule bg-paper-2 px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 重新检查
               </button>
@@ -284,26 +282,24 @@ function LifecycleView({
       </div>
 
       {disputeError !== undefined && disputeError !== null && (
-        <p aria-live="polite" className="mt-3 text-sm font-medium text-stone-700">
+        <p aria-live="polite" className="mt-3 text-sm font-medium text-ink-subtle">
           {failureMessage(disputeError)}
         </p>
       )}
 
       {history !== undefined && history.length > 0 && (
-        <div className="mt-4 border-t border-stone-200 pt-3">
-          <p className="text-xs font-medium text-stone-500">变更历史</p>
+        <div className="mt-4 border-t border-rule pt-3">
+          <p className="text-xs font-medium text-muted">变更历史</p>
           <ul className="mt-2 space-y-2" role="list">
             {history.slice(0, 5).map((record) => (
               <li key={record.recordFingerprint} className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <span className="text-xs font-medium text-stone-600">
+                  <span className="text-xs font-medium text-ink-subtle">
                     {lifecycleStatusLabel(record.status)}
                   </span>
-                  <span className="text-xs text-stone-400">{formatTimestamp(record.eventAt)}</span>
+                  <span className="text-xs text-faint">{formatTimestamp(record.eventAt)}</span>
                 </div>
-                <p className="mt-0.5 break-words text-xs leading-5 text-stone-500">
-                  {record.reason}
-                </p>
+                <p className="mt-0.5 break-words text-xs leading-5 text-muted">{record.reason}</p>
               </li>
             ))}
           </ul>

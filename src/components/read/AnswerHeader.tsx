@@ -32,18 +32,18 @@ export function AnswerHeader({ fixture }: AnswerHeaderProps) {
       <div className="flex items-center gap-3">
         <div
           aria-hidden="true"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-semibold text-stone-600"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rule text-xs font-semibold text-ink-subtle"
         >
           {avatarInitials}
         </div>
         <div>
-          <p className="text-sm font-medium text-stone-900">{source.authorDisplayName}</p>
-          <p className="text-xs text-stone-600">
+          <p className="text-sm font-medium text-ink">{source.authorDisplayName}</p>
+          <p className="text-xs text-ink-subtle">
             <a
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-stone-800"
+              className="underline hover:text-ink"
             >
               {source.questionTitle}
             </a>
@@ -54,13 +54,13 @@ export function AnswerHeader({ fixture }: AnswerHeaderProps) {
       </div>
 
       {/* Provenance label */}
-      <p className="mt-4 inline-flex items-center rounded-full border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
-        <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+      <p className="mt-4 inline-flex items-center rounded-full border border-rule bg-paper px-3 py-1 text-xs font-medium text-ink-subtle">
+        <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 rounded-full bg-update" />
         精选演示 · 从公开搜索摘要整理 · 非实时抓取
       </p>
 
       {/* Freshness notice */}
-      <p className="mt-4 text-sm leading-6 text-amber-700">{freshnessNotice}</p>
+      <p className="mt-4 text-sm leading-6 text-update">{freshnessNotice}</p>
     </header>
   );
 }

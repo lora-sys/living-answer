@@ -442,7 +442,7 @@ function Home() {
       <div className="mx-auto w-full max-w-4xl space-y-14">
         {/* ═══ Restrained hero ═══════════════════════════════════════════════════ */}
         <section>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-ink sm:text-4xl lg:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink sm:text-[38px] lg:text-[54px]">
             {APP_NAME}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
@@ -483,13 +483,13 @@ function Home() {
 
         {/* ═══ Dual entry: URL or search ═════════════════════════════════════════ */}
         <section className="border-t border-rule pt-10">
-          <h2 className="text-sm font-medium text-muted">找到要检索的回答</h2>
+          <h2 className="text-sm font-medium text-ink-subtle">找到要检索的回答</h2>
 
           {/* ── Segmented control ─────────────────────────────────────────── */}
           <div
             role="tablist"
             aria-label="选择入口方式"
-            className="mt-4 inline-flex rounded-xl border border-rule bg-paper p-0.5"
+            className="mt-4 inline-flex rounded-[8px] border border-rule bg-paper p-0.5"
           >
             {(["url", "search"] as const).map((mode) => (
               <button
@@ -530,10 +530,10 @@ function Home() {
                   disabled={isPending || disputeLoading}
                   autoComplete="off"
                   className={
-                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
-                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
-                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
+                    "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
                   }
                 />
               </div>
@@ -547,7 +547,7 @@ function Home() {
                       "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                       "bg-accent hover:bg-accent-hover " +
                       "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
-                      "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
+                      "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                     }
                   >
                     {isPending ? "获取中..." : "获取摘录"}
@@ -641,10 +641,10 @@ function Home() {
                   disabled={searchLoading || disputeLoading}
                   autoComplete="off"
                   className={
-                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
-                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
-                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
+                    "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
                   }
                 />
               </div>
@@ -657,7 +657,7 @@ function Home() {
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
-                    "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
+                    "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                   }
                 >
                   {searchLoading ? "搜索中..." : "搜索"}
@@ -730,7 +730,7 @@ function Home() {
                   rows={3}
                   disabled={analysisLoading || disputeLoading}
                   className={
-                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
                     "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
                     "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted " +
@@ -748,7 +748,7 @@ function Home() {
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
-                    "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
+                    "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                   }
                 >
                   {claimsLoading || evidenceLoading ? "准备分析中…" : "分析前提变化"}
@@ -786,7 +786,7 @@ function Home() {
           <h2 id="demo-heading" className="text-sm font-medium text-muted">
             先看示例
           </h2>
-          <p className="mt-2 text-xs text-muted/70">先看两个真实案例，了解补丁如何呈现</p>
+          <p className="mt-2 text-xs text-muted">先看两个真实案例，了解补丁如何呈现</p>
           <hr className="mt-6 border-rule" />
           {/* ── Featured case file ─────────────────────────────────────────── */}
           <Link
@@ -840,9 +840,9 @@ function Home() {
               {/* current change — amber only here */}
               <div
                 aria-label="现在变化"
-                className="border-t border-update-amber/30 bg-update-amber/5 px-6 py-3.5 sm:px-8"
+                className="border-t border-update/30 bg-update-soft px-6 py-3.5 sm:px-8"
               >
-                <span className="text-xs font-medium text-update-amber">现在变化</span>
+                <span className="text-xs font-medium text-update">现在变化</span>
                 <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
                   {truncatePreview(firstPatch.currentChange)}
                 </p>
@@ -1023,7 +1023,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
               <div className="mt-2.5 space-y-1.5">
                 <p className="text-xs text-muted">
                   锚点文本{" "}
-                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs leading-5 text-ink-subtle">
+                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono font-mono text-xs leading-5 text-ink-subtle">
                     {claim.anchorText.length > 60
                       ? claim.anchorText.slice(0, 57) + "…"
                       : claim.anchorText}
@@ -1133,7 +1133,7 @@ function EvidenceCandidatesSection({
         <div className="flex items-baseline gap-x-3">
           <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 第 2 步</h3>
           {result.isPartial && (
-            <span className="text-xs text-update-amber">
+            <span className="text-xs text-update">
               {partialRetrievalMessage(result.partialState)}
             </span>
           )}

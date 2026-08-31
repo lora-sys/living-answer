@@ -228,7 +228,7 @@ describe("AnalysisResultPanel", () => {
       expect(html).not.toContain("原文受影响前提");
       expect(html).not.toContain("匹配证据");
       expect(html).not.toContain("proposedBody");
-      expect(html).toContain("bg-[#fdf6f3]");
+      expect(html).toContain("bg-update-soft");
     });
 
     it("never renders proposedBody on UPDATE", () => {
@@ -258,32 +258,32 @@ describe("AnalysisResultPanel", () => {
   // ── Styling invariants ─────────────────────────────────────────────────────
 
   describe("styling invariants", () => {
-    it("UPDATE uses amber styling", () => {
+    it("UPDATE uses update styling", () => {
       const html = renderPanel({ result: UPDATE_RESULT });
       // UPDATE card: amber-tinted background and border
-      expect(html).toContain("bg-[#fdf6f3]");
-      expect(html).toContain("border-[#d97757]");
+      expect(html).toContain("bg-update-soft");
+      expect(html).toContain("border-update/30");
       // Amber badge color
-      expect(html).toContain("bg-amber-100");
+      expect(html).toContain("bg-update-soft");
     });
 
-    it("NO_PATCH uses stone (neutral) styling", () => {
+    it("NO_PATCH uses paper-2/rule (neutral) styling", () => {
       const html = renderPanel({ result: NO_PATCH_RESULT });
-      // NO_PATCH card: neutral stone background and border
-      expect(html).toContain("bg-stone-50");
-      expect(html).toContain("border-stone-200");
+      // NO_PATCH card: neutral paper-2 background and rule border
+      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("border-rule");
       // No amber styling
-      expect(html).not.toContain("bg-amber-100");
-      expect(html).not.toContain("bg-[#fdf6f3]");
+      expect(html).not.toContain("bg-update-soft");
+      expect(html).not.toContain("bg-update-soft");
     });
 
-    it("UNKNOWN uses stone (neutral) styling", () => {
+    it("UNKNOWN uses paper-2/rule (neutral) styling", () => {
       const html = renderPanel({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-stone-50");
-      expect(html).toContain("border-stone-200");
+      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("border-rule");
       // No amber styling
-      expect(html).not.toContain("bg-amber-100");
-      expect(html).not.toContain("bg-[#fdf6f3]");
+      expect(html).not.toContain("bg-update-soft");
+      expect(html).not.toContain("bg-update-soft");
     });
   });
 

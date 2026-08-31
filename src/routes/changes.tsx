@@ -8,9 +8,9 @@ import { formatTimestamp } from "../lib/failure-messages";
 
 const STATUS_STYLES: Record<string, string> = {
   VISIBLE: "bg-paper text-ink-subtle border-rule",
-  DISPUTED: "bg-update-amber/10 text-update-amber border-update-amber/30",
+  DISPUTED: "bg-update-soft text-update border-update/30",
   SUPERSEDED: "bg-paper text-muted border-rule",
-  RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RESOLVED: "bg-success-soft text-success border-success/30",
   WITHDRAWN: "bg-paper text-muted border-rule",
 };
 
@@ -100,7 +100,7 @@ function ChangesPage() {
         {!loading && result?.status === "error" && (
           <div
             role="alert"
-            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+            className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载变更记录</p>
             <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>

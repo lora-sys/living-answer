@@ -4,21 +4,42 @@
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  /* Hallmark · pre-emit critique: P5 H4 E4 S4 R5 V4
-   * Semantic token map — use these instead of raw hex values.
-   */
-  --color-paper: #f5f3ee;
-  --color-paper-2: #fffdf9;
-  --color-ink: #1c1917;
-  --color-ink-subtle: #44403c;
-  --color-muted: #78716c;
-  --color-rule: #d6d3d1;
-  --color-accent: #d97757;
-  --color-accent-hover: #c4684a;
-  --color-accent-deep: #a35c3e;
-  --color-update-amber: #b45309;
-  --color-focus: #d97757;
-  --color-text-on-accent: #1c1917;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Background and surfaces */
+  --color-paper: #f5f5f2;
+  --color-paper-2: #fbfbf8;
+  --color-paper-3: #ffffff;
+
+  /* Text */
+  --color-ink: #171717;
+  --color-ink-subtle: #434343;
+  --color-muted: #666666;
+  --color-faint: #8c8c8c;
+
+  /* Rules and chrome */
+  --color-rule: #e3e3dc;
+  --color-rule-strong: #d2d2ca;
+
+  /* Orange accent */
+  --color-accent: #ff6730;
+  --color-accent-hover: #f05a22;
+  --color-accent-active: #dd4a19;
+  --color-accent-text: #d1501e;
+  --color-accent-soft: #fff1e9;
+  --color-on-accent: #171717;
+
+  /* Semantic status */
+  --color-update: #b45309;
+  --color-update-soft: #fff4e2;
+  --color-success: #177245;
+  --color-success-soft: #e9f6ee;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdeceb;
+  --color-info: #3b5bdb;
+  --color-info-soft: #e8edfb;
+
+  --color-focus: #ff6730;
 }
 
 html {
@@ -37,6 +58,7 @@ html {
 }
 
 body {
+  font-family: var(--font-sans);
   margin: 0;
   min-width: 320px;
 }
