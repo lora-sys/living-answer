@@ -999,8 +999,7 @@ describe("analyze-patch", () => {
       };
       const h = buildGateHandler({
         claimStore: {
-          findLatestByExcerptFingerprint: () =>
-            Effect.succeed([makeGateClaim(), secondClaim]),
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim(), secondClaim]),
         } as unknown as ClaimStore,
         evidenceStore: {
           findCandidatesByClaimFingerprint: () => Effect.succeed([]),
@@ -1081,8 +1080,7 @@ describe("analyze-patch", () => {
       const modelRequests: OpenAiChatCompletionsRequest[] = [];
       const h = buildGateHandler({
         claimStore: {
-          findLatestByExcerptFingerprint: () =>
-            Effect.succeed([makeGateClaim(), secondClaim]),
+          findLatestByExcerptFingerprint: () => Effect.succeed([makeGateClaim(), secondClaim]),
         } as unknown as ClaimStore,
         evidenceStore: {
           findCandidatesByClaimFingerprint: (fingerprint: string) =>

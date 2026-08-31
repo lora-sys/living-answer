@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
@@ -88,6 +88,7 @@ function Home() {
   // ── Evidence candidates state ───────────────────────────────────────────────
   const [evidenceResult, setEvidenceResult] = useState<RetrieveEvidenceResponse | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const evidenceRequestKeyRef = useRef<string | null>(null);
 
   // ── Excerpt handler ────────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ function Home() {
 
     setErrorState(null);
     setServerResult(null);
+    evidenceRequestKeyRef.current = null;
     setAnalysisResult(null);
     setAnalysisLoading(false);
     setAnalysisError(null);
@@ -210,6 +212,7 @@ function Home() {
   // ── Claims extraction ────────────────────────────────────────────────────────
 
   const retryClaims = (): void => {
+    evidenceRequestKeyRef.current = null;
     setClaimsRetryKey((k) => k + 1);
   };
 
@@ -244,7 +247,7 @@ function Home() {
 
   // ── Evidence candidate retrieval ────────────────────────────────────────────
 
-  const retrieveEvidence = (): void => {
+  const retrieveEvidence = useCallback((): void => {
     if (claimsResult?.status !== "ok" || evidenceLoading) return;
 
     const claims = claimsResult.claims.slice(0, 3).map((c) => ({
@@ -269,7 +272,34 @@ function Home() {
         });
         setEvidenceLoading(false);
       });
+  }, [boundRetrieveEvidence, claimsResult, evidenceLoading]);
+
+  const retryEvidence = (): void => {
+    evidenceRequestKeyRef.current = null;
+    retrieveEvidence();
   };
+
+  useEffect(() => {
+    if (claimsResult?.status !== "ok" || claimsResult.claims.length === 0) {
+      evidenceRequestKeyRef.current = null;
+      return;
+    }
+
+    if (evidenceLoading || evidenceResult !== null) return;
+
+    const requestKey = claimsResult.claims.map((claim) => claim.claimFingerprint).join(":");
+    if (evidenceRequestKeyRef.current === requestKey) return;
+
+    evidenceRequestKeyRef.current = requestKey;
+    retrieveEvidence();
+  }, [claimsResult, evidenceLoading, evidenceResult, retrieveEvidence]);
+
+  const claimsReady = claimsResult?.status === "ok";
+  const evidenceReady =
+    !claimsReady ||
+    (claimsResult?.status === "ok" &&
+      (claimsResult.claims.length === 0 || evidenceResult?.status === "ok"));
+  const analysisDisabled = analysisLoading || disputeLoading || !claimsReady || !evidenceReady;
 
   // ── Demo fixtures ──────────────────────────────────────────────────────────
 
@@ -604,7 +634,7 @@ function Home() {
               <EvidenceCandidatesSection
                 loading={evidenceLoading}
                 result={evidenceResult}
-                onRetrieve={retrieveEvidence}
+                onRetrieve={retryEvidence}
               />
             )}
           </form>
@@ -617,7 +647,7 @@ function Home() {
                   htmlFor="analysis-context"
                   className="block text-sm font-medium text-ink-subtle"
                 >
-                  维护备注（可选）
+                  维护备注 · 第 3 步（可选）
                 </label>
                 <textarea
                   id="analysis-context"
@@ -643,7 +673,7 @@ function Home() {
                 <button
                   type="button"
                   onClick={handleAnalyze}
-                  disabled={analysisLoading || disputeLoading}
+                  disabled={analysisDisabled}
                   className={
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
@@ -651,7 +681,7 @@ function Home() {
                     "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
                   }
                 >
-                  {analysisLoading ? "分析中…" : "分析前提变化"}
+                  {claimsLoading || evidenceLoading ? "准备分析中…" : "分析前提变化"}
                 </button>
                 {analysisLoading && <span className="text-sm text-muted">正在分析…</span>}
               </div>
@@ -731,7 +761,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
     if (result.claims.length === 0) {
       return (
         <div>
-          <h3 className="text-sm font-medium text-ink-subtle">候选关键前提</h3>
+          <h3 className="text-sm font-medium text-ink-subtle">前提候选 · 第 1 步</h3>
           <span className="text-xs text-muted">摘录级候选 · 尚未核验</span>
           <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
             <p className="text-sm text-muted">该摘录中未发现需要关注的关键前提。</p>
@@ -743,7 +773,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
     return (
       <div>
         <div className="flex items-baseline gap-x-3">
-          <h3 className="text-sm font-medium text-ink-subtle">候选关键前提</h3>
+          <h3 className="text-sm font-medium text-ink-subtle">前提候选 · 第 1 步</h3>
           <span className="text-xs text-muted">摘录级候选 · 尚未核验</span>
         </div>
         <div className="mt-3 space-y-3">
@@ -843,8 +873,15 @@ function EvidenceCandidatesSection({
   if (result?.status === "error") {
     return (
       <div className="mt-4 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-        <div className="flex items-baseline gap-x-3">
-          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 第 2 步</h3>
+          <button
+            type="button"
+            onClick={onRetrieve}
+            className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            重试
+          </button>
         </div>
         <p className="mt-2 text-sm text-muted">{evidenceFailureMessage(result.code)}</p>
       </div>
@@ -857,7 +894,7 @@ function EvidenceCandidatesSection({
     return (
       <div className="mt-4">
         <div className="flex items-baseline gap-x-3">
-          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 未核验</h3>
+          <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 第 2 步</h3>
           {result.isPartial && (
             <span className="text-xs text-warning">
               {partialRetrievalMessage(result.partialState)}
@@ -931,7 +968,7 @@ function EvidenceCandidatesSection({
         onClick={onRetrieve}
         className="rounded-xl border border-rule bg-paper-2 px-5 py-3 text-sm font-medium text-ink-subtle transition-colors hover:bg-paper hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        检索候选证据
+        重新检索候选证据
       </button>
     </div>
   );
