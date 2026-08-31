@@ -451,15 +451,15 @@ function Home() {
           {/* product invariant commitments */}
           <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-rule pt-5 sm:grid-cols-3">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
+              <p className="text-xs font-medium text-muted tracking-wide">原文边界</p>
               <p className="text-sm leading-6 text-ink-subtle">不替换原文</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
+              <p className="text-xs font-medium text-muted tracking-wide">证据门槛</p>
               <p className="text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted tracking-wide">承诺</p>
+              <p className="text-xs font-medium text-muted tracking-wide">来源可查</p>
               <p className="text-sm leading-6 text-ink-subtle">每条变化可以回到一手来源</p>
             </div>
           </div>
@@ -787,7 +787,7 @@ function Home() {
             先看示例
           </h2>
           <p className="mt-2 text-xs text-muted/70">先看两个真实案例，了解补丁如何呈现</p>
-          <hr className="mt-6 border-stone-200" />
+          <hr className="mt-6 border-rule" />
           {/* ── Featured case file ─────────────────────────────────────────── */}
           <Link
             to={

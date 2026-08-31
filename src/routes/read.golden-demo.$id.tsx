@@ -58,6 +58,7 @@ function ReadGoldenDemo() {
   const closePanel = () => {
     setOpenParagraphId(null);
     setActivePatchId(null);
+    triggeringMarkerRef.current?.focus();
     triggeringMarkerRef.current = null;
   };
 

@@ -28,7 +28,7 @@ export function InlinePatchMarker({
       data-paragraph-id={paragraphId}
       className={[
         "inline-flex items-center rounded-full border border-amber-300 bg-amber-50",
-        "px-3 py-1 text-xs font-medium text-amber-800",
+        "min-h-11 px-3 py-2 text-xs font-medium text-amber-800",
         "cursor-pointer transition-colors hover:bg-amber-100 active:bg-amber-200 active:scale-[0.98]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500",
       ].join(" ")}
