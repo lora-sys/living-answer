@@ -38,7 +38,8 @@ export type AnalyzePatchServerFailureCode =
   | "MISSING_OPENAI_KEY"
   | "MODEL_TRANSPORT_ERROR"
   | "MALFORMED_MODEL_OUTPUT"
-  | "ANALYSIS_INVARIANT_VIOLATION";
+  | "ANALYSIS_INVARIANT_VIOLATION"
+  | "CLAIM_STORE_ERROR";
 
 // ── Mapping ─────────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ const FAILURE_MESSAGES: Readonly<Record<AnalyzePatchServerFailureCode, string>> 
   MODEL_TRANSPORT_ERROR: "模型服务暂时不可用，请稍后再试。",
   MALFORMED_MODEL_OUTPUT: "模型响应异常，请稍后再试。",
   ANALYSIS_INVARIANT_VIOLATION: "分析过程中出现内部错误，请稍后再试。",
+  CLAIM_STORE_ERROR: "保存分析结果时出现异常，请稍后再试。",
 };
 
 // ── Pure functions ─────────────────────────────────────────────────────────────

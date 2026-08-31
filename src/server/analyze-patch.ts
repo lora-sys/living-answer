@@ -392,13 +392,16 @@ export const analyzePatch = createServerFn({
 })
   .validator(validateInput)
   .handler(async ({ data }) => {
+    const openAiModel = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+    const openAiBaseUrl = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+
     return createAnalyzePatchHandler({
       getSecret: () => [process.env.OPENAI_API_KEY, process.env.ZHIHU_ACCESS_SECRET] as const,
       createChat: (apiKey) =>
         makeOpenAiChatCompletions({
           apiKey,
-          model: "patch-analysis",
-          baseUrl: "https://api.openai.com/v1",
+          model: openAiModel,
+          baseUrl: openAiBaseUrl,
           timeoutMs: FIVE_SECONDS_MS,
           transport: makeFetchOpenAiTransport({
             fetch: fetch,

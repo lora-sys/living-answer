@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
@@ -11,6 +11,10 @@ import { formatEvidenceLine, truncatePreview } from "../lib/golden-demo-preview"
 import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
+import {
+  type ExtractAnswerClaimsResponse,
+  extractAnswerClaims,
+} from "../server/extract-answer-claims";
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
 import { RealResultRead } from "../components/analysis/RealResultRead";
 
@@ -37,6 +41,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const boundResolve = useServerFn(resolveAnswerExcerpt);
   const boundAnalyze = useServerFn(analyzePatch);
+  const boundExtractClaims = useServerFn(extractAnswerClaims);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -63,6 +68,11 @@ function Home() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [contextText, setContextText] = useState("");
 
+  // ── Claims state ─────────────────────────────────────────────────────────────
+  const [claimsResult, setClaimsResult] = useState<ExtractAnswerClaimsResponse | null>(null);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [claimsRetryKey, setClaimsRetryKey] = useState(0);
+
   // ── Excerpt handler ────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,6 +90,9 @@ function Home() {
     setAnalysisResult(null);
     setAnalysisLoading(false);
     setAnalysisError(null);
+    setClaimsResult(null);
+    setClaimsLoading(false);
+    setClaimsRetryKey(0);
     setLoading(true);
 
     const response = await boundResolve({ data: { url: trimmed } }).catch(() => null);
@@ -125,6 +138,40 @@ function Home() {
   const handleRetry = async (): Promise<void> => {
     await runAnalysis();
   };
+
+  // ── Claims extraction ────────────────────────────────────────────────────────
+
+  const retryClaims = (): void => {
+    setClaimsRetryKey((k) => k + 1);
+  };
+
+  useEffect(() => {
+    if (serverResult?.status !== "ok") return;
+
+    let cancelled = false;
+
+    setClaimsLoading(true);
+    setClaimsResult(null);
+
+    boundExtractClaims({ data: { url: url.trim() } })
+      .then((response) => {
+        if (!cancelled) {
+          setClaimsResult(response);
+          setClaimsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setClaimsResult({ status: "error", code: "PROVIDER_ERROR" });
+          setClaimsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-run when excerpt succeeds or retry key increments
+  }, [boundExtractClaims, claimsRetryKey, serverResult, url]);
 
   // ── Demo fixtures ──────────────────────────────────────────────────────────
 
@@ -450,6 +497,9 @@ function Home() {
                 </p>
               </div>
             )}
+
+            {/* ── Claims extraction section ───────────────────────────────── */}
+            <ClaimsSection loading={claimsLoading} result={claimsResult} onRetry={retryClaims} />
           </form>
 
           {/* Maintenance context and analysis — available after successful excerpt */}
@@ -526,4 +576,111 @@ function Home() {
       </div>
     </main>
   );
+}
+
+// ── Claims section sub-component ───────────────────────────────────────────────
+
+interface ClaimsSectionProps {
+  readonly loading: boolean;
+  readonly result: ExtractAnswerClaimsResponse | null;
+  readonly onRetry: () => void;
+}
+
+function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+        <span
+          aria-hidden="true"
+          className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
+        />
+        <p className="text-sm text-ink-subtle">正在分析摘录前提…</p>
+      </div>
+    );
+  }
+
+  if (result?.status === "error") {
+    return (
+      <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm font-medium text-ink-subtle">{failureMessage(result.code)}</p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 text-xs font-semibold text-text-on-accent bg-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            重试
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (result?.status === "ok") {
+    if (result.claims.length === 0) {
+      return (
+        <div>
+          <h3 className="text-sm font-medium text-ink-subtle">候选关键前提</h3>
+          <span className="text-xs text-muted">摘录级候选 · 尚未核验</span>
+          <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+            <p className="text-sm text-muted">该摘录中未发现需要关注的关键前提。</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <div className="flex items-baseline gap-x-3">
+          <h3 className="text-sm font-medium text-ink-subtle">候选关键前提</h3>
+          <span className="text-xs text-muted">摘录级候选 · 尚未核验</span>
+        </div>
+        <div className="mt-3 space-y-3">
+          {result.claims.map((claim) => (
+            <div
+              key={claim.claimFingerprint}
+              className="rounded-xl border border-rule bg-paper-2 px-5 py-4"
+            >
+              <p className="break-words text-sm font-medium text-ink">{claim.claimText}</p>
+              <div className="mt-2.5 space-y-1.5">
+                <p className="text-xs text-muted">
+                  锚点文本{" "}
+                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs leading-5 text-ink-subtle">
+                    {claim.anchorText.length > 60
+                      ? claim.anchorText.slice(0, 57) + "…"
+                      : claim.anchorText}
+                  </code>
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                  <span>
+                    波动性{" "}
+                    <span className="font-medium text-ink-subtle">
+                      {claim.volatility === "high"
+                        ? "高"
+                        : claim.volatility === "medium"
+                          ? "中"
+                          : "低"}
+                    </span>
+                  </span>
+                  <span>
+                    决策相关度{" "}
+                    <span className="font-medium text-ink-subtle">
+                      {claim.decisionRelevance === "high"
+                        ? "高"
+                        : claim.decisionRelevance === "medium"
+                          ? "中"
+                          : "低"}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Idle — not loading and no result yet (brief moment before effect fires)
+  return null;
 }
