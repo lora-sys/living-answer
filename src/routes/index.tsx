@@ -130,7 +130,6 @@ function Home() {
 
   const featuredDemo = GOLDEN_DEMOS["chatgpt-free-plus"];
   const firstPatch = featuredDemo.patches[0];
-  const firstEvidence = firstPatch.evidence[0];
 
   const compactDemos: GoldenDemoFixture[] = [
     GOLDEN_DEMOS["create-react-app"],
@@ -165,94 +164,63 @@ function Home() {
   const showExtractSuccess = showSuccess && resultData !== null;
 
   return (
-    <main className="flex min-h-screen items-start bg-[#f5f3ee] px-5 py-12 text-stone-950 sm:px-8">
+    <main className="flex min-h-screen items-start bg-paper px-5 py-12 text-ink sm:px-8">
       <div className="mx-auto w-full max-w-4xl space-y-14">
         {/* ═══ Restrained hero ═══════════════════════════════════════════════════ */}
         <section>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-stone-900 sm:text-4xl lg:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-ink sm:text-4xl lg:text-5xl">
             {APP_NAME}
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-stone-700 sm:text-lg sm:leading-8">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
             {PRODUCT_TAGLINE}
           </p>
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500 sm:text-sm">
-            <span>不替换原文</span>
-            <span aria-hidden="true" className="text-stone-300">
-              ·
-            </span>
-            <span>证据不足时不生成补丁</span>
-            <span aria-hidden="true" className="text-stone-300">
-              ·
-            </span>
-            <span>每条变化可以回到一手来源</span>
+          {/* product invariant fields */}
+          <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-rule pt-5 sm:grid-cols-3">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted tracking-wide">边界</p>
+              <p className="text-sm leading-6 text-ink-subtle">不替换原文</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted tracking-wide">弱证据</p>
+              <p className="text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted tracking-wide">来源</p>
+              <p className="text-sm leading-6 text-ink-subtle">每条变化可以回到一手来源</p>
+            </div>
           </div>
         </section>
 
-        {/* ═══ 精选演示 ═════════════════════════════════════════════════════════ */}
+        {/* ═══ 精选案例 — evidence case file ═══════════════════════════════════ */}
         <section aria-labelledby="demo-heading">
-          <h2 id="demo-heading" className="text-sm font-semibold text-stone-500">
-            精选演示
+          <h2 id="demo-heading" className="text-sm font-medium text-muted">
+            精选案例
           </h2>
-          <p className="mt-1.5 text-xs text-stone-400">合成数据 · 精选演示</p>
+          <p className="mt-1.5 text-xs text-muted/70">合成数据 · 精选演示</p>
 
-          {/* ── Featured demo ──────────────────────────────────────────────── */}
+          {/* ── Featured case file ─────────────────────────────────────────── */}
           <Link
             to={
               `/read/golden-demo/${featuredDemo.id}` as unknown as Parameters<typeof Link>[0]["to"]
             }
-            className="group mt-5 block rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 transition-colors hover:border-stone-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]"
+            className="mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
           >
-            {/* topic */}
-            <span className="inline-flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#d97757]"
-              />
-              <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+            {/* left column: provenance, title, description, CTA */}
+            <div className="p-6 sm:p-8">
+              {/* provenance tag */}
+              <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
                 {featuredDemo.topic}
               </span>
-              <span className="text-xs text-stone-400">合成数据</span>
-            </span>
+              <span className="ml-2 text-xs text-muted">合成数据 · 精选演示</span>
 
-            {/* title */}
-            <h3 className="mt-3 text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">
-              {featuredDemo.displayTitle}
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-stone-600">{featuredDemo.description}</p>
+              {/* title */}
+              <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+                {featuredDemo.displayTitle}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-ink-subtle">{featuredDemo.description}</p>
 
-            {/* excerpt vs change split */}
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div
-                aria-label="原文前提"
-                className="rounded-xl border border-stone-200 bg-stone-50/60 p-4"
-              >
-                <span className="text-xs font-medium text-stone-500">原文前提</span>
-                <p className="mt-1.5 break-words text-sm leading-6 text-stone-700">
-                  {truncatePreview(firstPatch.originalExcerpt)}
-                </p>
-              </div>
-              <div
-                aria-label="现在变化"
-                className="rounded-xl border border-amber-200 bg-amber-50/60 p-4"
-              >
-                <span className="text-xs font-medium text-[#b45309]">现在变化</span>
-                <p className="mt-1.5 break-words text-sm leading-6 text-stone-700">
-                  {truncatePreview(firstPatch.currentChange)}
-                </p>
-              </div>
-            </div>
-
-            {/* evidence line + CTA */}
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <span className="break-words text-xs text-stone-500">
-                <span className="font-medium text-stone-600">证据</span>{" "}
-                {formatEvidenceLine(
-                  firstEvidence.organization,
-                  firstEvidence.sourceType,
-                  firstEvidence.publishedAt,
-                )}
-              </span>
-              <span className="inline-flex shrink-0 items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
+              {/* compact CTA */}
+              <span className="mt-6 inline-flex items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
                 阅读原文与旁证
                 <span
                   aria-hidden="true"
@@ -261,6 +229,63 @@ function Home() {
                   &rarr;
                 </span>
               </span>
+            </div>
+
+            {/* right column: evidence fields */}
+            <div className="lg:border-l lg:border-rule">
+              <p className="border-t border-rule px-6 pt-3.5 pb-2 text-xs text-muted sm:px-8">
+                证据关系
+              </p>
+
+              {/* original premise */}
+              <div aria-label="原文前提" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">原文前提</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.originalExcerpt)}
+                </p>
+              </div>
+
+              {/* current change — amber only here */}
+              <div
+                aria-label="现在变化"
+                className="border-t border-update-amber/30 bg-update-amber/5 px-6 py-3.5 sm:px-8"
+              >
+                <span className="text-xs font-medium text-update-amber">现在变化</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.currentChange)}
+                </p>
+              </div>
+
+              {/* impact */}
+              <div aria-label="影响" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">影响</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.impact)}
+                </p>
+              </div>
+
+              {/* evidence provenance */}
+              <div aria-label="证据来源" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">证据来源</span>
+                <ul className="mt-1.5 space-y-1.5">
+                  {firstPatch.evidence.map((ev) => {
+                    const evDate = new Date(ev.publishedAt);
+                    const year = evDate.getUTCFullYear();
+                    const month = String(evDate.getUTCMonth() + 1).padStart(2, "0");
+                    return (
+                      <li
+                        key={ev.sourceUrl}
+                        className="flex flex-wrap items-baseline gap-x-2 text-sm"
+                      >
+                        <span className="font-medium text-ink-subtle">{ev.organization}</span>
+                        <span className="text-xs text-muted">
+                          {ev.sourceType} · {year}-{month}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
           </Link>
 
@@ -282,39 +307,35 @@ function Home() {
                       `/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]
                     }
                     className={[
-                      "group block min-w-0 rounded-2xl border border-stone-200 bg-stone-50/60 p-5",
-                      "transition-colors hover:bg-stone-50",
-                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757]",
+                      "group block min-w-0 rounded-xl border border-rule bg-paper-2 p-4 sm:p-5",
+                      "transition-colors hover:border-accent/30",
+                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
                     ].join(" ")}
                   >
-                    {/* topic row */}
+                    {/* topic + title row */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span
-                        aria-hidden="true"
-                        className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#d97757]"
-                      />
-                      <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                      <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
                         {entry.topic}
                       </span>
-                      <span className="text-xs text-stone-400">合成数据</span>
+                      <span className="text-xs text-muted">合成数据</span>
                     </div>
 
-                    {/* title */}
-                    <h3 className="mt-2 text-base font-semibold tracking-tight text-stone-900">
-                      {entry.displayTitle}
-                    </h3>
-
-                    {/* one-line change preview */}
-                    <p className="mt-1.5 break-words text-sm leading-6 text-stone-600">
-                      {truncatePreview(patch.currentChange)}
-                    </p>
+                    {/* title + one-line change */}
+                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+                      <h3 className="text-sm font-semibold tracking-tight text-ink sm:text-base">
+                        {entry.displayTitle}
+                      </h3>
+                      <p className="break-words text-sm leading-5 text-ink-subtle">
+                        {truncatePreview(patch.currentChange)}
+                      </p>
+                    </div>
 
                     {/* evidence + CTA row */}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                      <span className="break-words text-xs text-stone-500">
-                        <span className="font-medium text-stone-600">证据</span> {evidenceLine}
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                      <span className="break-words text-xs text-muted">
+                        <span className="font-medium text-ink-subtle">证据</span> {evidenceLine}
                       </span>
-                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-[#d97757] transition-colors group-hover:text-[#c4684a]">
+                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
                         阅读原文与旁证
                         <span
                           aria-hidden="true"
@@ -331,13 +352,13 @@ function Home() {
           </ul>
         </section>
 
-        {/* ═══ URL-first workflow ════════════════════════════════════════════════ */}
-        <section>
-          <h2 className="text-sm font-semibold text-stone-500">粘贴一个知乎回答链接</h2>
+        {/* ═══ URL-first workflow ═══════════════════════════════════════════════ */}
+        <section className="border-t border-rule pt-10">
+          <h2 className="text-sm font-medium text-muted">输入回答链接，检索摘录</h2>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
             <div>
-              <label htmlFor="answer-url" className="block text-sm font-medium text-stone-600">
+              <label htmlFor="answer-url" className="block text-sm font-medium text-ink-subtle">
                 知乎回答链接
               </label>
               <input
@@ -352,10 +373,10 @@ function Home() {
                 disabled={isPending}
                 autoComplete="off"
                 className={
-                  "mt-1.5 block w-full rounded-xl border bg-white px-4 py-3 text-base text-stone-900 " +
-                  "placeholder:text-stone-400 " +
-                  "border-stone-300 focus:border-[#d97757] focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 " +
-                  "disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500"
+                  "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                  "placeholder:text-muted " +
+                  "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
+                  "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
                 }
               />
             </div>
@@ -366,67 +387,65 @@ function Home() {
                   type="submit"
                   disabled={isPending}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
-                    "bg-[#d97757] hover:bg-[#c4684a] " +
-                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
-                    "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                    "bg-accent hover:bg-accent-hover " +
+                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
+                    "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
                   }
                 >
                   {isPending ? "获取中..." : "获取摘录"}
                 </button>
-                {isPending && <span className="text-sm text-stone-500">正在检索回答摘录…</span>}
+                {isPending && <span className="text-sm text-muted">正在检索回答摘录…</span>}
               </div>
-              <p className="text-xs text-stone-500">
-                粘贴后点击获取摘录，查看该回答的前提是否已变化。
-              </p>
+              <p className="text-xs text-muted">粘贴后点击获取摘录，查看该回答的前提是否已变化。</p>
             </div>
 
             {showLoading && (
-              <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
                 <span
                   aria-hidden="true"
-                  className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-[#d97757]"
+                  className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
                 />
-                <p className="text-sm text-stone-600">正在获取回答摘录…</p>
+                <p className="text-sm text-ink-subtle">正在获取回答摘录…</p>
               </div>
             )}
 
             {errorState && !isPending && (
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
-                <p className="text-sm font-medium text-stone-700">{errorState.message}</p>
+              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <p className="text-sm font-medium text-ink-subtle">{errorState.message}</p>
               </div>
             )}
 
             {showError && serverErrorCode && (
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
-                <p className="text-sm font-medium text-stone-700">
+              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <p className="text-sm font-medium text-ink-subtle">
                   {failureMessage(serverErrorCode)}
                 </p>
               </div>
             )}
 
             {showSuccess && resultData && (
-              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-5 sm:px-6 sm:py-6">
-                <p className="whitespace-pre-wrap break-words text-base leading-7 text-stone-800 sm:text-lg sm:leading-8">
+              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-5 sm:px-6 sm:py-6">
+                <p className="whitespace-pre-wrap break-words text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
                   {resultData.excerpt.excerpt}
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-stone-500">
+                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
                   <span>
                     知乎问题{" "}
-                    <span className="font-medium text-stone-700">
+                    <span className="font-medium text-ink-subtle">
                       #{resultData.excerpt.questionId}
                     </span>
                   </span>
                   <span>
                     回答{" "}
-                    <span className="font-medium text-stone-700">
+                    <span className="font-medium text-ink-subtle">
                       #{resultData.excerpt.answerId}
                     </span>
                   </span>
                   <span>摘录时间 {formatTimestamp(resultData.excerpt.capturedAt)}</span>
                 </div>
-                <p className="mt-1 text-sm text-stone-500">
+                <p className="mt-1 text-sm text-muted">
                   来源编辑时间 {formatTimestamp(resultData.excerpt.sourceEditTime)}
                 </p>
               </div>
@@ -435,11 +454,11 @@ function Home() {
 
           {/* Maintenance context and analysis — available after successful excerpt */}
           {showExtractSuccess && (
-            <div className="mt-8 space-y-4 border-t border-stone-200 pt-6">
+            <div className="mt-8 space-y-4 border-t border-rule pt-6">
               <div>
                 <label
                   htmlFor="analysis-context"
-                  className="block text-sm font-medium text-stone-600"
+                  className="block text-sm font-medium text-ink-subtle"
                 >
                   维护备注（可选）
                 </label>
@@ -454,10 +473,10 @@ function Home() {
                   rows={3}
                   disabled={analysisLoading}
                   className={
-                    "mt-1.5 block w-full rounded-xl border bg-white px-4 py-3 text-base text-stone-900 " +
-                    "placeholder:text-stone-400 " +
-                    "border-stone-300 focus:border-[#d97757] focus:outline-none focus:ring-2 focus:ring-[#d97757]/20 " +
-                    "disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500 " +
+                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "placeholder:text-muted " +
+                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted " +
                     "resize-y"
                   }
                 />
@@ -469,15 +488,15 @@ function Home() {
                   onClick={handleAnalyze}
                   disabled={analysisLoading}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-white " +
-                    "bg-[#d97757] hover:bg-[#c4684a] " +
-                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d97757] " +
-                    "disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                    "bg-accent hover:bg-accent-hover " +
+                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
+                    "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
                   }
                 >
                   {analysisLoading ? "分析中…" : "分析前提变化"}
                 </button>
-                {analysisLoading && <span className="text-sm text-stone-500">正在分析…</span>}
+                {analysisLoading && <span className="text-sm text-muted">正在分析…</span>}
               </div>
 
               {/* Render real-data read view on successful analysis, otherwise show the generic panel */}
@@ -498,6 +517,12 @@ function Home() {
             </div>
           )}
         </section>
+
+        {/* ═══ Closing statement ═════════════════════════════════════════════════ */}
+        <p className="border-t border-rule pt-6 text-center text-xs text-muted">
+          Living Answer
+          为过去的知乎回答补充已变化的关键前提与证据源，不替换原文，也不生成通用最新答复。
+        </p>
       </div>
     </main>
   );

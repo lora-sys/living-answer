@@ -74,12 +74,11 @@ export const makeSqliteExcerptStore = (
     const database = yield* Effect.try({
       try: () => {
         // Ensure parent directory exists
-        const { dirname } = require("node:path") as typeof import("node:path");
-        const { mkdirSync, existsSync } = require("node:fs") as typeof import("node:fs");
-
-        const parent = dirname(dbPath);
-        if (!existsSync(parent)) {
-          mkdirSync(parent, { recursive: true });
+        const nodePath = require("node:path") as typeof import("node:path");
+        const nodeFs = require("node:fs") as typeof import("node:fs");
+        const parent = nodePath.dirname(dbPath);
+        if (!nodeFs.existsSync(parent)) {
+          nodeFs.mkdirSync(parent, { recursive: true });
         }
 
         // Use require because better-sqlite3 uses `module.exports` (CommonJS)
