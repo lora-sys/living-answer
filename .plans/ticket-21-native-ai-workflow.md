@@ -2,6 +2,8 @@
 
 Issue: #31
 
+Status: complete
+
 ## Problem
 
 The product has isolated AI building blocks, but the current experience still
