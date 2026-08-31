@@ -40,9 +40,11 @@ const makeExcerpt = (
   return result.excerpt;
 };
 
-const cleanup = (path: string): void => {
+const cleanup = async (path: string): Promise<void> => {
   try {
-    const { unlinkSync, existsSync } = require("node:fs");
+    const {
+      default: { unlinkSync, existsSync },
+    } = await import("node:fs");
     if (existsSync(path)) unlinkSync(path);
   } catch {
     // best-effort cleanup
@@ -50,7 +52,7 @@ const cleanup = (path: string): void => {
 };
 
 const buildStore = async (dbPath = TEST_DB_PATH): Promise<ExcerptStore> => {
-  cleanup(dbPath);
+  await cleanup(dbPath);
   const store = await Effect.runPromise(makeSqliteExcerptStore(dbPath));
   return store;
 };
@@ -67,8 +69,8 @@ const runSuccess = <A>(effect: Effect.Effect<A, StoreError>): Promise<A> =>
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe("excerpt-store", () => {
-  beforeAll(() => {
-    cleanup(TEST_DB_PATH);
+  beforeAll(async () => {
+    await cleanup(TEST_DB_PATH);
   });
 
   // ------------------------------------------------------------------

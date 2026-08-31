@@ -1,9 +1,6 @@
 import { Data, Effect } from "effect";
 
-import { createRequire } from "node:module";
 import type { AnswerExcerpt } from "./answer-excerpt";
-
-const require = createRequire(import.meta.url);
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
 
@@ -74,18 +71,20 @@ export const makeSqliteExcerptStore = (
 ): Effect.Effect<ExcerptStore, StoreError> =>
   Effect.gen(function* () {
     // Open the db lazily (only when the Effect is run)
-    const database = yield* Effect.try({
-      try: () => {
-        // Ensure parent directory exists
-        const nodePath = require("node:path") as typeof import("node:path");
-        const nodeFs = require("node:fs") as typeof import("node:fs");
+    const database = yield* Effect.tryPromise({
+      try: async () => {
+        // All Node-only and CJS modules are dynamically imported inside the
+        // lazy store-creation path so they are invisible to client bundling.
+        const nodePath = (await import("node:path")).default;
+        const nodeFs = (await import("node:fs")).default;
+        const betterSqlite3 = (await import("better-sqlite3")).default;
+
         const parent = nodePath.dirname(dbPath);
         if (!nodeFs.existsSync(parent)) {
           nodeFs.mkdirSync(parent, { recursive: true });
         }
 
-        // Use require because better-sqlite3 uses `module.exports` (CommonJS)
-        return require("better-sqlite3")(dbPath, { fileMustExist: false });
+        return betterSqlite3(dbPath, { fileMustExist: false });
       },
       catch: (e: unknown) =>
         new StoreError({
