@@ -465,6 +465,16 @@ function Home() {
           </div>
         </section>
 
+        {/* ═══ sources nav ═══════════════════════════════════════════════════════ */}
+        <nav>
+          <Link
+            to="/sources"
+            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+          >
+            查看所有证据来源 &rarr;
+          </Link>
+        </nav>
+
         {/* ═══ 精选案例 — evidence case file ═══════════════════════════════════ */}
         <section aria-labelledby="demo-heading">
           <h2 id="demo-heading" className="text-sm font-medium text-muted">

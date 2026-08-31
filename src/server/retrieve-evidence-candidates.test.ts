@@ -23,6 +23,8 @@ const makeStore = (overrides: Partial<EvidenceCandidateStore> = {}): EvidenceCan
   findCandidatesByClaimFingerprint: () => Effect.succeed([]),
   findCandidatesByExcerptFingerprint: () => Effect.succeed([]),
   ...overrides,
+
+  findAll: () => Effect.succeed([]),
 });
 
 const makeFetcher = (effect: Effect.Effect<readonly unknown[], ProviderFetchError>) => () => effect;

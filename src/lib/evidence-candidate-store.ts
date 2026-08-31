@@ -65,6 +65,11 @@ export interface EvidenceCandidateStore {
   readonly findCandidatesByExcerptFingerprint: (
     excerptFingerprint: string,
   ) => Effect.Effect<readonly EvidenceCandidateRecord[], EvidenceCandidateStoreError>;
+  /** Return all candidates, deduplicated by candidate fingerprint. */
+  readonly findAll: () => Effect.Effect<
+    readonly EvidenceCandidateRecord[],
+    EvidenceCandidateStoreError
+  >;
 }
 
 // ── SQL ────────────────────────────────────────────────────────────────────────
@@ -149,6 +154,29 @@ FROM evidence_candidates ec
 JOIN evidence_retrievals er ON ec.retrieval_id = er.id
 WHERE ec.claim_fingerprint = ?
 ORDER BY ec.created_at DESC, ec.id DESC;
+`;
+
+const FIND_ALL_SQL = `
+SELECT ec.retrieval_id,
+       ec.claim_fingerprint,
+       ec.candidate_fingerprint,
+       ec.provider,
+       ec.source_kind,
+       ec.authority_hint,
+       ec.source_content_id,
+       ec.source_content_type,
+       ec.source_label,
+       ec.title,
+       ec.source_url,
+       ec.content_preview,
+       ec.published_at,
+       ec.captured_at,
+       ec.source_access_state,
+       ec.status,
+       er.retrieval_event_fingerprint
+FROM evidence_candidates ec
+JOIN evidence_retrievals er ON ec.retrieval_id = er.id
+ORDER BY ec.captured_at DESC, ec.id DESC;
 `;
 
 const FIND_CANDIDATES_BY_EXCERPT_SQL = `
@@ -348,10 +376,28 @@ export const makeSqliteEvidenceCandidateStore = (
           }),
       });
 
+    const findAllStmt = database.prepare(FIND_ALL_SQL);
+
+    const findAll = (): Effect.Effect<
+      readonly EvidenceCandidateRecord[],
+      EvidenceCandidateStoreError
+    > =>
+      Effect.try({
+        try: () => {
+          const rows = findAllStmt.all() as ReadonlyArray<Record<string, unknown>>;
+          return rows.map(mapRowToRecord);
+        },
+        catch: (e: unknown) =>
+          new EvidenceCandidateStoreError({
+            reason: `findAll failed: ${e instanceof Error ? e.message : String(e)}`,
+          }),
+      });
+
     return {
       saveRetrieval,
       saveCandidates,
       findCandidatesByClaimFingerprint,
       findCandidatesByExcerptFingerprint,
+      findAll,
     };
   });
