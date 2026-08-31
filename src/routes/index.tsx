@@ -16,6 +16,10 @@ import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
 import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
 import {
+  type SearchAnswerCandidatesResponse,
+  searchAnswerCandidates,
+} from "../server/search-answer-candidates";
+import {
   type ExtractAnswerClaimsResponse,
   extractAnswerClaims,
 } from "../server/extract-answer-claims";
@@ -52,6 +56,7 @@ function Home() {
   const boundDisputePatch = useServerFn(disputePatchLifecycle);
   const boundExtractClaims = useServerFn(extractAnswerClaims);
   const boundRetrieveEvidence = useServerFn(retrieveEvidenceCandidatesFn);
+  const boundSearchCandidates = useServerFn(searchAnswerCandidates);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -70,6 +75,12 @@ function Home() {
 
   const [loading, setLoading] = useState(false);
   const [serverResult, setServerResult] = useState<ResolveAnswerExcerptResponse | null>(null);
+
+  // ── Dual entry state ──────────────────────────────────────────────────────
+  const [entryMode, setEntryMode] = useState<"url" | "search">("url");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<SearchAnswerCandidatesResponse | null>(null);
 
   // ── Analysis state ─────────────────────────────────────────────────────────
 
@@ -124,6 +135,36 @@ function Home() {
       setServerResult({ status: "error", code: "PROVIDER_ERROR" });
     }
     setLoading(false);
+  };
+
+  // ── Search handler ─────────────────────────────────────────────────────────
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchLoading || disputeLoading) return;
+    const trimmed = searchQuery.trim();
+    if (trimmed === "") {
+      setSearchResult({ status: "error", code: "INVALID_REQUEST", message: "请输入搜索关键词。" });
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchResult(null);
+
+    const response = await boundSearchCandidates({ data: { query: trimmed } }).catch(() => null);
+    if (response) {
+      setSearchResult(response as SearchAnswerCandidatesResponse);
+    } else {
+      setSearchResult({ status: "error", code: "SEARCH_ERROR", message: "搜索失败，请稍后再试。" });
+    }
+    setSearchLoading(false);
+  };
+
+  const handleSelectCandidate = (candidateUrl: string) => {
+    setUrl(candidateUrl);
+    setEntryMode("url");
+    setSearchResult(null);
+    setSearchQuery("");
   };
 
   // ── Analysis handler ───────────────────────────────────────────────────────
@@ -527,40 +568,178 @@ function Home() {
           </ul>
         </section>
 
-        {/* ═══ URL-first workflow ═══════════════════════════════════════════════ */}
+        {/* ═══ Dual entry: URL or search ═════════════════════════════════════════ */}
         <section className="border-t border-rule pt-10">
-          <h2 className="text-sm font-medium text-muted">输入回答链接，检索摘录</h2>
+          <h2 className="text-sm font-medium text-muted">找到要检索的回答</h2>
 
-          <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
-            <div>
-              <label htmlFor="answer-url" className="block text-sm font-medium text-ink-subtle">
-                知乎回答链接
-              </label>
-              <input
-                id="answer-url"
-                type="url"
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value);
-                  if (errorState) setErrorState(null);
-                }}
-                placeholder="https://www.zhihu.com/question/42/answer/100"
+          {/* ── Segmented control ─────────────────────────────────────────── */}
+          <div
+            role="tablist"
+            aria-label="选择入口方式"
+            className="mt-4 inline-flex rounded-xl border border-rule bg-paper p-0.5"
+          >
+            {(["url", "search"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="tab"
+                aria-selected={entryMode === mode}
+                onClick={() => setEntryMode(mode)}
                 disabled={isPending || disputeLoading}
-                autoComplete="off"
-                className={
-                  "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
-                  "placeholder:text-muted " +
-                  "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
-                  "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
-                }
-              />
-            </div>
+                className={[
+                  "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  entryMode === mode
+                    ? "bg-paper-2 text-ink shadow-sm"
+                    : "text-muted hover:text-ink-subtle",
+                ].join(" ")}
+              >
+                {mode === "url" ? "粘贴链接" : "搜索问题"}
+              </button>
+            ))}
+          </div>
 
-            <div className="flex flex-col gap-1">
+          {entryMode === "url" && (
+            <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="answer-url" className="block text-sm font-medium text-ink-subtle">
+                  知乎回答链接
+                </label>
+                <input
+                  id="answer-url"
+                  type="url"
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (errorState) setErrorState(null);
+                  }}
+                  placeholder="https://www.zhihu.com/question/42/answer/100"
+                  disabled={isPending || disputeLoading}
+                  autoComplete="off"
+                  className={
+                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "placeholder:text-muted " +
+                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
+                  }
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={isPending || disputeLoading}
+                    className={
+                      "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
+                      "bg-accent hover:bg-accent-hover " +
+                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
+                      "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
+                    }
+                  >
+                    {isPending ? "获取中..." : "获取摘录"}
+                  </button>
+                  {isPending && <span className="text-sm text-muted">正在检索回答摘录…</span>}
+                </div>
+                <p className="text-xs text-muted">
+                  粘贴后点击获取摘录，查看该回答的前提是否已变化。
+                </p>
+              </div>
+
+              {showLoading && (
+                <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
+                  />
+                  <p className="text-sm text-ink-subtle">正在获取回答摘录…</p>
+                </div>
+              )}
+
+              {errorState && !isPending && (
+                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                  <p className="text-sm font-medium text-ink-subtle">{errorState.message}</p>
+                </div>
+              )}
+
+              {showError && serverErrorCode && (
+                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                  <p className="text-sm font-medium text-ink-subtle">
+                    {failureMessage(serverErrorCode)}
+                  </p>
+                </div>
+              )}
+
+              {showSuccess && resultData && (
+                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-5 sm:px-6 sm:py-6">
+                  <p className="whitespace-pre-wrap break-words text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
+                    {resultData.excerpt.excerpt}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
+                    <span>
+                      知乎问题{" "}
+                      <span className="font-medium text-ink-subtle">
+                        #{resultData.excerpt.questionId}
+                      </span>
+                    </span>
+                    <span>
+                      回答{" "}
+                      <span className="font-medium text-ink-subtle">
+                        #{resultData.excerpt.answerId}
+                      </span>
+                    </span>
+                    <span>摘录时间 {formatTimestamp(resultData.excerpt.capturedAt)}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">
+                    来源编辑时间 {formatTimestamp(resultData.excerpt.sourceEditTime)}
+                  </p>
+                </div>
+              )}
+
+              {/* ── Claims extraction section ───────────────────────────────── */}
+              <ClaimsSection loading={claimsLoading} result={claimsResult} onRetry={retryClaims} />
+
+              {/* ── Evidence candidates section ──────────────────────────────── */}
+              {claimsResult?.status === "ok" && claimsResult.claims.length > 0 && (
+                <EvidenceCandidatesSection
+                  loading={evidenceLoading}
+                  result={evidenceResult}
+                  onRetrieve={retryEvidence}
+                />
+              )}
+            </form>
+          )}
+
+          {entryMode === "search" && (
+            <form onSubmit={handleSearch} noValidate className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="search-query" className="block text-sm font-medium text-ink-subtle">
+                  搜索知乎问题
+                </label>
+                <input
+                  id="search-query"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                  }}
+                  placeholder="例如：React 19 还值得学吗"
+                  disabled={searchLoading || disputeLoading}
+                  autoComplete="off"
+                  className={
+                    "mt-1.5 block w-full rounded-xl border bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "placeholder:text-muted " +
+                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted"
+                  }
+                />
+              </div>
+
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
-                  disabled={isPending || disputeLoading}
+                  disabled={searchLoading || disputeLoading}
                   className={
                     "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-text-on-accent " +
                     "bg-accent hover:bg-accent-hover " +
@@ -568,76 +747,54 @@ function Home() {
                     "disabled:cursor-not-allowed disabled:bg-accent-deep/40 disabled:text-ink-subtle"
                   }
                 >
-                  {isPending ? "获取中..." : "获取摘录"}
+                  {searchLoading ? "搜索中..." : "搜索"}
                 </button>
-                {isPending && <span className="text-sm text-muted">正在检索回答摘录…</span>}
+                {searchLoading && <span className="text-sm text-muted">正在搜索知乎回答…</span>}
               </div>
-              <p className="text-xs text-muted">粘贴后点击获取摘录，查看该回答的前提是否已变化。</p>
-            </div>
 
-            {showLoading && (
-              <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
-                />
-                <p className="text-sm text-ink-subtle">正在获取回答摘录…</p>
-              </div>
-            )}
-
-            {errorState && !isPending && (
-              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-                <p className="text-sm font-medium text-ink-subtle">{errorState.message}</p>
-              </div>
-            )}
-
-            {showError && serverErrorCode && (
-              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-                <p className="text-sm font-medium text-ink-subtle">
-                  {failureMessage(serverErrorCode)}
-                </p>
-              </div>
-            )}
-
-            {showSuccess && resultData && (
-              <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-5 sm:px-6 sm:py-6">
-                <p className="whitespace-pre-wrap break-words text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
-                  {resultData.excerpt.excerpt}
-                </p>
-
-                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
-                  <span>
-                    知乎问题{" "}
-                    <span className="font-medium text-ink-subtle">
-                      #{resultData.excerpt.questionId}
-                    </span>
-                  </span>
-                  <span>
-                    回答{" "}
-                    <span className="font-medium text-ink-subtle">
-                      #{resultData.excerpt.answerId}
-                    </span>
-                  </span>
-                  <span>摘录时间 {formatTimestamp(resultData.excerpt.capturedAt)}</span>
+              {searchResult?.status === "error" && (
+                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                  <p className="text-sm font-medium text-ink-subtle">{searchResult.message}</p>
                 </div>
-                <p className="mt-1 text-sm text-muted">
-                  来源编辑时间 {formatTimestamp(resultData.excerpt.sourceEditTime)}
-                </p>
-              </div>
-            )}
+              )}
 
-            {/* ── Claims extraction section ───────────────────────────────── */}
-            <ClaimsSection loading={claimsLoading} result={claimsResult} onRetry={retryClaims} />
+              {searchResult?.status === "ok" && searchResult.candidates.length === 0 && (
+                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                  <p className="text-sm text-ink-subtle">没有找到包含回答的搜索结果。</p>
+                </div>
+              )}
 
-            {/* ── Evidence candidates section ──────────────────────────────── */}
-            {claimsResult?.status === "ok" && claimsResult.claims.length > 0 && (
-              <EvidenceCandidatesSection
-                loading={evidenceLoading}
-                result={evidenceResult}
-                onRetrieve={retryEvidence}
-              />
-            )}
-          </form>
+              {searchResult?.status === "ok" && searchResult.candidates.length > 0 && (
+                <ul className="space-y-2" role="list">
+                  {searchResult.candidates.map((c) => (
+                    <li key={c.answerId}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCandidate(c.url)}
+                        className={
+                          "block w-full rounded-xl border border-rule bg-paper-2 px-4 py-3 text-left transition-colors " +
+                          "hover:border-accent/30 " +
+                          "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                        }
+                      >
+                        <p className="text-sm font-medium text-ink">
+                          {c.title || `知乎回答 #${c.answerId}`}
+                        </p>
+                        {c.preview && (
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
+                            {c.preview}
+                          </p>
+                        )}
+                        <p className="mt-1 text-xs text-muted">
+                          问题 #{c.questionId} · 回答 #{c.answerId}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </form>
+          )}
 
           {/* Maintenance context and analysis — available after successful excerpt */}
           {showExtractSuccess && (
