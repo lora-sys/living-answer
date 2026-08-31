@@ -72,68 +72,110 @@ function ChangesPage() {
         </section>
 
         {loading && (
-          <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-6"
+          >
             <span
               aria-hidden="true"
               className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
             />
-            <p className="text-sm text-ink-subtle">正在加载变更记录…</p>
+            <div className="space-y-2">
+              <p className="text-sm text-ink-subtle">正在加载变更记录…</p>
+              <div className="flex gap-3">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="h-3 w-24 animate-pulse rounded bg-rule"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {!loading && result?.status === "error" && (
-          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-            <p className="text-sm font-medium text-ink-subtle">{result.message}</p>
+          <div
+            role="alert"
+            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+          >
+            <p className="text-sm font-semibold text-ink">无法加载变更记录</p>
+            <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
+            <Link
+              to="/"
+              className="mt-3 inline-block text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+            >
+              返回首页
+            </Link>
           </div>
         )}
 
         {!loading && result?.status === "ok" && changes.length === 0 && (
-          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-            <p className="text-sm text-ink-subtle">还没有记录任何变更。</p>
+          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-8 text-center">
+            <p className="text-sm font-medium text-ink-subtle">变更时间线为空</p>
+            <p className="mt-1 text-sm text-muted">
+              目前还没有记录任何变更。当回答的前提或判断发生变化时，事件会出现在这里。
+            </p>
+            <Link
+              to="/"
+              className="mt-4 inline-block rounded-xl border border-rule bg-paper-2 px-5 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent/30 hover:text-accent-hover"
+            >
+              返回首页继续浏览
+            </Link>
           </div>
         )}
 
         {!loading && changes.length > 0 && (
-          <ul className="space-y-4" role="list">
+          <ul className="space-y-0" role="list">
             {changes.map((c) => {
               const zhihuUrl = `https://www.zhihu.com/question/${c.questionId}/answer/${c.answerId}`;
               const badgeClass = STATUS_STYLES[c.status] ?? "bg-paper text-ink-subtle border-rule";
 
               return (
-                <li
-                  key={c.recordFingerprint}
-                  className="rounded-2xl border border-rule bg-paper-2 p-5 transition-colors hover:border-accent/30 sm:p-6"
-                >
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span
-                      className={[
-                        "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                        badgeClass,
-                      ].join(" ")}
-                    >
-                      {STATUS_LABELS[c.status] ?? c.status}
-                    </span>
-                    <span className="text-xs text-muted">
-                      问题 #{c.questionId} · 回答 #{c.answerId}
-                    </span>
-                    <span className="text-xs text-muted">{formatTimestamp(c.eventAt)}</span>
-                  </div>
+                <li key={c.recordFingerprint} className="relative pl-8 pb-8 last:pb-0">
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full border border-rule bg-paper"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-[5px] top-[13px] h-full w-px bg-rule last:hidden"
+                  />
 
-                  <p className="mt-3 break-words text-sm leading-6 text-ink-subtle">
-                    {truncateReason(c.reason)}
-                  </p>
+                  <div className="rounded-2xl border border-rule bg-paper-2 p-5 transition-colors hover:border-accent/30 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span
+                        className={[
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                          badgeClass,
+                        ].join(" ")}
+                      >
+                        {STATUS_LABELS[c.status] ?? c.status}
+                      </span>
+                      <span className="text-xs text-muted">
+                        问题 #{c.questionId} · 回答 #{c.answerId}
+                      </span>
+                    </div>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span>证据 {c.evidenceCount} 条</span>
-                    <span>摘录时间 {formatTimestamp(c.capturedAt)}</span>
-                    <a
-                      href={zhihuUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent transition-colors hover:text-accent-hover"
-                    >
-                      查看知乎来源 &rarr;
-                    </a>
+                    <p className="mt-3 break-words text-sm leading-6 text-ink-subtle">
+                      {truncateReason(c.reason)}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                      <span>证据 {c.evidenceCount} 条</span>
+                      <span>摘录时间 {formatTimestamp(c.capturedAt)}</span>
+                      <a
+                        href={zhihuUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent transition-colors hover:text-accent-hover"
+                      >
+                        查看知乎来源 &rarr;
+                      </a>
+                    </div>
                   </div>
                 </li>
               );

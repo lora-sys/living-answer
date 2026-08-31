@@ -54,24 +54,59 @@ function SourcesPage() {
         </section>
 
         {loading && (
-          <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-6"
+          >
             <span
               aria-hidden="true"
               className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
             />
-            <p className="text-sm text-ink-subtle">正在加载来源…</p>
+            <div className="space-y-2">
+              <p className="text-sm text-ink-subtle">正在加载来源…</p>
+              <div className="flex gap-3">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="h-3 w-24 animate-pulse rounded bg-rule"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {!loading && result?.status === "error" && (
-          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-            <p className="text-sm font-medium text-ink-subtle">{result.message}</p>
+          <div
+            role="alert"
+            className="rounded-2xl border border-update-amber/30 bg-update-amber/5 px-5 py-5"
+          >
+            <p className="text-sm font-semibold text-ink">无法加载来源</p>
+            <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
+            <Link
+              to="/"
+              className="mt-3 inline-block text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+            >
+              返回首页
+            </Link>
           </div>
         )}
 
         {!loading && result?.status === "ok" && sources.length === 0 && (
-          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-            <p className="text-sm text-ink-subtle">还没有检索到任何来源。</p>
+          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-8 text-center">
+            <p className="text-sm font-medium text-ink-subtle">来源库为空</p>
+            <p className="mt-1 text-sm text-muted">
+              检索到的来源将展示在这里。当回答需要引用外部证据时，来源会出现在下方。
+            </p>
+            <Link
+              to="/"
+              className="mt-4 inline-block rounded-xl border border-rule bg-paper-2 px-5 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent/30 hover:text-accent-hover"
+            >
+              返回首页继续浏览
+            </Link>
           </div>
         )}
 
@@ -85,16 +120,23 @@ function SourcesPage() {
                   rel="noopener noreferrer"
                   className="block rounded-2xl border border-rule bg-paper-2 p-5 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-sm font-semibold text-ink">{s.sourceLabel}</span>
-                    <span className="rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex rounded-full border border-rule bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle"
+                    >
                       {s.sourceKind}
                     </span>
+                    <span className="text-sm font-semibold text-ink">{s.sourceLabel}</span>
                     {s.authorityHint && (
                       <span className="text-xs text-muted">{s.authorityHint}</span>
                     )}
                   </div>
-                  {s.title && <p className="mt-2 text-sm font-medium text-ink-subtle">{s.title}</p>}
+                  {s.title && (
+                    <p className="mt-2 break-words text-sm font-medium text-ink-subtle">
+                      {s.title}
+                    </p>
+                  )}
                   {s.contentPreview && (
                     <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">
                       {s.contentPreview}
