@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 
+import { createRequire } from "node:module";
 import type { DailyQuotaOutcome, DailyQuotaStore } from "./daily-quota";
 import { DailyQuotaStoreError } from "./daily-quota";
+
+const require = createRequire(import.meta.url);
 
 // ── SQL ───────────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,9 @@
 import { Data, Effect } from "effect";
 
+import { createRequire } from "node:module";
 import type { EvidenceCandidate } from "./evidence-candidate";
+
+const require = createRequire(import.meta.url);
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
 

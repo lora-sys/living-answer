@@ -1,7 +1,10 @@
 import { Data, Effect } from "effect";
 
+import { createRequire } from "node:module";
 import type { AnswerClaim } from "./answer-claim";
 import { fnv1a64 } from "./answer-excerpt";
+
+const require = createRequire(import.meta.url);
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
 
