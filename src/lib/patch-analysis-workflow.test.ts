@@ -215,6 +215,27 @@ describe("patch-analysis-workflow", () => {
     );
   });
 
+  // ── New verdict types ──────────────────────────────────────────────────────
+
+  for (const tag of ["CORRECTION", "CONDITION", "BETTER_WAY"] as const) {
+    it(`returns ${tag} when model verdict is ${tag}`, async () => {
+      const chat = makeFakeChat(() =>
+        JSON.stringify({
+          verdict: tag,
+          reason: `Advisory ${tag.toLowerCase()} note.`,
+        }),
+      );
+
+      const deps = makeDeps(chat);
+      const decision = await runDecision(analyzePatch(deps)(buildInput()));
+
+      expect(decision._tag).toBe(tag);
+      expect((decision as { reason: string }).reason).toBe(
+        `Advisory ${tag.toLowerCase()} note.`,
+      );
+    });
+  }
+
   // ── UPDATE downgrade: required evidence is absent ────────────────────────────
 
   it("downgrades UPDATE to UNKNOWN when selected evidence fingerprint is not in the supplied array", async () => {

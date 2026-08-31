@@ -63,7 +63,7 @@ type AnalysisPrompt = {
     readonly decisionRelevance: string;
   }>;
   readonly expectedResponse: {
-    readonly verdict: "UPDATE" | "NO_PATCH" | "UNKNOWN";
+    readonly verdict: string;
     readonly reason: string;
     readonly selectedEvidenceFingerprints?: readonly string[];
     readonly affectedWording?: string;
@@ -85,7 +85,13 @@ type ModelResponse = {
 
 // ── Decision types ─────────────────────────────────────────────────────────────
 
-export type PatchAnalysisVerdict = "UPDATE" | "NO_PATCH" | "UNKNOWN";
+export type PatchAnalysisVerdict =
+  | "UPDATE"
+  | "NO_PATCH"
+  | "UNKNOWN"
+  | "CORRECTION"
+  | "CONDITION"
+  | "BETTER_WAY";
 
 export interface PatchAnalysisUpdateDecision {
   readonly _tag: "UPDATE";
@@ -106,10 +112,28 @@ export interface PatchAnalysisUnknownDecision {
   readonly reason: string;
 }
 
+export interface PatchAnalysisCorrectionDecision {
+  readonly _tag: "CORRECTION";
+  readonly reason: string;
+}
+
+export interface PatchAnalysisConditionDecision {
+  readonly _tag: "CONDITION";
+  readonly reason: string;
+}
+
+export interface PatchAnalysisBetterWayDecision {
+  readonly _tag: "BETTER_WAY";
+  readonly reason: string;
+}
+
 export type PatchAnalysisDecision =
   | PatchAnalysisUpdateDecision
   | PatchAnalysisNoPatchDecision
-  | PatchAnalysisUnknownDecision;
+  | PatchAnalysisUnknownDecision
+  | PatchAnalysisCorrectionDecision
+  | PatchAnalysisConditionDecision
+  | PatchAnalysisBetterWayDecision;
 
 // ── Input type ─────────────────────────────────────────────────────────────────
 
@@ -211,8 +235,16 @@ const buildPrompt = (input: AnalyzePatchInput): AnalysisPrompt => {
 // ── Parsing helpers ─────────────────────────────────────────────────────────────
 
 const parseVerdict = (raw: unknown): PatchAnalysisVerdict | null => {
-  if (raw === "UPDATE" || raw === "NO_PATCH" || raw === "UNKNOWN") {
-    return raw;
+  const valid: readonly string[] = [
+    "UPDATE",
+    "NO_PATCH",
+    "UNKNOWN",
+    "CORRECTION",
+    "CONDITION",
+    "BETTER_WAY",
+  ];
+  if (typeof raw === "string" && valid.includes(raw)) {
+    return raw as PatchAnalysisVerdict;
   }
   return null;
 };
@@ -265,7 +297,7 @@ const parseModelResponse = (
       _tag: "failure",
       error: new PatchAnalysisError({
         reason: "INVALID_VERDICT",
-        detail: `Model verdict '${obj.verdict}' is not one of UPDATE, NO_PATCH, UNKNOWN.`,
+        detail: `Model verdict '${obj.verdict}' is not one of UPDATE, NO_PATCH, UNKNOWN, CORRECTION, CONDITION, BETTER_WAY.`,
       }),
     };
   }
@@ -495,6 +527,21 @@ export const analyzePatch =
             _tag: "UNKNOWN",
             reason,
           } as PatchAnalysisUnknownDecision;
+        case "CORRECTION":
+          return {
+            _tag: "CORRECTION",
+            reason,
+          } as PatchAnalysisCorrectionDecision;
+        case "CONDITION":
+          return {
+            _tag: "CONDITION",
+            reason,
+          } as PatchAnalysisConditionDecision;
+        case "BETTER_WAY":
+          return {
+            _tag: "BETTER_WAY",
+            reason,
+          } as PatchAnalysisBetterWayDecision;
         default:
           return yield* Effect.fail(
             new PatchAnalysisError({

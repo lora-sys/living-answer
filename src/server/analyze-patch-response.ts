@@ -71,12 +71,30 @@ export interface AnalyzePatchUnknownResponse {
   readonly reason: string;
 }
 
+export interface AnalyzePatchCorrectionResponse {
+  readonly verdict: "CORRECTION";
+  readonly reason: string;
+}
+
+export interface AnalyzePatchConditionResponse {
+  readonly verdict: "CONDITION";
+  readonly reason: string;
+}
+
+export interface AnalyzePatchBetterWayResponse {
+  readonly verdict: "BETTER_WAY";
+  readonly reason: string;
+}
+
 // ── Decision fragment inside the ok response ────────────────────────────────────
 
 export type AnalyzePatchDecisionResponse =
   | AnalyzePatchUpdateResponse
   | AnalyzePatchNoPatchResponse
-  | AnalyzePatchUnknownResponse;
+  | AnalyzePatchUnknownResponse
+  | AnalyzePatchCorrectionResponse
+  | AnalyzePatchConditionResponse
+  | AnalyzePatchBetterWayResponse;
 
 // ── Response union ─────────────────────────────────────────────────────────────
 
@@ -187,6 +205,24 @@ export const mapDecisionToResponse = (
     case "UNKNOWN":
       return {
         verdict: "UNKNOWN",
+        reason: decision.reason,
+      };
+
+    case "CORRECTION":
+      return {
+        verdict: "CORRECTION",
+        reason: decision.reason,
+      };
+
+    case "CONDITION":
+      return {
+        verdict: "CONDITION",
+        reason: decision.reason,
+      };
+
+    case "BETTER_WAY":
+      return {
+        verdict: "BETTER_WAY",
         reason: decision.reason,
       };
   }
