@@ -481,167 +481,6 @@ function Home() {
           </Link>
         </nav>
 
-        {/* ═══ 精选案例 — evidence case file ═══════════════════════════════════ */}
-        <section aria-labelledby="demo-heading">
-          <h2 id="demo-heading" className="text-sm font-medium text-muted">
-            精选案例
-          </h2>
-          <p className="mt-1.5 text-xs text-muted/70">合成数据 · 精选演示</p>
-
-          {/* ── Featured case file ─────────────────────────────────────────── */}
-          <Link
-            to={
-              `/read/golden-demo/${featuredDemo.id}` as unknown as Parameters<typeof Link>[0]["to"]
-            }
-            className="mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
-          >
-            {/* left column: provenance, title, description, CTA */}
-            <div className="p-6 sm:p-8">
-              {/* provenance tag */}
-              <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                {featuredDemo.topic}
-              </span>
-              <span className="ml-2 text-xs text-muted">合成数据 · 精选演示</span>
-
-              {/* title */}
-              <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
-                {featuredDemo.displayTitle}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-ink-subtle">{featuredDemo.description}</p>
-
-              {/* compact CTA */}
-              <span className="mt-6 inline-flex items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
-                阅读原文与旁证
-                <span
-                  aria-hidden="true"
-                  className="ml-1 transition-transform group-hover:translate-x-0.5"
-                >
-                  &rarr;
-                </span>
-              </span>
-            </div>
-
-            {/* right column: evidence fields */}
-            <div className="lg:border-l lg:border-rule">
-              <p className="border-t border-rule px-6 pt-3.5 pb-2 text-xs text-muted sm:px-8">
-                证据关系
-              </p>
-
-              {/* original premise */}
-              <div aria-label="原文前提" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">原文前提</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.originalExcerpt)}
-                </p>
-              </div>
-
-              {/* current change — amber only here */}
-              <div
-                aria-label="现在变化"
-                className="border-t border-update-amber/30 bg-update-amber/5 px-6 py-3.5 sm:px-8"
-              >
-                <span className="text-xs font-medium text-update-amber">现在变化</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.currentChange)}
-                </p>
-              </div>
-
-              {/* impact */}
-              <div aria-label="影响" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">影响</span>
-                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
-                  {truncatePreview(firstPatch.impact)}
-                </p>
-              </div>
-
-              {/* evidence provenance */}
-              <div aria-label="证据来源" className="border-t border-rule px-6 py-3.5 sm:px-8">
-                <span className="text-xs font-medium text-muted">证据来源</span>
-                <ul className="mt-1.5 space-y-1.5">
-                  {firstPatch.evidence.map((ev) => {
-                    const evDate = new Date(ev.publishedAt);
-                    const year = evDate.getUTCFullYear();
-                    const month = String(evDate.getUTCMonth() + 1).padStart(2, "0");
-                    return (
-                      <li
-                        key={ev.sourceUrl}
-                        className="flex flex-wrap items-baseline gap-x-2 text-sm"
-                      >
-                        <span className="font-medium text-ink-subtle">{ev.organization}</span>
-                        <span className="text-xs text-muted">
-                          {ev.sourceType} · {year}-{month}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          </Link>
-
-          {/* ── Two compact demos ─────────────────────────────────────────── */}
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2" role="list">
-            {compactDemos.map((entry) => {
-              const patch = entry.patches[0];
-              const evidence = patch.evidence[0];
-              const evidenceLine = formatEvidenceLine(
-                evidence.organization,
-                evidence.sourceType,
-                evidence.publishedAt,
-              );
-
-              return (
-                <li key={entry.id}>
-                  <Link
-                    to={
-                      `/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]
-                    }
-                    className={[
-                      "group block min-w-0 rounded-xl border border-rule bg-paper-2 p-4 sm:p-5",
-                      "transition-colors hover:border-accent/30",
-                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
-                    ].join(" ")}
-                  >
-                    {/* topic + title row */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-                        {entry.topic}
-                      </span>
-                      <span className="text-xs text-muted">合成数据</span>
-                    </div>
-
-                    {/* title + one-line change */}
-                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
-                      <h3 className="text-sm font-semibold tracking-tight text-ink sm:text-base">
-                        {entry.displayTitle}
-                      </h3>
-                      <p className="break-words text-sm leading-5 text-ink-subtle">
-                        {truncatePreview(patch.currentChange)}
-                      </p>
-                    </div>
-
-                    {/* evidence + CTA row */}
-                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                      <span className="break-words text-xs text-muted">
-                        <span className="font-medium text-ink-subtle">证据</span> {evidenceLine}
-                      </span>
-                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
-                        阅读原文与旁证
-                        <span
-                          aria-hidden="true"
-                          className="ml-1 transition-transform group-hover:translate-x-0.5"
-                        >
-                          &rarr;
-                        </span>
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
         {/* ═══ Dual entry: URL or search ═════════════════════════════════════════ */}
         <section className="border-t border-rule pt-10">
           <h2 className="text-sm font-medium text-muted">找到要检索的回答</h2>
@@ -940,6 +779,171 @@ function Home() {
               )}
             </div>
           )}
+        </section>
+
+        {/* ═══ 精选案例 — evidence case file ═══════════════════════════════════ */}
+        <section aria-labelledby="demo-heading">
+          <h2 id="demo-heading" className="text-sm font-medium text-muted">
+            先看示例
+          </h2>
+          <p className="mt-1.5 text-xs text-muted/70">先看两个真实案例，了解补丁如何呈现</p>
+
+          {/* ── Featured case file ─────────────────────────────────────────── */}
+          <Link
+            to={
+              `/read/golden-demo/${featuredDemo.id}` as unknown as Parameters<typeof Link>[0]["to"]
+            }
+            className="mt-5 block rounded-2xl border border-rule bg-paper-2 transition-colors hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent lg:grid lg:grid-cols-2"
+          >
+            {/* left column: provenance, title, description, CTA */}
+            <div className="p-6 sm:p-8">
+              {/* provenance tag */}
+              <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+                {featuredDemo.topic}
+              </span>
+              <span className="ml-2 inline-flex items-center rounded-full border border-rule bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+                精选演示 · 真实知乎来源
+              </span>
+
+              {/* title */}
+              <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+                {featuredDemo.displayTitle}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-ink-subtle">{featuredDemo.description}</p>
+
+              {/* compact CTA */}
+              <span className="mt-6 inline-flex items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
+                阅读原文与旁证
+                <span
+                  aria-hidden="true"
+                  className="ml-1 transition-transform group-hover:translate-x-0.5"
+                >
+                  &rarr;
+                </span>
+              </span>
+            </div>
+
+            {/* right column: evidence fields */}
+            <div className="lg:border-l lg:border-rule">
+              <p className="border-t border-rule px-6 pt-3.5 pb-2 text-xs text-muted sm:px-8">
+                证据关系
+              </p>
+
+              {/* original premise */}
+              <div aria-label="原文前提" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">原文前提</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.originalExcerpt)}
+                </p>
+              </div>
+
+              {/* current change — amber only here */}
+              <div
+                aria-label="现在变化"
+                className="border-t border-update-amber/30 bg-update-amber/5 px-6 py-3.5 sm:px-8"
+              >
+                <span className="text-xs font-medium text-update-amber">现在变化</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.currentChange)}
+                </p>
+              </div>
+
+              {/* impact */}
+              <div aria-label="影响" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">影响</span>
+                <p className="mt-1 break-words text-sm leading-6 text-ink-subtle">
+                  {truncatePreview(firstPatch.impact)}
+                </p>
+              </div>
+
+              {/* evidence provenance */}
+              <div aria-label="证据来源" className="border-t border-rule px-6 py-3.5 sm:px-8">
+                <span className="text-xs font-medium text-muted">证据来源</span>
+                <ul className="mt-1.5 space-y-1.5">
+                  {firstPatch.evidence.map((ev) => {
+                    const evDate = new Date(ev.publishedAt);
+                    const year = evDate.getUTCFullYear();
+                    const month = String(evDate.getUTCMonth() + 1).padStart(2, "0");
+                    return (
+                      <li
+                        key={ev.sourceUrl}
+                        className="flex flex-wrap items-baseline gap-x-2 text-sm"
+                      >
+                        <span className="font-medium text-ink-subtle">{ev.organization}</span>
+                        <span className="inline-flex items-center rounded-full bg-paper px-2 py-0.5 text-xs text-muted">
+                          {ev.sourceType} · {year}-{month}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </Link>
+
+          {/* ── Two compact demos ─────────────────────────────────────────── */}
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2" role="list">
+            {compactDemos.map((entry) => {
+              const patch = entry.patches[0];
+              const evidence = patch.evidence[0];
+              const evidenceLine = formatEvidenceLine(
+                evidence.organization,
+                evidence.sourceType,
+                evidence.publishedAt,
+              );
+
+              return (
+                <li key={entry.id}>
+                  <Link
+                    to={
+                      `/read/golden-demo/${entry.id}` as unknown as Parameters<typeof Link>[0]["to"]
+                    }
+                    className={[
+                      "group block min-w-0 rounded-xl border border-rule bg-paper-2 p-4 sm:p-5",
+                      "transition-colors hover:border-accent/30",
+                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
+                    ].join(" ")}
+                  >
+                    {/* topic + title row */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+                        {entry.topic}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-rule bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+                        真实来源
+                      </span>
+                    </div>
+
+                    {/* title + one-line change */}
+                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+                      <h3 className="text-sm font-semibold tracking-tight text-ink sm:text-base">
+                        {entry.displayTitle}
+                      </h3>
+                      <p className="break-words text-sm leading-5 text-ink-subtle">
+                        {truncatePreview(patch.currentChange)}
+                      </p>
+                    </div>
+
+                    {/* evidence + CTA row */}
+                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                      <span className="break-words text-xs text-muted">
+                        <span className="font-medium text-ink-subtle">证据</span> {evidenceLine}
+                      </span>
+                      <span className="inline-flex shrink-0 items-center text-sm font-medium text-accent transition-colors group-hover:text-accent-hover">
+                        阅读原文与旁证
+                        <span
+                          aria-hidden="true"
+                          className="ml-1 transition-transform group-hover:translate-x-0.5"
+                        >
+                          &rarr;
+                        </span>
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </section>
 
         {/* ═══ Closing statement ═════════════════════════════════════════════════ */}
