@@ -83,7 +83,42 @@ vp env install
 
 ## Current boundary
 
-Ticket 0 only establishes the runnable application baseline. It does not call
-the Zhihu API, create persistence, or implement answer ingestion. Spike 01
-still blocks ingestion Ticket 1 until a legal full-answer content path is
-confirmed.
+The current real-data path accepts a Zhihu answer URL, resolves a summary-class
+`AnswerExcerpt` through the official search API, extracts anchored and
+time-sensitive claims, retrieves Zhihu and global search candidates, applies an
+evidence gate, and produces an advisory patch result. Provider failures, rate
+limits, and durable daily quota limits are surfaced as safe, localized
+read-facing failures.
+
+Living Answer deliberately does **not** generate a new full answer or treat an
+excerpt as the original answer. The official open API surface observed in
+Spike 01 provides summary-class content rather than a documented full-answer
+path, so `AnswerExcerpt` remains a separate immutable observation. It must never
+be stored as an `AnswerSnapshot.body`.
+
+Development state is persisted under ignored `.local/` storage:
+
+- `AnswerExcerpt` observations.
+- Claim sets keyed by excerpt fingerprint.
+- Evidence-candidate retrieval events and candidates.
+- Daily provider quota usage.
+
+The product still lacks durable `PatchRevision`, a Changes timeline, recheck,
+and the minimal dispute flow. Golden-demo pages remain separate demonstration
+fixtures and are not presented as live API results. Full-answer ingestion,
+public deployment, final UI polish, and claim-level evaluation remain explicitly
+out of the current working slice.
+
+## Engineering rules
+
+- TanStack Start and Router own routes, loaders, server functions, and errors.
+- Effect is used at external and workflow boundaries where typed failures,
+  retries, validation, timeouts, or controlled concurrency help.
+- Domain code does not import React, TanStack, SQLite, provider SDKs, or
+  environment-specific paths.
+- Provider pages, API payloads, comments, and model output are untrusted data
+  and are validated before entering the domain.
+- Credentials are read only in the server-function boundary and never exposed
+  in responses, logs, or client state.
+- Writable development state stays under ignored `.local/`.
+- Tests use injected transports and never call real provider APIs.
