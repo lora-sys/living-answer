@@ -604,6 +604,7 @@ export const createAnalyzePatchHandler =
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const FIVE_SECONDS_MS = 5_000 as const;
+const PATCH_ANALYSIS_TIMEOUT_MS = 40_000 as const;
 
 /**
  * Stable domain-record marker for requests without user-supplied context.
@@ -663,10 +664,10 @@ export const analyzePatch = createServerFn({
           apiKey,
           model: openAiModel,
           baseUrl: openAiBaseUrl,
-          timeoutMs: FIVE_SECONDS_MS,
+          timeoutMs: PATCH_ANALYSIS_TIMEOUT_MS,
           transport: makeFetchOpenAiTransport({
             fetch: fetch,
-            timeoutMs: FIVE_SECONDS_MS,
+            timeoutMs: PATCH_ANALYSIS_TIMEOUT_MS,
           }),
         }),
       createProvider: getOrCreateProvider,
