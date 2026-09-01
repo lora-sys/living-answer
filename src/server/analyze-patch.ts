@@ -604,7 +604,7 @@ export const createAnalyzePatchHandler =
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const FIVE_SECONDS_MS = 5_000 as const;
-const PATCH_ANALYSIS_TIMEOUT_MS = 40_000 as const;
+const PATCH_ANALYSIS_TIMEOUT_MS = 120_000 as const;
 
 /**
  * Stable domain-record marker for requests without user-supplied context.
