@@ -53,7 +53,7 @@ function ChangesPage() {
       .finally(() => setLoading(false));
   }, [boundList]);
 
-  const changes = result?.status === "ok" ? result.changes : [];
+  const groups = result?.status === "ok" ? result.groups : [];
 
   return (
     <main className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
@@ -115,7 +115,7 @@ function ChangesPage() {
           </div>
         )}
 
-        {!loading && result?.status === "ok" && changes.length === 0 && (
+        {!loading && result?.status === "ok" && groups.length === 0 && (
           <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-8">
             <p className="text-sm font-medium text-ink-subtle">变更时间线为空</p>
             <p className="mt-1 text-sm text-muted">
@@ -130,60 +130,97 @@ function ChangesPage() {
           </div>
         )}
 
-        {!loading && changes.length > 0 && (
-          <ul className="space-y-0" role="list">
-            {changes.map((c) => {
-              const zhihuUrl = `https://www.zhihu.com/question/${c.questionId}/answer/${c.answerId}`;
-              const badgeClass = STATUS_STYLES[c.status] ?? "bg-paper text-ink-subtle border-rule";
+        {!loading && groups.length > 0 && (
+          <ol className="space-y-10" role="list">
+            {groups.map((group) => {
+              const zhihuUrl = `https://www.zhihu.com/question/${group.questionId}/answer/${group.answerId}`;
 
               return (
-                <li key={c.recordFingerprint} className="border-t border-rule pt-4 pb-4 last:pb-0">
-                  <div className="rounded-[2px] border border-rule bg-paper-2 p-5 sm:p-6">
-                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                      <span
-                        className={[
-                          "inline-flex min-h-8 items-center rounded-[2px] border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]",
-                          badgeClass,
-                        ].join(" ")}
-                      >
-                        {STATUS_LABELS[c.status] ?? c.status}
-                      </span>
-                      <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-                        问题 #{c.questionId} · 回答 #{c.answerId}
-                      </span>
+                <li key={`${group.questionId}:${group.answerId}`}>
+                  {/* Group header */}
+                  <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-rule pb-3">
+                    <div className="flex items-baseline gap-x-3">
+                      <h2 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-subtle">
+                        问题 #{group.questionId}
+                      </h2>
+                      <span className="text-xs text-muted">/</span>
+                      <h2 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-subtle">
+                        回答 #{group.answerId}
+                      </h2>
                     </div>
-
-                    <p className="mt-4 max-w-[68ch] break-words text-sm leading-6 text-ink-subtle">
-                      {truncateReason(c.reason)}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-                      <span>证据 {c.evidenceCount} 条</span>
-                      <span>摘录时间 {formatTimestamp(c.capturedAt)}</span>
-                      <a
-                        href={zhihuUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent-text transition-colors duration-150 hover:text-accent-active"
-                      >
-                        查看知乎来源 &rarr;
-                      </a>
-                      <Link
-                        to="/read/answer/$questionId/$answerId"
-                        params={{
-                          questionId: c.questionId,
-                          answerId: c.answerId,
-                        }}
-                        className="text-accent-text transition-colors duration-150 hover:text-accent-active"
-                      >
-                        查看阅读页 &rarr;
-                      </Link>
-                    </div>
+                    <span className="font-mono text-[11px] text-muted">
+                      {group.recordCount} 条记录
+                    </span>
                   </div>
+
+                  {/* Action links at group level */}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
+                    <a
+                      href={zhihuUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent-text transition-colors duration-150 hover:text-accent-active"
+                    >
+                      查看知乎来源 &rarr;
+                    </a>
+                    <Link
+                      to="/read/answer/$questionId/$answerId"
+                      params={{
+                        questionId: group.questionId,
+                        answerId: group.answerId,
+                      }}
+                      className="text-accent-text transition-colors duration-150 hover:text-accent-active"
+                    >
+                      查看阅读页 &rarr;
+                    </Link>
+                  </div>
+
+                  {/* Runs within the group */}
+                  <ul className="mt-4 space-y-0" role="list">
+                    {group.runs.map((run) => {
+                      const badgeClass =
+                        STATUS_STYLES[run.status] ?? "bg-paper text-ink-subtle border-rule";
+
+                      return (
+                        <li
+                          key={run.recordFingerprint}
+                          className="border-t border-rule pt-4 pb-4 first:pt-0"
+                        >
+                          <div className="rounded-[2px] border border-rule bg-paper-2 p-5 sm:p-6">
+                            <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                              <span
+                                className={[
+                                  "inline-flex min-h-8 items-center rounded-[2px] border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]",
+                                  badgeClass,
+                                ].join(" ")}
+                              >
+                                {STATUS_LABELS[run.status] ?? run.status}
+                              </span>
+                              <time
+                                dateTime={new Date(run.eventAt).toISOString()}
+                                className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted"
+                              >
+                                {formatTimestamp(run.eventAt)}
+                              </time>
+                            </div>
+
+                            <p className="mt-4 max-w-[68ch] break-words text-sm leading-6 text-ink-subtle">
+                              {truncateReason(run.reason)}
+                            </p>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
+                              <span>证据 {run.evidenceCount} 条</span>
+                              <span>摘录时间 {formatTimestamp(run.capturedAt)}</span>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </li>
               );
             })}
-          </ul>
+          </ol>
         )}
       </div>
     </main>

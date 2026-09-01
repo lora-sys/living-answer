@@ -17,10 +17,19 @@ export interface ChangeEntry {
   readonly evidenceCount: number;
 }
 
+export interface AnswerTimelineGroup {
+  readonly questionId: string;
+  readonly answerId: string;
+  readonly recordCount: number;
+  readonly newestEventAt: number;
+  readonly runs: readonly ChangeEntry[];
+}
+
 export type ListPatchChangesResponse =
   | {
       readonly status: "ok";
       readonly changes: readonly ChangeEntry[];
+      readonly groups: readonly AnswerTimelineGroup[];
     }
   | {
       readonly status: "error";
@@ -41,6 +50,42 @@ function toChangeEntry(record: PatchLifecycleRecordWithStatus): ChangeEntry {
   };
 }
 
+export function groupByAnswer(
+  records: readonly PatchLifecycleRecordWithStatus[],
+): AnswerTimelineGroup[] {
+  // Sort all records newest to oldest to establish a stable ordering
+  const sorted = [...records].sort((a, b) => {
+    const diff = b.eventAt - a.eventAt;
+    if (diff !== 0) return diff;
+    return a.recordFingerprint.localeCompare(b.recordFingerprint);
+  });
+
+  const groups = new Map<
+    string,
+    { questionId: string; answerId: string; runs: PatchLifecycleRecordWithStatus[] }
+  >();
+  for (const record of sorted) {
+    const key = `${record.questionId}:${record.answerId}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.runs.push(record);
+    } else {
+      groups.set(key, { questionId: record.questionId, answerId: record.answerId, runs: [record] });
+    }
+  }
+
+  // Sort groups by their newest event, newest first
+  return Array.from(groups.values())
+    .sort((a, b) => b.runs[0].eventAt - a.runs[0].eventAt)
+    .map((g) => ({
+      questionId: g.questionId,
+      answerId: g.answerId,
+      recordCount: g.runs.length,
+      newestEventAt: g.runs[0].eventAt,
+      runs: g.runs.map(toChangeEntry),
+    }));
+}
+
 export const listPatchChanges = createServerFn({
   method: "GET",
 }).handler(async (): Promise<ListPatchChangesResponse> => {
@@ -50,7 +95,8 @@ export const listPatchChanges = createServerFn({
     );
     const records = await Effect.runPromise(store.findAll());
     const changes = records.map(toChangeEntry);
-    return { status: "ok", changes };
+    const groups = groupByAnswer(records);
+    return { status: "ok", changes, groups };
   } catch {
     return {
       status: "error",
