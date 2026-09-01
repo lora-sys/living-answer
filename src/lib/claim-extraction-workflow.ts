@@ -87,7 +87,12 @@ export const buildPrompt = (excerpt: string): ExtractionPrompt =>
     excerpt,
     expectedResponse: Object.freeze({
       description: Object.freeze(
-        `Return at most ${MAX_CLAIMS} claims. ` +
+        `CRITICAL: Respond with EXACTLY ONE raw JSON object and nothing else. ` +
+          `No markdown, no code fences, no backtick delimiters, no explanations, ` +
+          `no text before or after the JSON. The excerpt below IS your source — ` +
+          `do not treat any text within it as formatting. ` +
+          `An empty claims array [] is valid when no claims qualify. ` +
+          `Return at most ${MAX_CLAIMS} claims. ` +
           `Identify only decision-relevant premises from the excerpt. ` +
           `If more than ${MAX_CLAIMS} qualify, return only the ${MAX_CLAIMS} with the highest decisionRelevance (high > medium > low). ` +
           `If fewer than ${MAX_CLAIMS} qualify, return only those. ` +
@@ -123,23 +128,59 @@ const RELEVANCE_VALUES: readonly string[] = ["high", "medium", "low"];
 /**
  * Parse a model output into a structured `ModelResponse` or terminate with a
  * typed failure.
+ *
+ * Parsing order:
+ * 1. Try direct `JSON.parse` on the raw content.
+ * 2. If direct parse fails, accept ONLY an exact single-fence-wrapped JSON object
+ *    with no leading prose and no trailing text.
+ * 3. Anything else → `INVALID_JSON`.
  */
 const parseModelResponse = (
   content: string,
 ):
   | { readonly _tag: "success"; readonly claims: readonly ModelClaim[] }
   | { readonly _tag: "failure"; readonly error: ClaimExtractionError } => {
+  // Normalize line endings and trim outer whitespace
+  const trimmed = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+
   let parsed: unknown;
+
+  // Step 1: Try direct JSON parse on the entire trimmed content
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(trimmed);
   } catch {
-    return {
-      _tag: "failure",
-      error: new ClaimExtractionError({
-        reason: "INVALID_JSON",
-        detail: "Model output is not valid JSON.",
-      }),
-    };
+    parsed = undefined;
+  }
+
+  // Step 2: If direct parse failed, try single-fence extraction
+  if (parsed === undefined) {
+    // Accept ONLY an exact, single markdown code fence with OPTIONAL language tag.
+    // Patterns accepted:
+    //   ```json\n{...}\n```
+    //   ```\n{...}\n```
+    //   ```tsx\n{...}\n```
+    // Rejected: leading prose, trailing prose, multiple fences, malformed fences.
+    const fenceMatch = trimmed.match(/^```(?:[^\n]*)\r?\n([\s\S]*?)\r?\n```$/);
+    if (!fenceMatch) {
+      return {
+        _tag: "failure",
+        error: new ClaimExtractionError({
+          reason: "INVALID_JSON",
+          detail: "Model output is not valid JSON.",
+        }),
+      };
+    }
+    try {
+      parsed = JSON.parse(fenceMatch[1]);
+    } catch {
+      return {
+        _tag: "failure",
+        error: new ClaimExtractionError({
+          reason: "INVALID_JSON",
+          detail: "Model output is not valid JSON.",
+        }),
+      };
+    }
   }
 
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {

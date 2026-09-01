@@ -489,9 +489,9 @@ describe("extractClaims", () => {
   });
 
   // ------------------------------------------------------------------
-  // 18. Prompt explicitly states max 3 claims and "fewer is OK"
+  // 19. Prompt requires single JSON object, no fences/explanations
   // ------------------------------------------------------------------
-  it("buildPrompt description states at most 3 claims and fewer is acceptable", () => {
+  it("buildPrompt description enforces raw JSON output", () => {
     const excerpt = "Some test excerpt text.";
     const prompt = buildPrompt(excerpt);
 
@@ -500,5 +500,177 @@ describe("extractClaims", () => {
     expect(desc).toContain("highest decisionRelevance");
     expect(desc).toContain("fewer than 3");
     expect(desc).toContain("empty claims array");
+    // Ticket 47: strict output contract
+    expect(desc).toContain("CRITICAL");
+    expect(desc).toContain("EXACTLY ONE raw JSON object");
+    expect(desc).toContain("No markdown");
+    expect(desc).toContain("no code fences");
+    expect(desc).toContain("no backtick");
+  });
+
+  // ------------------------------------------------------------------
+  // 20. Single complete code fence around JSON succeeds
+  // ------------------------------------------------------------------
+  it("accepts a single complete code fence wrapping a valid JSON object", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = '```json\n{\n  "claims": []\n}\n```';
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const claims = await runEffect(workflow({ excerpt }));
+
+    expect(claims).toEqual([]);
+  });
+
+  // ------------------------------------------------------------------
+  // 21. Single fence with one claim succeeds
+  // ------------------------------------------------------------------
+  it("accepts a single complete fence wrapping a JSON object with claims", async () => {
+    const excerpt = makeExcerpt();
+
+    const mockResponse =
+      "```\n" +
+      JSON.stringify({
+        claims: [
+          {
+            claimText: "The Earth orbits the Sun in an elliptical path.",
+            anchorText: "The Earth orbits the Sun",
+            volatility: "high",
+            decisionRelevance: "high",
+            candidateReason: "Orbital mechanics news may update what learners see.",
+          },
+        ],
+      }) +
+      "\n```";
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const claims = await runEffect(workflow({ excerpt }));
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0].claimText).toBe("The Earth orbits the Sun in an elliptical path.");
+  });
+
+  // ------------------------------------------------------------------
+  // 22. Plain prose without fence → INVALID_JSON
+  // ------------------------------------------------------------------
+  it("returns INVALID_JSON for plain prose without a complete fenced JSON object", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = "Here is the result: there are no claims to extract.";
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const err = await runError(workflow({ excerpt }));
+    expect(err.reason).toBe("INVALID_JSON");
+  });
+
+  // ------------------------------------------------------------------
+  // 23. Leading prose before fence → INVALID_JSON
+  // ------------------------------------------------------------------
+  it("returns INVALID_JSON when there is leading prose before a code fence", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = 'Sure, here you go:\n```json\n{"claims": []}\n```';
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const err = await runError(workflow({ excerpt }));
+    expect(err.reason).toBe("INVALID_JSON");
+  });
+
+  // ------------------------------------------------------------------
+  // 24. Trailing prose after fence → INVALID_JSON
+  // ------------------------------------------------------------------
+  it("returns INVALID_JSON when there is trailing prose after a code fence", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = '```json\n{"claims": []}\n```\nLet me know if that helps!';
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const err = await runError(workflow({ excerpt }));
+    expect(err.reason).toBe("INVALID_JSON");
+  });
+
+  // ------------------------------------------------------------------
+  // 25. Multiple fences → INVALID_JSON
+  // ------------------------------------------------------------------
+  it("returns INVALID_JSON with multiple code fences", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = '```json\n{"claims": []}\n```\n```json\n{"other": true}\n```';
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const err = await runError(workflow({ excerpt }));
+    expect(err.reason).toBe("INVALID_JSON");
+  });
+
+  // ------------------------------------------------------------------
+  // 26. Malformed fence (no closing) → INVALID_JSON
+  // ------------------------------------------------------------------
+  it("returns INVALID_JSON with a malformed (unclosed) fence", async () => {
+    const excerpt = makeExcerpt();
+    const mockResponse = '```json\n{"claims": []}\n';
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const err = await runError(workflow({ excerpt }));
+    expect(err.reason).toBe("INVALID_JSON");
+  });
+
+  // ------------------------------------------------------------------
+  // 27. Excerpt containing a code fence works when model obeys contract
+  // ------------------------------------------------------------------
+  it("extracts claims when the excerpt contains a code fence and model returns valid JSON", async () => {
+    // The excerpt itself contains a fenced code block (tsx snippet) —
+    // model must treat it as source material, not as formatting instruction.
+    const excerpt = makeExcerpt({
+      excerpt:
+        "Some context. ```tsx\nconst x = 1;\n```\nThe Earth orbits the Sun in an elliptical path.",
+    });
+
+    const mockResponse = JSON.stringify({
+      claims: [
+        {
+          claimText: "The Earth orbits the Sun in an elliptical path.",
+          anchorText: "The Earth orbits the Sun",
+          volatility: "low",
+          decisionRelevance: "low",
+          candidateReason: "This is a reason that is long enough.",
+        },
+      ],
+    });
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const claims = await runEffect(workflow({ excerpt }));
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0].claimText).toBe("The Earth orbits the Sun in an elliptical path.");
+  });
+
+  // ------------------------------------------------------------------
+  // 28. Excerpt with code fence, model obeys contract and returns empty
+  // ------------------------------------------------------------------
+  it("returns empty claims when excerpt contains a code fence and model returns empty claims", async () => {
+    const excerpt = makeExcerpt({
+      excerpt:
+        "Some context. ```tsx\nconst x = 1;\n```\nThe Earth orbits the Sun in an elliptical path.",
+    });
+
+    const mockResponse = JSON.stringify({ claims: [] });
+
+    const deps = makeDeps(makeChatMock(mockResponse));
+    const workflow = extractClaims(deps);
+
+    const claims = await runEffect(workflow({ excerpt }));
+
+    expect(claims).toEqual([]);
   });
 });
