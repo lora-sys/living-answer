@@ -14,6 +14,7 @@ import { Route as ChangesRouteImport } from './routes/changes'
 import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as ReadGoldenDemoRouteImport } from './routes/read.golden-demo'
 import { Route as ReadGoldenDemoIdRouteImport } from './routes/read.golden-demo.$id'
+import { Route as ReadAnswerQuestionIdAnswerIdRouteImport } from './routes/read.answer.$questionId.$answerId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,12 @@ const ReadGoldenDemoIdRoute = ReadGoldenDemoIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ReadGoldenDemoRoute,
 } as any)
+const ReadAnswerQuestionIdAnswerIdRoute =
+  ReadAnswerQuestionIdAnswerIdRouteImport.update({
+    id: '/read/answer/$questionId/$answerId',
+    path: '/read/answer/$questionId/$answerId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +54,7 @@ export interface FileRoutesByFullPath {
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
+  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +62,7 @@ export interface FileRoutesByTo {
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
+  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,6 +71,7 @@ export interface FileRoutesById {
   '/sources': typeof SourcesRoute
   '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
+  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -71,6 +81,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/read/golden-demo'
     | '/read/golden-demo/$id'
+    | '/read/answer/$questionId/$answerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -78,6 +89,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/read/golden-demo'
     | '/read/golden-demo/$id'
+    | '/read/answer/$questionId/$answerId'
   id:
     | '__root__'
     | '/'
@@ -85,6 +97,7 @@ export interface FileRouteTypes {
     | '/sources'
     | '/read/golden-demo'
     | '/read/golden-demo/$id'
+    | '/read/answer/$questionId/$answerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -92,6 +105,7 @@ export interface RootRouteChildren {
   ChangesRoute: typeof ChangesRoute
   SourcesRoute: typeof SourcesRoute
   ReadGoldenDemoRoute: typeof ReadGoldenDemoRouteWithChildren
+  ReadAnswerQuestionIdAnswerIdRoute: typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -131,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReadGoldenDemoIdRouteImport
       parentRoute: typeof ReadGoldenDemoRoute
     }
+    '/read/answer/$questionId/$answerId': {
+      id: '/read/answer/$questionId/$answerId'
+      path: '/read/answer/$questionId/$answerId'
+      fullPath: '/read/answer/$questionId/$answerId'
+      preLoaderRoute: typeof ReadAnswerQuestionIdAnswerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -151,6 +172,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangesRoute: ChangesRoute,
   SourcesRoute: SourcesRoute,
   ReadGoldenDemoRoute: ReadGoldenDemoRouteWithChildren,
+  ReadAnswerQuestionIdAnswerIdRoute: ReadAnswerQuestionIdAnswerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -6,10 +6,7 @@ import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import { parseZhihuAnswerUrl } from "../lib/zhihu-answer-url";
 import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
-import type {
-  AnalyzePatchResponse,
-  AnalyzePatchServerFailureCode,
-} from "../server/analyze-patch-response";
+import type { AnalyzePatchResponse } from "../server/analyze-patch-response";
 import {
   failureMessage,
   formatDateFromUnixSeconds,
@@ -17,11 +14,8 @@ import {
 } from "../lib/failure-messages";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
+import { readAnswer } from "../server/read-answer";
 import { analyzePatch } from "../server/analyze-patch";
-import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
-import { resolvePatchLifecycle } from "../server/resolve-patch-lifecycle";
-import { withdrawPatchLifecycle } from "../server/withdraw-patch-lifecycle";
-import { submitPatchFeedback } from "../server/submit-patch-feedback";
 import {
   type SearchAnswerCandidatesResponse,
   searchAnswerCandidates,
@@ -35,8 +29,8 @@ import {
   retrieveEvidenceCandidatesFn,
 } from "../server/retrieve-evidence-candidates";
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
-import { RealResultRead } from "../components/analysis/RealResultRead";
 import { GoldenDemoPreviewCard } from "../components/demo/GoldenDemoPreviewCard";
+import { type ListPatchChangesResponse, listPatchChanges } from "../server/list-patch-changes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -59,15 +53,14 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const navigate = useNavigate();
   const boundResolve = useServerFn(resolveAnswerExcerpt);
   const boundAnalyze = useServerFn(analyzePatch);
-  const boundDisputePatch = useServerFn(disputePatchLifecycle);
   const boundExtractClaims = useServerFn(extractAnswerClaims);
   const boundRetrieveEvidence = useServerFn(retrieveEvidenceCandidatesFn);
   const boundSearchCandidates = useServerFn(searchAnswerCandidates);
-  const boundResolvePatch = useServerFn(resolvePatchLifecycle);
-  const boundWithdrawPatch = useServerFn(withdrawPatchLifecycle);
-  const boundSubmitFeedback = useServerFn(submitPatchFeedback);
+  const boundListChanges = useServerFn(listPatchChanges);
+  const boundRead = useServerFn(readAnswer);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -100,15 +93,14 @@ function Home() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [contextText, setContextText] = useState("");
   const [disputeLoading, setDisputeLoading] = useState(false);
-  const [disputeError, setDisputeError] = useState<AnalyzePatchServerFailureCode | null>(null);
-  const [lifecycleAction, setLifecycleAction] = useState<"dispute" | "resolve" | "withdraw" | null>(
-    null,
-  );
 
   // ── Claims state ─────────────────────────────────────────────────────────────
   const [claimsResult, setClaimsResult] = useState<ExtractAnswerClaimsResponse | null>(null);
   const [claimsLoading, setClaimsLoading] = useState(false);
   const [claimsRetryKey, setClaimsRetryKey] = useState(0);
+
+  // ── Recent maintained answers ────────────────────────────────────────────
+  const [recentChanges, setRecentChanges] = useState<ListPatchChangesResponse | null>(null);
 
   // ── Evidence candidates state ───────────────────────────────────────────────
   const [evidenceResult, setEvidenceResult] = useState<RetrieveEvidenceResponse | null>(null);
@@ -134,7 +126,6 @@ function Home() {
     setAnalysisLoading(false);
     setAnalysisError(null);
     setDisputeLoading(false);
-    setDisputeError(null);
     setClaimsResult(null);
     setClaimsLoading(false);
     setClaimsRetryKey(0);
@@ -174,11 +165,27 @@ function Home() {
     setSearchLoading(false);
   };
 
-  const handleSelectCandidate = (candidateUrl: string) => {
-    setUrl(candidateUrl);
-    setEntryMode("url");
-    setSearchResult(null);
-    setSearchQuery("");
+  useEffect(() => {
+    let cancelled = false;
+    boundListChanges()
+      .then((response) => {
+        if (!cancelled) setRecentChanges(response);
+      })
+      .catch(() => {
+        if (!cancelled) setRecentChanges(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [boundListChanges]);
+
+  const handleSelectCandidate = async (candidate: {
+    questionId: string;
+    answerId: string;
+    url: string;
+  }): Promise<void> => {
+    setUrl(candidate.url);
     setErrorState(null);
     setServerResult(null);
     setAnalysisResult(null);
@@ -186,6 +193,24 @@ function Home() {
     setClaimsResult(null);
     setEvidenceResult(null);
     evidenceRequestKeyRef.current = null;
+
+    const readResponse = await boundRead({
+      data: { questionId: candidate.questionId, answerId: candidate.answerId },
+    }).catch(() => null);
+
+    if (readResponse?.status === "ok" || readResponse?.status === "excerpt_only") {
+      await navigate({
+        to: "/read/answer/$questionId/$answerId",
+        params: { questionId: candidate.questionId, answerId: candidate.answerId },
+      });
+      setSearchResult(null);
+      setSearchQuery("");
+      return;
+    }
+
+    setEntryMode("url");
+    setSearchResult(null);
+    setSearchQuery("");
   };
 
   // ── Analysis handler ───────────────────────────────────────────────────────
@@ -194,7 +219,6 @@ function Home() {
     setAnalysisResult(null);
     setAnalysisError(null);
     setAnalysisLoading(true);
-    setDisputeError(null);
 
     const trimmedUrl = url.trim();
     const trimmedContext = contextText.trim();
@@ -210,6 +234,19 @@ function Home() {
 
     if (response) {
       setAnalysisResult(response);
+      if (
+        response.status === "ok" &&
+        response.decision.verdict === "UPDATE" &&
+        resultData !== null
+      ) {
+        await navigate({
+          to: "/read/answer/$questionId/$answerId",
+          params: {
+            questionId: resultData.excerpt.questionId,
+            answerId: resultData.excerpt.answerId,
+          },
+        });
+      }
     } else {
       setAnalysisResult({ status: "error", code: "PROVIDER_ERROR" });
     }
@@ -222,123 +259,6 @@ function Home() {
 
   const handleRetry = async (): Promise<void> => {
     await runAnalysis();
-  };
-
-  const handleDispute = async (): Promise<void> => {
-    if (
-      disputeLoading ||
-      analysisResult?.status !== "ok" ||
-      analysisResult.lifecycle?.status !== "VISIBLE"
-    ) {
-      return;
-    }
-
-    const recordFingerprint = analysisResult.lifecycle.recordFingerprint;
-    setLifecycleAction("dispute");
-    setDisputeError(null);
-
-    const response = await boundDisputePatch({ data: { recordFingerprint } }).catch(() => null);
-
-    if (response?.status === "ok") {
-      setAnalysisResult((current) => {
-        if (
-          current?.status !== "ok" ||
-          current.lifecycle?.recordFingerprint !== response.recordFingerprint
-        ) {
-          return current;
-        }
-
-        return {
-          ...current,
-          lifecycle: {
-            ...current.lifecycle,
-            status: "DISPUTED",
-            eventAt: response.disputedAt,
-          },
-          history: current.history?.map((record) =>
-            record.recordFingerprint === response.recordFingerprint
-              ? { ...record, status: "DISPUTED", eventAt: response.disputedAt }
-              : record,
-          ),
-        };
-      });
-    } else if (response?.status === "error") {
-      setDisputeError(response.code);
-    } else {
-      setDisputeError("DISPUTE_PATCH_STORE_ERROR");
-    }
-
-    setDisputeLoading(false);
-    setLifecycleAction(null);
-  };
-
-  const handleLifecycleTransition = async (action: "resolve" | "withdraw"): Promise<void> => {
-    if (
-      disputeLoading ||
-      analysisResult?.status !== "ok" ||
-      analysisResult.lifecycle?.status !== "VISIBLE"
-    ) {
-      return;
-    }
-
-    const recordFingerprint = analysisResult.lifecycle.recordFingerprint;
-    setLifecycleAction(action);
-    setDisputeError(null);
-
-    const boundFn = action === "resolve" ? boundResolvePatch : boundWithdrawPatch;
-    const response = await boundFn({ data: { recordFingerprint } }).catch(() => null);
-
-    if (response?.status === "ok") {
-      const newStatus = action === "resolve" ? "RESOLVED" : "WITHDRAWN";
-      const eventAt = Date.now();
-      setAnalysisResult((current) => {
-        if (
-          current?.status !== "ok" ||
-          current.lifecycle?.recordFingerprint !== response.recordFingerprint
-        ) {
-          return current;
-        }
-        return {
-          ...current,
-          lifecycle: {
-            ...current.lifecycle,
-            status: newStatus,
-            eventAt,
-          },
-          history: current.history?.map((record) =>
-            record.recordFingerprint === response.recordFingerprint
-              ? { ...record, status: newStatus, eventAt }
-              : record,
-          ),
-        };
-      });
-    } else {
-      setDisputeError("DISPUTE_PATCH_STORE_ERROR");
-    }
-
-    setLifecycleAction(null);
-  };
-
-  const handleResolve = (): Promise<void> => handleLifecycleTransition("resolve");
-  const handleWithdraw = (): Promise<void> => handleLifecycleTransition("withdraw");
-
-  const handleSubmitFeedback = async (input: {
-    questionId: string;
-    answerId: string;
-    excerptFingerprint: string;
-    recordFingerprint?: string;
-    reason: import("../lib/patch-feedback").PatchFeedbackReason;
-    question?: string;
-    evidenceUrl?: string;
-    evidenceQuote?: string;
-  }): Promise<import("../server/submit-patch-feedback").SubmitPatchFeedbackResponse> => {
-    const response = await boundSubmitFeedback({ data: input }).catch(() => null);
-    if (response) return response;
-    return {
-      status: "error",
-      code: "FEEDBACK_STORE_ERROR",
-      message: "反馈提交出现异常，请稍后再试。",
-    };
   };
 
   // ── Claims extraction ────────────────────────────────────────────────────────
@@ -441,6 +361,7 @@ function Home() {
     GOLDEN_DEMOS["delayed-retirement"],
   ];
   const supportingDemos = goldenDemos.slice(1);
+  const maintainedAnswers = recentChanges?.status === "ok" ? recentChanges.changes.slice(0, 3) : [];
   // ── Derive display state ───────────────────────────────────────────────────
 
   const isPending = loading;
@@ -776,7 +697,7 @@ function Home() {
                     <li key={c.answerId}>
                       <button
                         type="button"
-                        onClick={() => handleSelectCandidate(c.url)}
+                        onClick={() => handleSelectCandidate(c)}
                         className={
                           "block w-full rounded-[2px] border border-rule bg-paper-2 px-4 py-4 text-left transition-colors duration-150 " +
                           "hover:border-accent/30 " +
@@ -849,20 +770,30 @@ function Home() {
                 {analysisLoading && <span className="text-sm text-muted">正在分析…</span>}
               </div>
 
-              {/* Render real-data read view on successful analysis, otherwise show the generic panel */}
-              {analysisResult !== null && analysisResult.status === "ok" && resultData !== null ? (
-                <RealResultRead
-                  excerpt={resultData.excerpt}
-                  result={analysisResult}
-                  contextText={contextText}
-                  onDispute={handleDispute}
-                  onResolve={handleResolve}
-                  onWithdraw={handleWithdraw}
-                  onRecheck={handleRetry}
-                  isDisputePending={disputeLoading || lifecycleAction !== null}
-                  disputeError={disputeError}
-                  onSubmitFeedback={handleSubmitFeedback}
-                />
+              {analysisResult?.status === "ok" &&
+              analysisResult.decision.verdict === "UPDATE" &&
+              resultData !== null ? (
+                <div className="rounded-[2px] border border-success/32 bg-success-soft px-5 py-5">
+                  <p className="text-sm font-semibold text-success">分析已完成</p>
+                  <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-subtle">
+                    结果已保存到专属阅读页，可以在阅读页复核证据、反馈或继续维护。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void navigate({
+                        to: "/read/answer/$questionId/$answerId",
+                        params: {
+                          questionId: resultData.excerpt.questionId,
+                          answerId: resultData.excerpt.answerId,
+                        },
+                      })
+                    }
+                    className="mt-4 inline-flex min-h-11 items-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  >
+                    打开回答阅读页 &rarr;
+                  </button>
+                </div>
               ) : (
                 <AnalysisResultPanel
                   result={analysisResult}
@@ -874,6 +805,46 @@ function Home() {
             </div>
           )}
         </section>
+
+        {maintainedAnswers.length > 0 && (
+          <section aria-labelledby="recent-maintained-heading">
+            <div className="max-w-3xl">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+                RECENT
+              </p>
+              <h2
+                id="recent-maintained-heading"
+                className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]"
+              >
+                最近维护的回答
+              </h2>
+              <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
+                这些回答已经有可核对的维护记录，可以直接进入专属阅读页。
+              </p>
+            </div>
+
+            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+              {maintainedAnswers.map((entry) => (
+                <li key={entry.recordFingerprint}>
+                  <Link
+                    to="/read/answer/$questionId/$answerId"
+                    params={{
+                      questionId: entry.questionId,
+                      answerId: entry.answerId,
+                    }}
+                    className="block h-full rounded-[2px] border border-rule bg-paper-2 p-5 transition-colors duration-150 hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  >
+                    <p className="line-clamp-2 text-sm font-semibold text-ink">{entry.reason}</p>
+                    <p className="mt-3 text-xs leading-5 text-muted">
+                      问题 #{entry.questionId} · 回答 #{entry.answerId}
+                    </p>
+                    <p className="mt-4 text-sm font-medium text-accent-text">打开阅读页 &rarr;</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* ═══ Patch proof ledger ══════════════════════════════════════════════ */}
         <section aria-labelledby="demo-heading">

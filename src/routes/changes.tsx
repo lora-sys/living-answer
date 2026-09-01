@@ -168,6 +168,16 @@ function ChangesPage() {
                       >
                         查看知乎来源 &rarr;
                       </a>
+                      <Link
+                        to="/read/answer/$questionId/$answerId"
+                        params={{
+                          questionId: c.questionId,
+                          answerId: c.answerId,
+                        }}
+                        className="text-accent-text transition-colors duration-150 hover:text-accent-active"
+                      >
+                        查看阅读页 &rarr;
+                      </Link>
                     </div>
                   </div>
                 </li>
