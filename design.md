@@ -1,20 +1,24 @@
-# Design — Revision Desk
+# Design — Answer Space + Landing
 
-Living Answer is not a generic article site. It is a controlled repair desk for
-old answers: the original author remains intact, while the UI marks what the
-world has changed since. The interface should feel like a precision instrument
-and a public archive at the same time.
+Living Answer is not a generic article site. It has two adjacent surfaces:
 
-This system replaces the previous visual system. Do not preserve the old warm
-orange landing language.
+- `/` is the Answer Space: a working question entry, search result list, and
+  maintained reading surface.
+- `/landing` is the product story: it proves how an old answer is checked
+  without replacing the author.
 
-## 1. Product attitude
+Both surfaces use the same controlled repair-desk language. The original author
+remains intact, while the UI marks what the world has changed since. The
+interface should feel like a precision instrument and a public archive at the
+same time.
 
 - The page reads like a public record, not marketing.
 - The old answer is the stable artifact; patches are explicit interventions.
 - Evidence is never decoration. Every color signal has a meaning.
-- The hero must answer three things in ten seconds: what is repaired, why it is
-  trustworthy, and where the user starts.
+- The Landing must answer three things in ten seconds: what is repaired, why it
+  is trustworthy, and how to enter the Answer Space.
+- The Answer Space must answer one thing in ten seconds: what question to read
+  or search now.
 - Product copy is short, factual, and Chinese-first. Latin product names may use
   the display font.
 
@@ -95,14 +99,48 @@ Rules:
 - Do not use display font for buttons or input values.
 - Long Chinese paragraphs use a max width of 68 characters.
 
-## 4. Structure
+## 4. Information architecture
+
+### Answer Space (`/`)
+
+`/` is the working product surface, not a marketing page.
+
+Working order:
+
+1. Compact black Answer Space header (working scale, not display-scale hero).
+2. Search input as the default entry, prominent and always visible.
+3. Starter question chips that trigger real Zhihu searches.
+4. Search result cards when a search has run.
+5. Prepared Golden Demo records as directly readable examples.
+6. Recently maintained answer records when local records exist.
+7. Collapsed advanced Zhihu answer URL entry for users who already have a link.
+8. Result/fallback workspace and, where applicable, the URL analysis flow.
+
+Rules:
+
+- Search is the default entry. No URL/search mode toggle.
+- URL is an advanced entry, hidden behind a "展开" button.
+- Every no-result state names the boundary and offers a next action.
+- Every prepared record opens a route; it is never decorative.
+- No fabricated answers, metrics, or testimonials.
+
+### Landing (`/landing`)
+
+`/landing` is the proof story and sends readers to `/`.
+
+Proof order:
+
+1. Statement header.
+2. Featured proof record.
+3. Three proof records.
+4. Workflow.
+5. Product boundaries.
+6. Primary call to action.
 
 - Page shell uses a centered 1120px working area, with 20px mobile padding and
   32px desktop padding.
-- Landing order: fixed nav → black hero with integrated entry → three proof
-  patches → workflow explanation → public archive footer.
-- The hero is not a text-only banner. It contains the URL/search entry and one
-  featured patch proof.
+- The Landing hero is a narrative panel, not a form.
+- The Answer Space header is compact and working-scale.
 - Cards use square geometry. No rounded 2xl, no floating card-clouds.
 - A patch record is a ledger row, not a generic product card: index, status,
   original premise, revision, source.
@@ -130,7 +168,7 @@ Ordinary UI never uses Tailwind `shadow-lg`, `shadow-xl`, `rounded-3xl`, or
 
 - Height 64px, bottom rule only.
 - Left: `LIVING ANSWER` in mono, letter-spacing `.18em`.
-- Right: `时间线` and `来源`.
+- Right: `开始使用`, `了解产品`, `时间线` and `来源`.
 - Active link has a 2px blue underline, not a pill background.
 - Mobile links are full-height rows in a white sheet with a 1px top rule.
 
@@ -147,7 +185,7 @@ filled.
 
 ### Input / search
 
-- Height 56px on the landing hero; 44px elsewhere.
+- Height 56px in the Answer Space query bar; 44px elsewhere.
 - Square-corner 4px radius.
 - Label sits above the field in mono.
 - On focus: 2px blue border plus a 3px outer ring using 18% accent.
@@ -190,9 +228,10 @@ count`. Do not turn evidence into decorative badges.
 ## 9. Implementation slices
 
 1. Token reset: colors, fonts, radii, shadows, body background, nav.
-2. Landing reset: black hero, integrated entry, proof ledger, archive footer.
-3. Read reset: same patch language, stronger source strip, sticky evidence.
-4. Lifecycle/sources/changes reset into ledger tables and timeline records.
-5. Final polish: focus, empty states, loading, error, and motion.
+2. Answer Space reset: search-first header, starter questions, honest fallbacks.
+3. Landing reset: statement hero, proof ledger, workflow, and Answer Space CTA.
+4. Read reset: same patch language, stronger source strip, sticky evidence.
+5. Lifecycle/sources/changes reset into ledger tables and timeline records.
+6. Final polish: focus, empty states, loading, error, and motion.
 
 Each slice must preserve tests, product invariants, and honest failure states.

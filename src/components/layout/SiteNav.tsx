@@ -2,6 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
+  { to: "/", label: "开始使用" },
+  { to: "/landing", label: "了解产品" },
   { to: "/changes", label: "时间线" },
   { to: "/sources", label: "来源" },
 ] as const;
