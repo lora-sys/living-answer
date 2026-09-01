@@ -54,6 +54,33 @@ const UNKNOWN_RESULT = Object.freeze({
   },
 });
 
+const OTHER_RESULTS = [
+  Object.freeze({
+    status: "ok" as const,
+    decision: {
+      _tag: "CORRECTION" as const,
+      verdict: "CORRECTION" as const,
+      reason: "The original wording contained an incorrect factual detail.",
+    },
+  }),
+  Object.freeze({
+    status: "ok" as const,
+    decision: {
+      _tag: "CONDITION" as const,
+      verdict: "CONDITION" as const,
+      reason: "The conclusion only applies under changed conditions.",
+    },
+  }),
+  Object.freeze({
+    status: "ok" as const,
+    decision: {
+      _tag: "BETTER_WAY" as const,
+      verdict: "BETTER_WAY" as const,
+      reason: "A better current method is now documented.",
+    },
+  }),
+] as const;
+
 const ERROR_RESULT = Object.freeze({
   status: "error" as const,
   code: "PROVIDER_ERROR",
@@ -255,6 +282,29 @@ describe("AnalysisResultPanel", () => {
     });
   });
 
+  // ── Other supported verdicts ──────────────────────────────────────────────
+
+  describe("other supported verdicts", () => {
+    it("renders CORRECTION without treating it as UPDATE", () => {
+      const html = renderPanel({ result: OTHER_RESULTS[0] });
+      expect(html).toContain("The original wording contained an incorrect factual detail.");
+      expect(html).toContain("更正");
+      expect(html).not.toContain("bg-update-soft");
+    });
+
+    it("renders CONDITION", () => {
+      const html = renderPanel({ result: OTHER_RESULTS[1] });
+      expect(html).toContain("条件变化");
+      expect(html).toContain("The conclusion only applies under changed conditions.");
+    });
+
+    it("renders BETTER_WAY", () => {
+      const html = renderPanel({ result: OTHER_RESULTS[2] });
+      expect(html).toContain("更好的方式");
+      expect(html).toContain("A better current method is now documented.");
+    });
+  });
+
   // ── Styling invariants ─────────────────────────────────────────────────────
 
   describe("styling invariants", () => {
@@ -297,7 +347,7 @@ describe("AnalysisResultPanel", () => {
 
     it("renders a retry button on server error", () => {
       const html = renderPanel({ result: ERROR_RESULT });
-      expect(html).toContain("重新分析");
+      expect(html).toContain("重试");
     });
 
     it("does not render retry button when result is null", () => {

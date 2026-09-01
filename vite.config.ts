@@ -16,7 +16,7 @@ const config = defineConfig({
     options: { typeAware: true, typeCheck: true },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
   resolve: { tsconfigPaths: true },
   ssr: {

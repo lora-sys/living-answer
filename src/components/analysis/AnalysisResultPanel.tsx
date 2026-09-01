@@ -24,6 +24,9 @@ import type {
   AnalyzePatchUpdateResponse,
   AnalyzePatchNoPatchResponse,
   AnalyzePatchUnknownResponse,
+  AnalyzePatchCorrectionResponse,
+  AnalyzePatchConditionResponse,
+  AnalyzePatchBetterWayResponse,
   AnalyzePatchResponse,
   AnalyzePatchServerFailureCode,
 } from "../../server/analyze-patch-response";
@@ -68,18 +71,30 @@ function LoadingView() {
 interface ErrorViewProps {
   readonly message: string;
   readonly isFormError: boolean;
+  readonly onRetry?: () => void;
 }
 
-function ErrorView({ message, isFormError }: ErrorViewProps) {
+function ErrorView({ message, isFormError, onRetry }: ErrorViewProps) {
   return (
     <div
       className={`rounded-[2px] border px-5 py-4 ${
         isFormError ? "border-danger/30 bg-danger-soft" : "border-rule bg-paper-2"
       }`}
     >
-      <p className={`text-sm font-medium ${isFormError ? "text-danger" : "text-ink-subtle"}`}>
-        {message}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className={`text-sm font-medium ${isFormError ? "text-danger" : "text-ink-subtle"}`}>
+          {message}
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex min-h-9 shrink-0 items-center rounded-[6px] bg-accent px-4 text-xs font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            重试
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -128,6 +143,33 @@ function UnknownView({ decision }: UnknownViewProps) {
   );
 }
 
+type OtherDecision =
+  | AnalyzePatchCorrectionResponse
+  | AnalyzePatchConditionResponse
+  | AnalyzePatchBetterWayResponse;
+
+const OTHER_VERDICT_LABELS = {
+  CORRECTION: "更正",
+  CONDITION: "条件变化",
+  BETTER_WAY: "更好的方式",
+} as const;
+
+interface OtherVerdictViewProps {
+  readonly decision: OtherDecision;
+}
+
+function OtherVerdictView({ decision }: OtherVerdictViewProps) {
+  return (
+    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+        {OTHER_VERDICT_LABELS[decision.verdict]}
+      </p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
+      <p className="mt-3 text-xs text-muted">这是分析结论，尚未生成原文补丁。</p>
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────────
 
 export function AnalysisResultPanel({
@@ -143,7 +185,7 @@ export function AnalysisResultPanel({
 
   // --- Client-side validation error --------------------------------------------
   if (analysisError) {
-    return <ErrorView message={analysisError} isFormError={true} />;
+    return <ErrorView message={analysisError} isFormError={true} onRetry={onRetry} />;
   }
 
   // --- No result to display ---------------------------------------------------
@@ -154,7 +196,7 @@ export function AnalysisResultPanel({
   // --- Server error -----------------------------------------------------------
   if (result.status === "error") {
     const code = result.code as AnalyzePatchServerFailureCode;
-    return <ErrorView message={failureMessage(code)} isFormError={false} />;
+    return <ErrorView message={failureMessage(code)} isFormError={false} onRetry={onRetry} />;
   }
 
   // --- Result decision --------------------------------------------------------
@@ -169,6 +211,10 @@ export function AnalysisResultPanel({
       {resultDecision.verdict === "NO_PATCH" && <NoPatchView decision={resultDecision} />}
 
       {resultDecision.verdict === "UNKNOWN" && <UnknownView decision={resultDecision} />}
+
+      {resultDecision.verdict === "CORRECTION" && <OtherVerdictView decision={resultDecision} />}
+      {resultDecision.verdict === "CONDITION" && <OtherVerdictView decision={resultDecision} />}
+      {resultDecision.verdict === "BETTER_WAY" && <OtherVerdictView decision={resultDecision} />}
 
       <div>
         <button
