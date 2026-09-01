@@ -21,7 +21,16 @@ export type AnswerExcerptServerFailureCode =
   | "INVALID_PROVIDER_ANSWER"
   | "PROVIDER_ERROR"
   | "PROVIDER_RATE_LIMITED"
-  | "PROVIDER_QUOTA_EXCEEDED";
+  | "PROVIDER_QUOTA_EXCEEDED"
+  | "THREAD_NOT_FOUND"
+  | "THREAD_CORRUPTED"
+  | "ARTIFACT_STORE_FAILURE";
+
+/** All server failure codes returned by the thread flow. */
+export type ThreadServerFailureCode =
+  | AnswerExcerptServerFailureCode
+  | "CLARIFICATION_UNAVAILABLE"
+  | "SYNTHESIS_UNAVAILABLE";
 
 // ── Response union ─────────────────────────────────────────────────────────────
 

@@ -45,7 +45,13 @@ export type AnalyzePatchServerFailureCode =
   | "EVIDENCE_STORE_ERROR"
   | "LIFECYCLE_STORE_ERROR"
   | "DISPUTE_PATCH_NOT_FOUND"
-  | "DISPUTE_PATCH_STORE_ERROR";
+  | "DISPUTE_PATCH_STORE_ERROR"
+  | "EXCERPT_LOOKUP_FAILED"
+  | "CLARIFICATION_UNAVAILABLE"
+  | "SYNTHESIS_UNAVAILABLE"
+  | "THREAD_NOT_FOUND"
+  | "THREAD_CORRUPTED"
+  | "ARTIFACT_STORE_FAILURE";
 
 // ── Mapping ─────────────────────────────────────────────────────────────────────
 
@@ -71,6 +77,12 @@ const FAILURE_MESSAGES: Readonly<Record<AnalyzePatchServerFailureCode, string>> 
   LIFECYCLE_STORE_ERROR: "记录变更状态时出现异常，请稍后再试。",
   DISPUTE_PATCH_NOT_FOUND: "该变更记录不存在或已更新，请重新检查。",
   DISPUTE_PATCH_STORE_ERROR: "暂停变更时出现异常，请稍后再试。",
+  THREAD_NOT_FOUND: "该学习线程不存在或已被移除。",
+  THREAD_CORRUPTED: "该学习线程数据损坏，无法加载。",
+  ARTIFACT_STORE_FAILURE: "保存学习线程时出现异常，请稍后再试。",
+  EXCERPT_LOOKUP_FAILED: "未找到回答摘录，请先搜索并选择候选。",
+  CLARIFICATION_UNAVAILABLE: "AI 澄清服务暂时不可用，请稍后再试。",
+  SYNTHESIS_UNAVAILABLE: "AI 综合总结暂时不可用，请稍后再试。",
 };
 
 // ── Pure functions ─────────────────────────────────────────────────────────────

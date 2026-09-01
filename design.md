@@ -1,237 +1,67 @@
-# Design — Answer Space + Landing
+# Living Answer — 设计文档
 
-Living Answer is not a generic article site. It has two adjacent surfaces:
+## 核心理念
 
-- `/` is the Answer Space: a working question entry, search result list, and
-  maintained reading surface.
-- `/landing` is the product story: it proves how an old answer is checked
-  without replacing the author.
+Living Answer 让一个模糊的问题变成一份可生长的学习线程。用户不必措辞完美，
+系统通过澄清流程理解学习意图，再从真实知乎回答中选取摘录，最后生成结构化的
+学习总结和可追溯的引用链。
 
-Both surfaces use the same controlled repair-desk language. The original author
-remains intact, while the UI marks what the world has changed since. The
-interface should feel like a precision instrument and a public archive at the
-same time.
+## 产品表面
 
-- The page reads like a public record, not marketing.
-- The old answer is the stable artifact; patches are explicit interventions.
-- Evidence is never decoration. Every color signal has a meaning.
-- The Landing must answer three things in ten seconds: what is repaired, why it
-  is trustworthy, and how to enter the Answer Space.
-- The Answer Space must answer one thing in ten seconds: what question to read
-  or search now.
-- Product copy is short, factual, and Chinese-first. Latin product names may use
-  the display font.
+| 路径                    | 角色                                                        |
+| ----------------------- | ----------------------------------------------------------- |
+| `/`                     | 问题学习线程：输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程 |
+| `/thread/$threadId`     | 线程阅读器：查看完整学习线程，含时间线、学习节点和来源      |
+| `/landing`              | 产品故事：展示理念与示例记录                                |
+| `/changes`              | 维护时间线                                                  |
+| `/sources`              | 来源说明                                                    |
+| `/read/golden-demo/:id` | 旧式阅读页（兼容保留）                                      |
 
-## 2. Color
+## 技术架构
 
-`src/styles.css` owns tokens. Components consume semantic Tailwind token names,
-never raw hex values.
+- TanStack Start + TanStack Router（基于文件的响应式路由）
+- Tailwind CSS 4 + CSS 变量令牌系统
+- Effect TS（纯域模型，可组合效果）
+- Vite+（测试框架）
+- SQLite（`better-sqlite3`，通过动态导入用于客户端）
 
-```css
-@theme {
-  --color-paper: #f0f0ea;
-  --color-paper-2: #f8f8f4;
-  --color-paper-3: #ffffff;
+### 架构约束
 
-  --color-ink: #101413;
-  --color-ink-subtle: #3d4340;
-  --color-muted: #646a66;
-  --color-faint: #878d89;
+- 纯域层不引用 React、TanStack SDK、`process.env`
+- 生产凭据仅存在于 `src/server/` 服务函数内
+- SQLite 通过 `require("better-sqlite3")` 懒加载以适配 Vite SSR 外部配置
+- 所有 API 响应必须 JSON 安全（不包含 Effect 类型或 Error 实例）
 
-  --color-rule: #d8d9cf;
-  --color-rule-strong: #b9bab1;
+## 设计语言
 
-  /* Source blue is the sole action color. */
-  --color-accent: #1746ff;
-  --color-accent-hover: #0c2fd2;
-  --color-accent-active: #08249f;
-  --color-accent-text: #1640da;
-  --color-accent-soft: #e8edff;
-  --color-on-accent: #ffffff;
+- 排版：中文正文使用系统无衬线字体，数字/标签使用等宽字体
+- 颜色：暖色调纸面背景，强调色用于状态指示，所有颜色通过 CSS 变量定义
+- 布局：最大宽度 1120px，响应式内边距
+- 间距：使用 Tailwind 的 spacing scale，保持统一节奏
+- 交互：所有按钮有清晰的视觉反馈层次（默认 / hover / active / focus）
 
-  /* Vermilion is reserved for revision, dispute, and correction. */
-  --color-update: #c6271a;
-  --color-update-soft: #fbeae7;
-  --color-success: #0d6b52;
-  --color-success-soft: #e6f2ec;
-  --color-danger: #b42318;
-  --color-danger-soft: #fdeceb;
-  --color-info: #274b8f;
-  --color-info-soft: #e8edfb;
+## 域模型
 
-  --color-focus: #1746ff;
-}
+```
+问题学习线程（QuestionLearningThread）
+  ├── question / refinedQuery / learningIntent
+  ├── timelineStages[] → 时间线阶段（来源记录）
+  ├── learningNodes[]   → 学习节点（关系/因果/演变/共识/分歧/前提变化/未知）
+  └── uncertainty       → 整体不确定性评级
 ```
 
-Usage:
+## 存储
 
-- Page background is `bg-paper`; raised evidence surfaces are `bg-paper-2`.
-- Use `bg-paper-3` only for a small card inside a larger panel.
-- Blue is for primary action, active state, link, and selected input focus.
-- Vermilion is for UPDATE/CORRECTION and dispute states only. It is a warning,
-  not the brand accent.
-- Black panels may be used for the hero and primary result header only. They
-  create the sense that the original answer is the fixed artifact.
+SQLite `thread_artifacts` 表：
 
-## 3. Type
+- 主键：`(thread_id, fingerprint)`
+- 存储完整的线程 JSON 和指纹用于变化检测
+- `makeSqliteThreadArtifactStore` 是懒单例
 
-Use a three-voice system:
+## 关键安全规则
 
-```css
---font-display: "Instrument Serif", "Noto Serif SC", "Songti SC", "SimSun", serif;
---font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
---font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
-```
-
-| Role          | Type    | Mobile | Desktop | Notes                                                       |
-| ------------- | ------- | -----: | ------: | ----------------------------------------------------------- |
-| Display       | display |  44/48 |   78/82 | For the home H1 and major page statements only. Weight 400. |
-| Page title    | display |  32/38 |   52/56 | For a section-defining page title.                          |
-| Section title | sans    |  20/28 |   26/34 | Weight 650, tracking `-0.02em`.                             |
-| Card title    | sans    |  17/26 |   19/28 | Weight 650.                                                 |
-| Body          | sans    |  15/27 |   16/29 | Weight 420-450.                                             |
-| Metadata      | mono    |  11/17 |   12/19 | IDs, dates, source fingerprints, coordinates.               |
-
-Rules:
-
-- Display text is sentence case, never italic.
-- Mono text can be uppercase only for short labels under twelve characters.
-- Do not use display font for buttons or input values.
-- Long Chinese paragraphs use a max width of 68 characters.
-
-## 4. Information architecture
-
-### Answer Space (`/`)
-
-`/` is the working product surface, not a marketing page.
-
-Working order:
-
-1. Compact black Answer Space header (working scale, not display-scale hero).
-2. Search input as the default entry, prominent and always visible.
-3. Starter question chips that trigger real Zhihu searches.
-4. Search result cards when a search has run.
-5. Prepared Golden Demo records as directly readable examples.
-6. Recently maintained answer records when local records exist.
-7. Collapsed advanced Zhihu answer URL entry for users who already have a link.
-8. Result/fallback workspace and, where applicable, the URL analysis flow.
-
-Rules:
-
-- Search is the default entry. No URL/search mode toggle.
-- URL is an advanced entry, hidden behind a "展开" button.
-- Every no-result state names the boundary and offers a next action.
-- Every prepared record opens a route; it is never decorative.
-- No fabricated answers, metrics, or testimonials.
-
-### Landing (`/landing`)
-
-`/landing` is the proof story and sends readers to `/`.
-
-Proof order:
-
-1. Statement header.
-2. Featured proof record.
-3. Three proof records.
-4. Workflow.
-5. Product boundaries.
-6. Primary call to action.
-
-- Page shell uses a centered 1120px working area, with 20px mobile padding and
-  32px desktop padding.
-- The Landing hero is a narrative panel, not a form.
-- The Answer Space header is compact and working-scale.
-- Cards use square geometry. No rounded 2xl, no floating card-clouds.
-- A patch record is a ledger row, not a generic product card: index, status,
-  original premise, revision, source.
-
-## 5. Shape, rules, shadow
-
-```css
---radius-control: 6px;
---radius-input: 4px;
---radius-card: 2px;
---radius-panel: 4px;
-
---shadow-flat: 0 0 0 1px var(--color-rule);
---shadow-card: 0 1px 0 var(--color-rule-strong), 0 18px 40px rgb(16 20 19 / 0.06);
---shadow-panel: 0 1px 0 var(--color-rule-strong), 0 32px 72px rgb(16 20 19 / 0.1);
-```
-
-Cards and panels use 1px hard rules. Shadows are subtle and never colored.
-Ordinary UI never uses Tailwind `shadow-lg`, `shadow-xl`, `rounded-3xl`, or
-`backdrop-blur`.
-
-## 6. Components
-
-### Navigation
-
-- Height 64px, bottom rule only.
-- Left: `LIVING ANSWER` in mono, letter-spacing `.18em`.
-- Right: `开始使用`, `了解产品`, `时间线` and `来源`.
-- Active link has a 2px blue underline, not a pill background.
-- Mobile links are full-height rows in a white sheet with a 1px top rule.
-
-### Primary button
-
-```text
-h-12 rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent
-hover:bg-accent-hover active:bg-accent-active
-focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus
-```
-
-Use one primary action per visual region. Secondary buttons are bordered, not
-filled.
-
-### Input / search
-
-- Height 56px in the Answer Space query bar; 44px elsewhere.
-- Square-corner 4px radius.
-- Label sits above the field in mono.
-- On focus: 2px blue border plus a 3px outer ring using 18% accent.
-- Never hide validation inside a tooltip.
-
-### Patch proof
-
-The main proof record has three columns on desktop and stacked rows on mobile:
-
-1. `原文前提` — paper background, black text, fixed artifact.
-2. `现在变化` — vermilion top rule, neutral body text.
-3. `证据` — source name, publication month, and external link.
-
-The metadata strip uses mono text and always shows `UPDATE / date / source
-count`. Do not turn evidence into decorative badges.
-
-### Status
-
-- `UPDATE`, `CORRECTION`, `DISPUTED`: vermilion signal.
-- `NO_PATCH`: neutral black on paper.
-- `UNKNOWN`: blue information signal.
-- `VISIBLE`: success green.
-- Loading uses a 10px accent dot and preserves layout height.
-
-## 7. Motion
-
-- 150ms for hover and focus; 220ms for reveal.
-- Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
-- Cards do not lift. Their top rule changes from rule-strong to accent.
-- Buttons may translate down 1px on active.
-- Respect `prefers-reduced-motion`.
-
-## 8. Responsive floor
-
-- No horizontal scroll at 320, 375, 768, and 1440px.
-- Every action has a 44px minimum target.
-- Grid tracks that contain text use `minmax(0, 1fr)`.
-- Metadata can wrap, but buttons and nav labels do not wrap to two lines.
-
-## 9. Implementation slices
-
-1. Token reset: colors, fonts, radii, shadows, body background, nav.
-2. Answer Space reset: search-first header, starter questions, honest fallbacks.
-3. Landing reset: statement hero, proof ledger, workflow, and Answer Space CTA.
-4. Read reset: same patch language, stronger source strip, sticky evidence.
-5. Lifecycle/sources/changes reset into ledger tables and timeline records.
-6. Final polish: focus, empty states, loading, error, and motion.
-
-Each slice must preserve tests, product invariants, and honest failure states.
+1. 不向客户端暴露原始凭据或凭据提示
+2. 将所有模型输出视为非受信任输入，执行严格 JSON 解析
+3. 知乎数据摘要级别，始终标注"摘录"
+4. 不将以摘录的 AnswerSnapshot.body 存储为 thread 的一部分
+5. 无结果/配额/AI/无效状态均诚实处理并提供有用操作

@@ -34,6 +34,7 @@ export interface AnswerCandidate {
   readonly title: string;
   readonly url: string;
   readonly preview: string;
+  readonly excerptFingerprint: string;
   readonly authorDisplayName?: string;
   readonly editAt?: number;
   readonly maintenance: {
@@ -153,6 +154,7 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
       title: typeof record.Title === "string" ? record.Title.trim() : "",
       url: parsed.canonicalUrl,
       preview: excerpt.excerpt.slice(0, 200),
+      excerptFingerprint: excerpt.fingerprint,
       authorDisplayName:
         typeof record.AuthorName === "string" && record.AuthorName.trim() !== ""
           ? record.AuthorName.trim()

@@ -37,7 +37,7 @@ function NotFound() {
             404
           </p>
           <h1 className="mt-5 font-display text-[32px] leading-[38px] font-normal tracking-[-0.01em] sm:text-[44px] sm:leading-[48px]">
-            这里没有答案补丁
+            这里没有学习线程
           </h1>
           <p className="mt-4 leading-7 text-ink-subtle">当前地址不存在，返回开发环境首页继续。</p>
           <Link

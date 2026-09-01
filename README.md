@@ -1,124 +1,72 @@
-<p align="center">
-  <img src="./docs/assets/living-answer-hero.png" alt="Living Answer — an evidence-backed maintenance layer for old Zhihu answers" width="100%" />
-</p>
-
 # Living Answer
 
-Living Answer helps readers see which important premises in an older Zhihu
-answer have materially changed, what that means today, and which evidence
-supports the update.
+输入一个模糊问题，澄清学习意图，从真实知乎回答中选取摘录，生成一份持久的学习线程。
 
-## One-command development
+## 技术栈
 
-```bash
-./dev.sh
-```
+- [TanStack Start](https://tanstack.com/start) — SSR 全栈框架
+- [TanStack Router](https://tanstack.com/router) — TypeScript 路由器
+- [Tailwind CSS 4](https://tailwindcss.com/) — 样式
+- [Effect TS](https://effect.website/) — 效果系统
+- [Vite+](https://vitest.dev/) — 测试框架
+- SQLite (better-sqlite3) — 持久化
 
-On its first run, the script installs the pinned global Vite+ CLI if `vp` is
-missing, installs the project-pinned Node.js runtime and dependencies, checks
-the environment, and starts the TanStack Start development server. Use the URL
-printed by Vite; the project does not assume a fixed port. Stop it with
-`Ctrl+C`.
-
-The first run changes the user-level Vite+ installation. This is intentional.
-
-## Manual commands
+## 快速开始
 
 ```bash
-vp env install
-vp env doctor
-vp install --frozen-lockfile
-vp dev
+pnpm install
+pnpm dev
 ```
 
-Validation:
+打开 http://localhost:3000 即可使用。
+
+## 项目结构
+
+```
+src/
+  routes/        — 基于 TanStack Router 的文件式路由
+    index.tsx    — 问题学习线程入口
+    thread/
+      $threadId.tsx — 线程阅读器
+    landing.tsx  — 产品故事
+    changes.tsx  — 维护时间线
+    sources.tsx  — 来源说明
+  server/        — 服务端函数
+    clarify-question.ts    — 澄清模糊问题
+    synthesize-thread.ts   — 合成学习节点
+    generate-thread-artifact.ts — 生成并持久化线程
+    read-thread-artifact.ts — 读取线程
+    search-answer-candidates.ts — 搜索候选
+  lib/           — 纯域层和工具
+    thread-artifact.ts    — 线程域记录和工厂
+    thread-artifact-store.ts — SQLite 存储
+    thread-clarification.ts — 澄清工作流
+    thread-synthesis.ts   — 合成工作流
+    zhihu-direct-answer-adapter.ts — zhihu 回答适配器
+    golden-demo-fixture.ts — 演示数据
+    app-info.ts      — 产品信息
+    failure-messages.ts — 错误地图
+  components/    — 可复用 UI
+  lib/           — 纯域模型、存储、工具
+```
+
+## 开发
 
 ```bash
-vp check
-vp test
-vp build
+pnpm check      # 类型检查
+pnpm test       # 运行测试
+pnpm build      # 生产构建
 ```
 
-## Troubleshooting
+## 核心流程
 
-When something looks off, run the doctor first. It reports Node version,
-package manager, and Vite+ installation status in one place.
+1. **输入**：用户在 `/` 输入模糊问题
+2. **澄清**：系统精炼查询，提供备选词和学习意图
+3. **搜索**：在知乎搜索候选回答，每条提供摘录预览
+4. **选择**：用户手动勾选要引用的回答
+5. **生成**：系统基于选中的摘录合成结构化学习线程
+6. **阅读**：在 `/thread/$threadId` 查看完整线程
 
-```bash
-vp env doctor
-```
+## 许可证
 
-### Port already in use
-
-`vp dev` does not assume a fixed port. If a previous session left a process
-bound to the printed port, stop it (the address is shown in the dev output)
-or let the next run pick a new one.
-
-```bash
-# list processes for the printed port
-# macOS / Linux
-lsof -i :<port>
-# Windows
-netstat -ano | findstr :<port>
-```
-
-### Dependencies drifted
-
-`vp install` rewrites the lockfile. To restore a clean state from the
-pinned lockfile:
-
-```bash
-vp install --frozen-lockfile
-vp check
-```
-
-### Wrong Node version
-
-The project pins Node 24 LTS via `devEngines`. If `vp env doctor` reports
-the wrong runtime, install the pinned version and re-run:
-
-```bash
-vp env install
-```
-
-## Current boundary
-
-The current real-data path accepts a Zhihu answer URL, resolves a summary-class
-`AnswerExcerpt` through the official search API, extracts anchored and
-time-sensitive claims, retrieves Zhihu and global search candidates, applies an
-evidence gate, and produces an advisory patch result. Provider failures, rate
-limits, and durable daily quota limits are surfaced as safe, localized
-read-facing failures.
-
-Living Answer deliberately does **not** generate a new full answer or treat an
-excerpt as the original answer. The official open API surface observed in
-Spike 01 provides summary-class content rather than a documented full-answer
-path, so `AnswerExcerpt` remains a separate immutable observation. It must never
-be stored as an `AnswerSnapshot.body`.
-
-Development state is persisted under ignored `.local/` storage:
-
-- `AnswerExcerpt` observations.
-- Claim sets keyed by excerpt fingerprint.
-- Evidence-candidate retrieval events and candidates.
-- Daily provider quota usage.
-
-The product still lacks durable `PatchRevision`, a Changes timeline, recheck,
-and the minimal dispute flow. Golden-demo pages remain separate demonstration
-fixtures and are not presented as live API results. Full-answer ingestion,
-public deployment, final UI polish, and claim-level evaluation remain explicitly
-out of the current working slice.
-
-## Engineering rules
-
-- TanStack Start and Router own routes, loaders, server functions, and errors.
-- Effect is used at external and workflow boundaries where typed failures,
-  retries, validation, timeouts, or controlled concurrency help.
-- Domain code does not import React, TanStack, SQLite, provider SDKs, or
-  environment-specific paths.
-- Provider pages, API payloads, comments, and model output are untrusted data
-  and are validated before entering the domain.
-- Credentials are read only in the server-function boundary and never exposed
-  in responses, logs, or client state.
-- Writable development state stays under ignored `.local/`.
-- Tests use injected transports and never call real provider APIs.
+MIT
