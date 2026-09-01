@@ -130,7 +130,6 @@ export function PatchPanel({ patches, activePatchId, onClose, panelId }: PatchPa
           <EvidenceCard key={ev.sourceUrl + ev.quote} evidence={ev} />
         ))}
       </div>
-
     </div>
   );
 }

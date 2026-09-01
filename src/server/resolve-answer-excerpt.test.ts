@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   AmbiguousAnswerProviderError,
@@ -10,11 +10,14 @@ import {
   QuotaExceededProviderError,
   RateLimitedProviderError,
   UnsupportedAnswerUrlError,
+  makeAnswerExcerptProvider,
   type AnswerExcerptProvider,
   type AnswerExcerptProviderFailure,
 } from "../lib/answer-excerpt-provider";
 
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
+
+import type { ExcerptStore } from "../lib/excerpt-store";
 
 import { createResolveAnswerExcerptHandler } from "./resolve-answer-excerpt";
 
@@ -284,6 +287,50 @@ describe("resolve-answer-excerpt", () => {
           status: "error",
           code: "UNSUPPORTED_ANSWER_URL",
         });
+      }
+    });
+  });
+
+  // ── Store-hit (search-reuse path) ────────────────────────────────────
+
+  describe("store-hit path", () => {
+    it("resolves from store without calling fetchItems when excerpt is persisted", async () => {
+      // Simulate the search-reuse flow: the store already has the excerpt
+      // that was persisted by the search-candidate handler.  The provider
+      // must NOT call fetchItems — it finds the excerpt in the store first.
+      const existingExcerpt = makeExcerpt({
+        questionId: "42",
+        answerId: "100",
+        excerpt: "persisted excerpt from search",
+      });
+
+      const fakeStore = {
+        save: vi.fn(() => Effect.succeed(void 0)),
+        findLatest: vi.fn(() => Effect.succeed(existingExcerpt)),
+      };
+
+      // This fetcher would throw if called — we verify it is NOT called.
+      const failingFetcher = () =>
+        Effect.fail(new AnswerNotFoundProviderError()) as Effect.Effect<
+          readonly unknown[],
+          AnswerExcerptProviderFailure
+        >;
+
+      const provider = await Effect.runPromise(
+        makeAnswerExcerptProvider({
+          fetchItems: failingFetcher,
+          ttl: 60_000,
+          store: fakeStore as ExcerptStore,
+        }),
+      );
+
+      const h = buildHandler("secret", provider);
+      const response = await call(h, { url: VALID_URL });
+
+      expect(response.status).toBe("ok");
+      if (response.status === "ok") {
+        expect(response.excerpt).toBe(existingExcerpt);
+        expect(response.excerpt.excerpt).toBe("persisted excerpt from search");
       }
     });
   });

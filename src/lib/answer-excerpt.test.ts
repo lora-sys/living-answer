@@ -279,6 +279,36 @@ describe("createAnswerExcerpt", () => {
     expect(aEx.fingerprint).not.toBe(bEx.fingerprint);
   });
 
+  it("strips Zhihu search <em> highlight markup", () => {
+    const result = createAnswerExcerpt({
+      questionId: "1",
+      answerId: "1",
+      capturedAt: 0,
+      sourceContentId: "1",
+      sourceContentType: "Answer",
+      sourceEditTime: 0,
+      excerpt: "some <em>highlighted</em> and more text",
+    });
+
+    const ex = expectExcerpt(result);
+    expect(ex.excerpt).toBe("some highlighted and more text");
+  });
+
+  it("strips multiple <em> tags and leaves plain text", () => {
+    const result = createAnswerExcerpt({
+      questionId: "1",
+      answerId: "1",
+      capturedAt: 0,
+      sourceContentId: "1",
+      sourceContentType: "Answer",
+      sourceEditTime: 0,
+      excerpt: "<em>first</em> middle <em>second</em> end",
+    });
+
+    const ex = expectExcerpt(result);
+    expect(ex.excerpt).toBe("first middle second end");
+  });
+
   // ── normalisation: excerpt ────────────────────────────────────────────────
 
   it("normalises CRLF to LF", () => {

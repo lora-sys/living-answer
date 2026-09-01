@@ -59,13 +59,9 @@ const FP_PATTERN = /^v1:[0-9a-f]{16}$/;
 const normalizeText = (raw: string): string =>
   raw.normalize("NFC").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
 
-const isValidTimestamp = (value: number): boolean =>
-  Number.isSafeInteger(value) && value >= 0;
+const isValidTimestamp = (value: number): boolean => Number.isSafeInteger(value) && value >= 0;
 
-const optionalText = (
-  value: string | undefined,
-  maxLength: number,
-): string | undefined | null => {
+const optionalText = (value: string | undefined, maxLength: number): string | undefined | null => {
   if (value === undefined) return undefined;
   const normalized = normalizeText(value);
   if (normalized === "" || normalized.length > maxLength) return null;
@@ -107,21 +103,13 @@ const buildFeedbackFingerprint = (record: PatchFeedbackRecord): string => {
 export const createPatchFeedback = (input: PatchFeedbackInput): PatchFeedbackResult => {
   const questionId = normalizeText(input.questionId);
   const answerId = normalizeText(input.answerId);
-  if (
-    questionId === "" ||
-    answerId === "" ||
-    questionId.length > 64 ||
-    answerId.length > 64
-  ) {
+  if (questionId === "" || answerId === "" || questionId.length > 64 || answerId.length > 64) {
     return { _tag: "failure", reason: "INVALID_ANSWER_IDENTITY" };
   }
   if (!FP_PATTERN.test(input.excerptFingerprint)) {
     return { _tag: "failure", reason: "INVALID_EXCERPT_FINGERPRINT" };
   }
-  if (
-    input.recordFingerprint !== undefined &&
-    !FP_PATTERN.test(input.recordFingerprint)
-  ) {
+  if (input.recordFingerprint !== undefined && !FP_PATTERN.test(input.recordFingerprint)) {
     return { _tag: "failure", reason: "INVALID_RECORD_FINGERPRINT" };
   }
   if (!isValidTimestamp(input.submittedAt)) {
@@ -148,10 +136,11 @@ export const createPatchFeedback = (input: PatchFeedbackInput): PatchFeedbackRes
 
   let evidenceUrl: string | undefined;
   if (input.evidenceUrl !== undefined) {
-    evidenceUrl = normalizeEvidenceUrl(input.evidenceUrl);
-    if (evidenceUrl === null) {
+    const normalizedEvidenceUrl = normalizeEvidenceUrl(input.evidenceUrl);
+    if (normalizedEvidenceUrl === null) {
       return { _tag: "failure", reason: "INVALID_EVIDENCE_URL" };
     }
+    evidenceUrl = normalizedEvidenceUrl;
   }
 
   const evidenceQuote = optionalText(input.evidenceQuote, 1000);
@@ -163,7 +152,9 @@ export const createPatchFeedback = (input: PatchFeedbackInput): PatchFeedbackRes
     questionId,
     answerId,
     excerptFingerprint: input.excerptFingerprint,
-    ...(input.recordFingerprint === undefined ? {} : { recordFingerprint: input.recordFingerprint }),
+    ...(input.recordFingerprint === undefined
+      ? {}
+      : { recordFingerprint: input.recordFingerprint }),
     reason,
     ...(question === undefined ? {} : { question }),
     ...(evidenceUrl === undefined ? {} : { evidenceUrl }),
@@ -181,9 +172,7 @@ export const createPatchFeedback = (input: PatchFeedbackInput): PatchFeedbackRes
   };
 };
 
-export const FEEDBACK_REASON_LABELS: Readonly<
-  Record<PatchFeedbackReason, string>
-> = Object.freeze({
+export const FEEDBACK_REASON_LABELS: Readonly<Record<PatchFeedbackReason, string>> = Object.freeze({
   QUESTION: "提问",
   EVIDENCE_UNSUPPORTED: "证据不支持这条提示",
   WRONG_CONDITION: "适用条件写错了",

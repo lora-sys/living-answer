@@ -478,7 +478,8 @@ function Home() {
           </p>
         </div>
         <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle">
-          当前摘录来自搜索接口，不能按回答 URL 保证精确定位。这条回答可能未被收录、已受限，或暂时不可检索。
+          当前摘录来自搜索接口，不能按回答 URL
+          保证精确定位。这条回答可能未被收录、已受限，或暂时不可检索。
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button

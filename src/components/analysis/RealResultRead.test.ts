@@ -30,11 +30,13 @@ const renderRead = (overrides?: Partial<RealResultReadProps>): string => {
     excerpt: overrides?.excerpt ?? EXCERPT,
     result: overrides?.result ?? UPDATE_RESULT,
     contextText: overrides?.contextText ?? undefined,
-    onSubmitFeedback: overrides?.onSubmitFeedback ?? (async () => ({
-      status: "error",
-      code: "FEEDBACK_STORE_ERROR",
-      message: "unused",
-    })),
+    onSubmitFeedback:
+      overrides?.onSubmitFeedback ??
+      (async () => ({
+        status: "error",
+        code: "FEEDBACK_STORE_ERROR",
+        message: "unused",
+      })),
     ...overrides,
   };
   return h(React.createElement(RealResultRead, props));
@@ -358,29 +360,11 @@ describe("RealResultRead", () => {
       },
     });
 
-    const renderFull = (): string =>
-      h(
-        React.createElement(RealResultRead, {
-          excerpt: EXCERPT,
-          result: FULL_UPDATE_RESULT,
-        }),
-      );
+    const renderFull = (): string => renderRead({ result: FULL_UPDATE_RESULT });
 
-    const renderPartial = (): string =>
-      h(
-        React.createElement(RealResultRead, {
-          excerpt: EXCERPT,
-          result: PARTIAL_UPDATE_RESULT,
-        }),
-      );
+    const renderPartial = (): string => renderRead({ result: PARTIAL_UPDATE_RESULT });
 
-    const renderLegacy = (): string =>
-      h(
-        React.createElement(RealResultRead, {
-          excerpt: EXCERPT,
-          result: LEGACY_UPDATE_RESULT,
-        }),
-      );
+    const renderLegacy = (): string => renderRead({ result: LEGACY_UPDATE_RESULT });
 
     it("renders all new sections for a full claim-anchored UPDATE", () => {
       const html = renderFull();
@@ -452,12 +436,7 @@ describe("RealResultRead", () => {
           ],
         },
       };
-      const html = h(
-        React.createElement(RealResultRead, {
-          excerpt: EXCERPT,
-          result,
-        }),
-      );
+      const html = renderRead({ result });
       expect(html).toContain("bg-update-soft");
       expect(html).toContain("border-update/30");
     });

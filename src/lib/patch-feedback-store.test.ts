@@ -53,7 +53,11 @@ describe("patch feedback store", () => {
   it("keeps data across reopening the database", async () => {
     const reopened = await Effect.runPromise(makeSqlitePatchFeedbackStore(TEST_DB_PATH));
     const saved = await Effect.runPromise(
-      reopened.save(createRecord("Second question."), "EVIDENCE_GATE_INSUFFICIENT", 1_700_000_004_000),
+      reopened.save(
+        createRecord("Second question."),
+        "EVIDENCE_GATE_INSUFFICIENT",
+        1_700_000_004_000,
+      ),
     );
 
     expect(saved.question).toBe("Second question.");

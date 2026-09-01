@@ -4,10 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { fnv1a64 } from "../lib/answer-excerpt";
 import { createEvidenceCandidate, type EvidenceCandidate } from "../lib/evidence-candidate";
 import { createPatchFeedback, type PatchFeedbackRecord } from "../lib/patch-feedback";
-import {
-  makeSqlitePatchFeedbackStore,
-  type PatchFeedbackStore,
-} from "../lib/patch-feedback-store";
+import { makeSqlitePatchFeedbackStore, type PatchFeedbackStore } from "../lib/patch-feedback-store";
 
 export type SubmitPatchFeedbackFailureCode = "INVALID_REQUEST" | "FEEDBACK_STORE_ERROR";
 
@@ -41,10 +38,7 @@ export interface SubmitPatchFeedbackInput {
   readonly evidenceQuote?: string;
 }
 
-export type EvidenceReviewOutcome =
-  | "passed"
-  | "insufficient"
-  | "no_patch";
+export type EvidenceReviewOutcome = "passed" | "insufficient" | "no_patch";
 
 export interface SubmitPatchFeedbackDeps {
   readonly createFeedbackStore: () => Promise<PatchFeedbackStore>;
@@ -72,8 +66,7 @@ const parseInput = (input: unknown): SubmitPatchFeedbackInput => {
   return {
     questionId: typeof raw.questionId === "string" ? raw.questionId : "",
     answerId: typeof raw.answerId === "string" ? raw.answerId : "",
-    excerptFingerprint:
-      typeof raw.excerptFingerprint === "string" ? raw.excerptFingerprint : "",
+    excerptFingerprint: typeof raw.excerptFingerprint === "string" ? raw.excerptFingerprint : "",
     ...(typeof raw.recordFingerprint === "string"
       ? { recordFingerprint: raw.recordFingerprint }
       : {}),
@@ -95,9 +88,7 @@ const safeError = (code: SubmitPatchFeedbackFailureCode): SubmitPatchFeedbackRes
       : "反馈提交出现异常，请稍后再试。",
 });
 
-const createUserEvidenceCandidate = (
-  feedback: PatchFeedbackRecord,
-): EvidenceCandidate | null => {
+const createUserEvidenceCandidate = (feedback: PatchFeedbackRecord): EvidenceCandidate | null => {
   if (feedback.evidenceUrl === undefined || feedback.evidenceQuote === undefined) {
     return null;
   }
@@ -147,7 +138,9 @@ export const createSubmitPatchFeedbackHandler =
       questionId: input.questionId,
       answerId: input.answerId,
       excerptFingerprint: input.excerptFingerprint,
-      ...(input.recordFingerprint === undefined ? {} : { recordFingerprint: input.recordFingerprint }),
+      ...(input.recordFingerprint === undefined
+        ? {}
+        : { recordFingerprint: input.recordFingerprint }),
       reason: input.reason,
       ...(input.question === undefined ? {} : { question: input.question }),
       ...(input.evidenceUrl === undefined ? {} : { evidenceUrl: input.evidenceUrl }),
@@ -204,9 +197,8 @@ export const submitPatchFeedback = createServerFn({ method: "POST" })
         ? {
             reviewEvidence: async (claimText, candidates) => {
               const { runEvidenceGate } = await import("../lib/evidence-gate");
-              const { makeOpenAiChatCompletions, makeFetchOpenAiTransport } = await import(
-                "../lib/openai-adapter"
-              );
+              const { makeOpenAiChatCompletions, makeFetchOpenAiTransport } =
+                await import("../lib/openai-adapter");
 
               const gate = runEvidenceGate(
                 {
@@ -214,7 +206,11 @@ export const submitPatchFeedback = createServerFn({ method: "POST" })
                     apiKey: openAiKey,
                     model,
                     baseUrl: "https://api.openai.com/v1",
-                    transport: makeFetchOpenAiTransport({ fetch, timeoutMs: "10 seconds" }),
+                    transport: makeFetchOpenAiTransport({
+                      fetch,
+                      timeoutMs: "10 seconds",
+                    }),
+                    timeoutMs: "10 seconds",
                   }),
                   model,
                 },
@@ -222,12 +218,12 @@ export const submitPatchFeedback = createServerFn({ method: "POST" })
                 candidates,
               );
 
-              const exit = await Effect.runPromiseExit(Effect.either(gate));
-              if (exit._tag === "Left") {
-                throw exit.left;
+              const gateExit = await Effect.runPromiseExit(gate);
+              if (gateExit._tag === "Failure") {
+                throw new Error("evidence gate failed");
               }
 
-              const result = exit.right;
+              const result = gateExit.value;
               if (result._tag === "gate_passed") return "passed" as const;
               if (result._tag === "gate_unknown") return "insufficient" as const;
               return "no_patch" as const;

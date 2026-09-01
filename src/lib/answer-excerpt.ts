@@ -68,7 +68,8 @@ const isNumericId = (value: string): boolean => value !== "" && /^\d+$/.test(val
 
 /** Normalise a text field: NFC → CRLF/CR to LF → trim. */
 const normalizeText = (raw: string): string => {
-  const nfc = raw.normalize("NFC");
+  const withoutEm = raw.replace(/<\/?em>/g, "");
+  const nfc = withoutEm.normalize("NFC");
   const lf = nfc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   return lf.trim();
 };

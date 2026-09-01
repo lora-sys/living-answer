@@ -1,12 +1,7 @@
 import { useState } from "react";
 
-import {
-  FEEDBACK_REASON_LABELS,
-  type PatchFeedbackReason,
-} from "../../lib/patch-feedback";
-import type {
-  SubmitPatchFeedbackResponse,
-} from "../../server/submit-patch-feedback";
+import { FEEDBACK_REASON_LABELS, type PatchFeedbackReason } from "../../lib/patch-feedback";
+import type { SubmitPatchFeedbackResponse } from "../../server/submit-patch-feedback";
 
 interface PatchFeedbackPanelProps {
   readonly questionId: string;
@@ -97,7 +92,10 @@ export function PatchFeedbackPanel({
               id="feedback-reason"
               value={form.reason}
               onChange={(event) =>
-                setForm((current) => ({ ...current, reason: event.target.value as PatchFeedbackReason }))
+                setForm((current) => ({
+                  ...current,
+                  reason: event.target.value as PatchFeedbackReason,
+                }))
               }
               disabled={isPending}
               className="mt-2 h-12 w-full rounded-[4px] border border-rule bg-paper-3 px-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"

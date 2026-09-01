@@ -42,9 +42,7 @@ describe("createPatchFeedback", () => {
   });
 
   it("rejects malformed evidence and invalid targets", () => {
-    expect(
-      createPatchFeedback({ ...baseInput, evidenceUrl: "not-a-url" })._tag,
-    ).toBe("failure");
+    expect(createPatchFeedback({ ...baseInput, evidenceUrl: "not-a-url" })._tag).toBe("failure");
     expect(createPatchFeedback({ ...baseInput, questionId: "" })._tag).toBe("failure");
   });
 });

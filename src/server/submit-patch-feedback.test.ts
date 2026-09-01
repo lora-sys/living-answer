@@ -4,16 +4,9 @@ import {
   createSubmitPatchFeedbackHandler,
   type SubmitPatchFeedbackInput,
 } from "./submit-patch-feedback";
-import {
-  PatchFeedbackStoreError,
-  type PatchFeedbackRecord,
-  type PatchFeedbackStore,
-} from "../lib/patch-feedback-store";
+import type { PatchFeedbackStore } from "../lib/patch-feedback-store";
+import type { PatchFeedbackRecord } from "../lib/patch-feedback";
 import { Effect } from "effect";
-
-const FAILED_STORE: PatchFeedbackStore = {
-  save: () => Effect.fail(new PatchFeedbackStoreError({ reason: "unused" })),
-};
 
 const SUCCESS_STORE: PatchFeedbackStore = {
   save: (feedback: PatchFeedbackRecord, reviewState, reviewedAt) =>
