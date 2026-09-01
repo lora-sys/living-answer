@@ -88,21 +88,25 @@ const render = (advisoryOverride: ReadAnswerAdvisoryDecision, status?: string): 
 describe("GeneralizedRealResultRead", () => {
   it("renders a visible UPDATE with matched evidence only", () => {
     const html = render(advisory);
-    expect(html).toContain("旧回答摘录");
-    expect(html).toContain("UPDATE");
+    const updatePos = html.indexOf("UPDATE");
+    const excerptPos = html.indexOf("旧回答摘录");
+    expect(updatePos).toBeGreaterThanOrEqual(0);
+    expect(excerptPos).toBeGreaterThanOrEqual(0);
+    expect(updatePos).toBeLessThan(excerptPos);
+    expect(html).toContain("已有更新");
     expect(html).toContain("官方说明");
     expect(html).toContain("https://example.com/official");
     expect(html).not.toContain("未匹配候选");
   });
 
-  it("renders NO_PATCH and UNKNOWN conclusions without turning them into UPDATE", () => {
+  it("renders NO_PATCH and UNKNOWN with human labels and without implying replacement", () => {
     const noPatch = render({
       ...advisory,
       verdict: "NO_PATCH",
       selectedEvidenceFingerprints: [],
       evidenceSummary: [],
     });
-    expect(noPatch).toContain("可学习 · 暂无更新");
+    expect(noPatch).toContain("暂无更新");
     expect(noPatch).not.toMatch(/>UPDATE</);
 
     const unknown = render({
@@ -111,7 +115,26 @@ describe("GeneralizedRealResultRead", () => {
       selectedEvidenceFingerprints: [],
       evidenceSummary: [],
     });
-    expect(unknown).toContain(">UNKNOWN<");
+    expect(unknown).toContain("UNKNOWN");
+    expect(unknown).toContain("状态待确定");
+    expect(unknown).not.toMatch(/>UPDATE</);
+  });
+
+  it("places the advisory conclusion before the excerpt for UPDATE, NO_PATCH, and UNKNOWN", () => {
+    for (const verdict of ["UPDATE", "NO_PATCH", "UNKNOWN"] as const) {
+      const advisoryMarker = verdict === "NO_PATCH" ? "暂无更新" : verdict;
+      const html = render({
+        ...advisory,
+        verdict,
+        selectedEvidenceFingerprints: [],
+        evidenceSummary: [],
+      });
+      const advisoryPos = html.indexOf(advisoryMarker);
+      const excerptLabelPos = html.indexOf("搜索接口摘要摘录");
+      expect(advisoryPos).toBeGreaterThanOrEqual(0);
+      expect(excerptLabelPos).toBeGreaterThanOrEqual(0);
+      expect(advisoryPos).toBeLessThan(excerptLabelPos);
+    }
   });
 
   it("renders a disputed lifecycle as paused and hides the active advisory", () => {

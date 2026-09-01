@@ -412,8 +412,10 @@ function SourceNotice({
   return (
     <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-        <p className="text-sm font-medium text-ink-subtle">搜索接口摘要摘录</p>
-        <p className="text-xs text-muted">以下文本来自知乎公开搜索接口，不是回答完整正文。</p>
+        <p className="text-sm font-medium text-ink-subtle">内容来源</p>
+        <p className="text-xs text-muted">
+          以下内容来自知乎公开搜索接口的摘要数据，不是回答的完整正文。
+        </p>
       </div>
       <p className="mt-2 text-xs text-muted">
         原文地址：

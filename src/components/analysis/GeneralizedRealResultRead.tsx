@@ -55,6 +55,9 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
 
   return (
     <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+      <p className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+        搜索接口摘要摘录
+      </p>
       <div className="space-y-4">
         {paragraphs.map((paragraph, index) => (
           <p
@@ -125,13 +128,13 @@ function UpdateAdvisoryView({ advisory }: { readonly advisory: ReadAnswerAdvisor
         <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
           UPDATE
         </p>
-        <p className="text-sm font-medium text-ink-subtle">前提变化提示</p>
+        <p className="text-sm font-medium text-ink-subtle">已有更新</p>
       </div>
 
       {advisory.affectedWording !== undefined && (
         <div className="mt-5 rounded-[2px] border border-update/24 bg-paper-2 px-4 py-3">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-update">
-            原文受影响前提
+            受影响内容
           </p>
           <p className="mt-1 text-sm leading-6 text-ink">{advisory.affectedWording}</p>
         </div>
@@ -159,7 +162,7 @@ function UpdateAdvisoryView({ advisory }: { readonly advisory: ReadAnswerAdvisor
       <EvidenceList evidenceSummary={advisory.evidenceSummary} />
 
       <p className="mt-4 text-xs text-muted">
-        前提说明已经发生变化，建议结合最新信息综合判断。上下文摘要作为辅助参考，请核对原始引用。
+        此回答的前提已发生变化。上下文摘要作为辅助参考，请核对原始引用。
       </p>
     </div>
   );
@@ -189,6 +192,7 @@ function UnknownView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecisi
       <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
         UNKNOWN
       </p>
+      <p className="mt-1 text-xs text-muted">状态待确定</p>
       <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{advisory.reason}</p>
     </div>
   );
@@ -337,8 +341,6 @@ export function GeneralizedRealResultRead({
 
   return (
     <div className="space-y-4">
-      <ExcerptView excerpt={excerpt} />
-
       {showActiveAnalysis && <UpdateAdvisoryView advisory={advisory} />}
       {showActiveAnalysis && <NoPatchView advisory={advisory} />}
       {showActiveAnalysis && <UnknownView advisory={advisory} />}
@@ -346,6 +348,8 @@ export function GeneralizedRealResultRead({
       {lifecycle.status !== "VISIBLE" && lifecycle.status !== "DISPUTED" && (
         <ClosedPatchView lifecycle={lifecycle} />
       )}
+
+      <ExcerptView excerpt={excerpt} />
 
       <LifecycleView
         lifecycle={lifecycle}
