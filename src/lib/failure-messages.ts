@@ -100,3 +100,17 @@ export const formatTimestamp = (ms: number): string => {
   const min = String(d.getUTCMinutes()).padStart(2, "0");
   return `${yyyy}/${mm}/${dd} ${hh}:${min} UTC`;
 };
+
+/**
+ * Format a Unix-second source timestamp as a stable UTC date.
+ *
+ * Zhihu `EditTime` is a second-resolution Unix value, unlike internal
+ * event timestamps that use milliseconds.
+ */
+export const formatDateFromUnixSeconds = (seconds: number): string => {
+  const d = new Date(seconds * 1000);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}/${mm}/${dd} UTC`;
+};

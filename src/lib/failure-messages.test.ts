@@ -4,6 +4,7 @@ import {
   type AnalyzePatchServerFailureCode,
   type AnswerExcerptServerFailureCode,
   failureMessage,
+  formatDateFromUnixSeconds,
   formatTimestamp,
 } from "./failure-messages";
 
@@ -141,6 +142,18 @@ describe("failure-messages", () => {
     it("produces stable output for the same input", () => {
       const ts = 1_700_000_000_000;
       expect(formatTimestamp(ts)).toBe(formatTimestamp(ts));
+    });
+  });
+
+  describe("formatDateFromUnixSeconds", () => {
+    it("formats Zhihu second-resolution timestamps without the millisecond bug", () => {
+      const ts = 1_772_080_127;
+      expect(formatDateFromUnixSeconds(ts)).toBe("2026/02/26 UTC");
+    });
+
+    it("returns deterministic output", () => {
+      const ts = 1_700_000_000;
+      expect(formatDateFromUnixSeconds(ts)).toBe(formatDateFromUnixSeconds(ts));
     });
   });
 });

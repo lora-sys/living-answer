@@ -52,7 +52,7 @@ const EXCERPT: AnswerExcerpt = Object.freeze({
   capturedAt: 1700000000000,
   sourceContentId: "123456",
   sourceContentType: "Answer",
-  sourceEditTime: 1699000000000,
+  sourceEditTime: 1699000000,
   excerpt: "这是回答的第一段。\n\n这是回答的第二段，包含更多内容。\n\n这是第三段。",
   fingerprint: "v1:abcdef1234567890",
 });

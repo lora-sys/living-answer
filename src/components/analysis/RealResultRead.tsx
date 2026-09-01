@@ -24,7 +24,11 @@ import type {
   PatchLifecycleHistorySummary,
   PatchLifecycleSummary,
 } from "../../server/analyze-patch-response";
-import { failureMessage, formatTimestamp } from "../../lib/failure-messages";
+import {
+  failureMessage,
+  formatDateFromUnixSeconds,
+  formatTimestamp,
+} from "../../lib/failure-messages";
 import type { PatchLifecycleStatus } from "../../lib/patch-lifecycle";
 import type { AnalyzePatchServerFailureCode } from "../../lib/failure-messages";
 import { UpdateAdvisoryCard } from "./UpdateAdvisoryCard";
@@ -101,10 +105,10 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
         <span>
           回答 <span className="font-medium text-ink-subtle">#{excerpt.answerId}</span>
         </span>
-        <span>摘录时间 {new Date(excerpt.capturedAt).toLocaleDateString("zh-CN")}</span>
+        <span>摘录时间 {formatTimestamp(excerpt.capturedAt)}</span>
       </div>
       <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-        来源编辑时间 {new Date(excerpt.sourceEditTime).toLocaleDateString("zh-CN")}
+        来源编辑时间 {formatDateFromUnixSeconds(excerpt.sourceEditTime)}
       </p>
     </div>
   );

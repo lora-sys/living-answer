@@ -10,7 +10,11 @@ import type {
   AnalyzePatchResponse,
   AnalyzePatchServerFailureCode,
 } from "../server/analyze-patch-response";
-import { failureMessage, formatTimestamp } from "../lib/failure-messages";
+import {
+  failureMessage,
+  formatDateFromUnixSeconds,
+  formatTimestamp,
+} from "../lib/failure-messages";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
@@ -686,7 +690,7 @@ function Home() {
                     <span>摘录时间 {formatTimestamp(resultData.excerpt.capturedAt)}</span>
                   </div>
                   <p className="mt-1 text-sm text-muted">
-                    来源编辑时间 {formatTimestamp(resultData.excerpt.sourceEditTime)}
+                    来源编辑时间 {formatDateFromUnixSeconds(resultData.excerpt.sourceEditTime)}
                   </p>
                 </div>
               )}
