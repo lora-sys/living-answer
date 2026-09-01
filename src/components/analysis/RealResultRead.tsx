@@ -28,6 +28,9 @@ import { failureMessage, formatTimestamp } from "../../lib/failure-messages";
 import type { PatchLifecycleStatus } from "../../lib/patch-lifecycle";
 import type { AnalyzePatchServerFailureCode } from "../../lib/failure-messages";
 import { UpdateAdvisoryCard } from "./UpdateAdvisoryCard";
+import { PatchFeedbackPanel } from "../read/PatchFeedbackPanel";
+import type { PatchFeedbackReason } from "../../lib/patch-feedback";
+import type { SubmitPatchFeedbackResponse } from "../../server/submit-patch-feedback";
 
 // ── Types ────────────────────────────────────────────────────────────────────────
 
@@ -50,6 +53,17 @@ export interface RealResultReadProps {
   readonly isDisputePending?: boolean;
   /** Stable failure code for a rejected dispute request. */
   readonly disputeError?: AnalyzePatchServerFailureCode | null;
+  /** Persist a structured review item. The route owns the server boundary. */
+  readonly onSubmitFeedback: (input: {
+    readonly questionId: string;
+    readonly answerId: string;
+    readonly excerptFingerprint: string;
+    readonly recordFingerprint?: string;
+    readonly reason: PatchFeedbackReason;
+    readonly question?: string;
+    readonly evidenceUrl?: string;
+    readonly evidenceQuote?: string;
+  }) => Promise<SubmitPatchFeedbackResponse>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
@@ -131,10 +145,16 @@ function NoPatchView({ decision }: NoPatchViewProps) {
   return (
     <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-        NO_PATCH
+        可学习 · 暂无更新
       </p>
-      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
-      <p className="mt-3 text-xs text-muted">未检测到需要更新回答的关键前提。</p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink">
+        这份回答仍可以作为理解问题的基础，目前没有可确认的关键前提更新。
+      </p>
+      <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle">{decision.reason}</p>
+      <ol className="mt-4 grid gap-2 border-t border-rule pt-4 text-sm leading-6 text-ink-subtle">
+        <li>1. 先读摘录，注意作者当时给出的判断条件。</li>
+        <li>2. 如果发现过时点，请在下方提交原因和可核对的证据。</li>
+      </ol>
     </div>
   );
 }
@@ -321,6 +341,7 @@ export function RealResultRead({
   onRecheck,
   isDisputePending,
   disputeError,
+  onSubmitFeedback,
 }: RealResultReadProps) {
   // Defensive: if the caller passes an error response, render nothing.
   // The route is responsible for handling error results with
@@ -360,6 +381,16 @@ export function RealResultRead({
         onRecheck={onRecheck}
         isDisputePending={isDisputePending}
         disputeError={disputeError}
+      />
+
+      <PatchFeedbackPanel
+        questionId={excerpt.questionId}
+        answerId={excerpt.answerId}
+        excerptFingerprint={excerpt.fingerprint}
+        {...(result.lifecycle === undefined
+          ? {}
+          : { recordFingerprint: result.lifecycle.recordFingerprint })}
+        onSubmitFeedback={onSubmitFeedback}
       />
     </div>
   );

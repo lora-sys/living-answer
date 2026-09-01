@@ -30,6 +30,11 @@ const renderRead = (overrides?: Partial<RealResultReadProps>): string => {
     excerpt: overrides?.excerpt ?? EXCERPT,
     result: overrides?.result ?? UPDATE_RESULT,
     contextText: overrides?.contextText ?? undefined,
+    onSubmitFeedback: overrides?.onSubmitFeedback ?? (async () => ({
+      status: "error",
+      code: "FEEDBACK_STORE_ERROR",
+      message: "unused",
+    })),
     ...overrides,
   };
   return h(React.createElement(RealResultRead, props));
@@ -169,6 +174,14 @@ describe("RealResultRead", () => {
     it("renders the clean confirmation", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
       expect(html).toContain("No evidence of premise changes");
+    });
+
+    it("presents the answer as learnable while review remains explicit", () => {
+      const html = renderRead({ result: NO_PATCH_RESULT });
+      expect(html).toContain("可学习 · 暂无更新");
+      expect(html).toContain("这份回答仍可以作为理解问题的基础");
+      expect(html).toContain("反馈与复核");
+      expect(html).toContain("先进入复核队列，不会直接改写结论");
     });
 
     it("uses paper-2/rule neutral styling", () => {

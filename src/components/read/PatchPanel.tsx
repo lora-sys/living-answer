@@ -131,12 +131,6 @@ export function PatchPanel({ patches, activePatchId, onClose, panelId }: PatchPa
         ))}
       </div>
 
-      {/* 7. Feedback (disabled, for later release) */}
-      <div className="mt-6 rounded-[2px] border border-rule bg-paper px-4 py-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-faint">
-          FEEDBACK · LATER
-        </p>
-      </div>
     </div>
   );
 }

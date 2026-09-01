@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
+import { parseZhihuAnswerUrl } from "../lib/zhihu-answer-url";
 import type { ResolveAnswerExcerptResponse } from "../server/answer-excerpt-response";
 import type {
   AnalyzePatchResponse,
@@ -16,6 +17,7 @@ import { analyzePatch } from "../server/analyze-patch";
 import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
 import { resolvePatchLifecycle } from "../server/resolve-patch-lifecycle";
 import { withdrawPatchLifecycle } from "../server/withdraw-patch-lifecycle";
+import { submitPatchFeedback } from "../server/submit-patch-feedback";
 import {
   type SearchAnswerCandidatesResponse,
   searchAnswerCandidates,
@@ -61,6 +63,7 @@ function Home() {
   const boundSearchCandidates = useServerFn(searchAnswerCandidates);
   const boundResolvePatch = useServerFn(resolvePatchLifecycle);
   const boundWithdrawPatch = useServerFn(withdrawPatchLifecycle);
+  const boundSubmitFeedback = useServerFn(submitPatchFeedback);
 
   // ── Excerpt state ──────────────────────────────────────────────────────────
 
@@ -315,6 +318,25 @@ function Home() {
   const handleResolve = (): Promise<void> => handleLifecycleTransition("resolve");
   const handleWithdraw = (): Promise<void> => handleLifecycleTransition("withdraw");
 
+  const handleSubmitFeedback = async (input: {
+    questionId: string;
+    answerId: string;
+    excerptFingerprint: string;
+    recordFingerprint?: string;
+    reason: import("../lib/patch-feedback").PatchFeedbackReason;
+    question?: string;
+    evidenceUrl?: string;
+    evidenceQuote?: string;
+  }): Promise<import("../server/submit-patch-feedback").SubmitPatchFeedbackResponse> => {
+    const response = await boundSubmitFeedback({ data: input }).catch(() => null);
+    if (response) return response;
+    return {
+      status: "error",
+      code: "FEEDBACK_STORE_ERROR",
+      message: "反馈提交出现异常，请稍后再试。",
+    };
+  };
+
   // ── Claims extraction ────────────────────────────────────────────────────────
 
   const retryClaims = (): void => {
@@ -441,6 +463,39 @@ function Home() {
       : null;
 
   const showExtractSuccess = showSuccess && resultData !== null;
+
+  const entryFailureNotice = () => {
+    if (serverErrorCode !== "ANSWER_NOT_FOUND") return null;
+    const parsed = parseZhihuAnswerUrl(url.trim());
+    if (parsed._tag !== "success") return null;
+
+    return (
+      <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+          <p className="text-sm font-semibold text-ink">链接已识别，但摘录服务未返回该回答</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+            问题 #{parsed.questionId} · 回答 #{parsed.answerId}
+          </p>
+        </div>
+        <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle">
+          当前摘录来自搜索接口，不能按回答 URL 保证精确定位。这条回答可能未被收录、已受限，或暂时不可检索。
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setEntryMode("search");
+              setSearchQuery("React 19 还值得学吗");
+            }}
+            className="inline-flex h-10 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            改用搜索问题
+          </button>
+          <p className="text-xs text-muted">搜索时输入问题关键词，而不是完整回答链接。</p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-paper pb-20 text-ink">
@@ -598,13 +653,15 @@ function Home() {
                 </div>
               )}
 
-              {showError && serverErrorCode && (
+              {showError && serverErrorCode && entryFailureNotice() === null && (
                 <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm font-medium text-ink-subtle">
                     {failureMessage(serverErrorCode)}
                   </p>
                 </div>
               )}
+
+              {entryFailureNotice()}
 
               {showSuccess && resultData && (
                 <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6 sm:py-6">
@@ -699,7 +756,12 @@ function Home() {
 
               {searchResult?.status === "ok" && searchResult.candidates.length === 0 && (
                 <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
-                  <p className="text-sm text-ink-subtle">没有找到包含回答的搜索结果。</p>
+                  <p className="text-sm font-medium text-ink-subtle">
+                    搜索完成，但没有可用的回答候选。
+                  </p>
+                  <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-subtle">
+                    当前接口只返回回答类内容；换一个更具体的问题关键词，通常比粘贴完整链接更容易命中。
+                  </p>
                 </div>
               )}
 
@@ -794,6 +856,7 @@ function Home() {
                   onRecheck={handleRetry}
                   isDisputePending={disputeLoading || lifecycleAction !== null}
                   disputeError={disputeError}
+                  onSubmitFeedback={handleSubmitFeedback}
                 />
               ) : (
                 <AnalysisResultPanel
