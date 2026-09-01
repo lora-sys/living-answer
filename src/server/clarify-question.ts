@@ -12,11 +12,12 @@
 import { Effect } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
-import { clarifyQuestion } from "../lib/thread-clarification";
 import {
-  makeFetchZhihuDirectAnswerTransport,
-  makeZhihuDirectAnswerCompletions,
-} from "../lib/zhihu-direct-answer-adapter";
+  makeFetchOpenAiTransport,
+  makeOpenAiChatCompletions,
+  type OpenAiChatCompletions,
+} from "../lib/openai-adapter";
+import { clarifyQuestion } from "../lib/thread-clarification";
 
 // ── Response types ─────────────────────────────────────────────────────────────
 
@@ -45,10 +46,7 @@ export type ClarifyQuestionResponse =
 export interface ClarifyQuestionDeps {
   readonly getSecret: () => string | undefined;
   readonly getModel: () => string;
-  readonly createChat: (
-    secret: string,
-    model: string,
-  ) => Promise<ReturnType<typeof makeZhihuDirectAnswerCompletions>>;
+  readonly createChat: (secret: string, model: string) => Promise<OpenAiChatCompletions>;
 }
 
 export const createClarifyQuestionHandler =
@@ -120,24 +118,24 @@ const parseInput = (input: unknown): { readonly question: string } => {
 
 // ── Chat creation helper ───────────────────────────────────────────────────────
 
-const createChat = async (secret: string, model: string) =>
-  makeZhihuDirectAnswerCompletions({
-    accessSecret: secret,
+const createChat = async (apiKey: string, model: string) =>
+  makeOpenAiChatCompletions({
+    apiKey,
     model,
-    transport: makeFetchZhihuDirectAnswerTransport({ timeoutMs: 30_000 }),
+    baseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+    transport: makeFetchOpenAiTransport({ timeoutMs: "30 seconds" }),
+    timeoutMs: "30 seconds",
   });
 
 // ── Production wiring ──────────────────────────────────────────────────────────
 
-const DEFAULT_MODEL = "zhida-thinking-1p5";
-
-const ZHIHU_ACCESS_SECRET = process.env.ZHIHU_ACCESS_SECRET;
-const ZHIHU_MODEL = process.env.ZHIHU_MODEL ?? DEFAULT_MODEL;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
 export const clarifyQuestionFn = createServerFn({ method: "POST" })
   .validator(parseInput)
   .handler(async ({ data }) => {
-    if (!ZHIHU_ACCESS_SECRET) {
+    if (!OPENAI_API_KEY) {
       return {
         success: false as const,
         code: "MISSING_MODEL_KEY",
@@ -146,11 +144,10 @@ export const clarifyQuestionFn = createServerFn({ method: "POST" })
     }
 
     return createClarifyQuestionHandler({
-      getSecret: () => ZHIHU_ACCESS_SECRET,
-      getModel: () => ZHIHU_MODEL,
-      createChat: async (secret, model) => {
-        const chat = await createChat(secret, model);
-        return chat;
+      getSecret: () => OPENAI_API_KEY,
+      getModel: () => OPENAI_MODEL,
+      createChat: async (apiKey, model) => {
+        return createChat(apiKey, model);
       },
     })(data);
   });

@@ -1,5 +1,6 @@
 import { Data, Effect } from "effect";
 
+import { createQuestionLearningThread } from "./thread-artifact";
 import type { QuestionLearningThread } from "./thread-artifact";
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
@@ -127,8 +128,6 @@ export const makeSqliteThreadArtifactStore = (
 
           // Validate through the factory — this ensures every row that enters
           // React has passed the full domain validation.
-          const { createQuestionLearningThread } =
-            require("./thread-artifact") as typeof import("./thread-artifact");
           const result = createQuestionLearningThread({
             threadId: String(row.thread_id),
             question: String(row.question),

@@ -370,4 +370,31 @@ describe("thread-synthesis synthesizeThread", () => {
       expect(result.nodes.every((n: SynthesizedNode) => n.kind === "unknown")).toBe(true);
     }
   });
+
+  it("falls back to unknown nodes when the source URL does not match the selected stage", async () => {
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "relationship",
+          title: "Valid",
+          summary: "A valid summary.",
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "This is the exact excerpt text that must appear in the quote.",
+            },
+          ],
+          sourceAnswerId: "100",
+          sourceUrl: "https://www.zhihu.com/question/999/answer/100",
+          uncertainty: 0.5,
+        },
+      ],
+    });
+    const chat = makeSucceedChat(response);
+    const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    if (outcome._tag === "success") {
+      const { result } = outcome;
+      expect(result.nodes.every((n: SynthesizedNode) => n.kind === "unknown")).toBe(true);
+    }
+  });
 });

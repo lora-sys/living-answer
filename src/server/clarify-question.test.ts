@@ -6,25 +6,16 @@ import { ClarificationWorkflowError } from "../lib/thread-clarification";
 
 import { type ClarifyQuestionDeps, createClarifyQuestionHandler } from "./clarify-question";
 
-import {
-  DirectAnswerError,
-  ZhihuDirectAnswerTransportError,
-  type ZhihuDirectAnswerCompletions,
-} from "../lib/zhihu-direct-answer-adapter";
+import { OpenAiTransportError, type OpenAiChatCompletions } from "../lib/openai-adapter";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-const makeChat = (response: string): ZhihuDirectAnswerCompletions => ({
+const makeChat = (response: string): OpenAiChatCompletions => ({
   complete: () => Effect.succeed(response),
 });
 
-const makeFailChat = (err: ClarificationWorkflowError): ZhihuDirectAnswerCompletions => ({
-  complete: () =>
-    Effect.fail(err) as unknown as Effect.Effect<
-      string,
-      DirectAnswerError | ZhihuDirectAnswerTransportError,
-      never
-    >,
+const makeFailChat = (err: ClarificationWorkflowError): OpenAiChatCompletions => ({
+  complete: () => Effect.fail(err as unknown as OpenAiTransportError),
 });
 
 const buildHandler = (
@@ -32,7 +23,7 @@ const buildHandler = (
 ): ReturnType<typeof createClarifyQuestionHandler> => {
   const deps: ClarifyQuestionDeps = {
     getSecret: () => "test-secret",
-    getModel: () => "zhida-thinking-1p5",
+    getModel: () => "gpt-4o-mini",
     createChat: async (_secret: string, _model: string) =>
       makeChat(
         JSON.stringify({
@@ -187,14 +178,14 @@ describe("clarify-question createClarifyQuestionHandler", () => {
 // ── clarifyQuestionFn handler ────────────────────────────────────────────
 
 describe("clarify-question clarifyQuestionFn", () => {
-  const originalSecret = process.env.ZHIHU_ACCESS_SECRET;
+  const originalSecret = process.env.OPENAI_API_KEY;
 
   afterEach(() => {
-    process.env.ZHIHU_ACCESS_SECRET = originalSecret;
+    process.env.OPENAI_API_KEY = originalSecret;
   });
 
   it("returns MISSING_MODEL_KEY when the environment secret is absent", async () => {
-    delete process.env.ZHIHU_ACCESS_SECRET;
+    delete process.env.OPENAI_API_KEY;
     // Import would normally be done at module level; test via handler logic
     const handler = buildHandler({
       getSecret: () => undefined,

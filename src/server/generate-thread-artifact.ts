@@ -16,7 +16,6 @@
  * @module generate-thread-artifact
  */
 
-import { randomUUID } from "crypto";
 import { Effect } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -28,10 +27,7 @@ import {
   type SynthesizedNode,
   type ThreadSynthesisResult,
 } from "../lib/thread-synthesis";
-import {
-  makeFetchZhihuDirectAnswerTransport,
-  makeZhihuDirectAnswerCompletions,
-} from "../lib/zhihu-direct-answer-adapter";
+import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ExcerptStore } from "../lib/excerpt-store";
 
@@ -84,7 +80,7 @@ export interface GenerateThreadDeps {
   readonly createChat: (
     secret: string,
     model: string,
-  ) => Promise<ReturnType<typeof makeZhihuDirectAnswerCompletions>>;
+  ) => Promise<ReturnType<typeof makeOpenAiChatCompletions>>;
 }
 
 export const createGenerateThreadHandler =
@@ -185,7 +181,7 @@ export const createGenerateThreadHandler =
       }
 
       // Generate thread ID (opaque, random)
-      const threadId = randomUUID().replace(/-/g, "").slice(0, 16).toLowerCase();
+      const threadId = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toLowerCase();
 
       // Run synthesis
       const timelineStages =
@@ -305,12 +301,12 @@ const parseInput = (input: unknown): GenerateThreadInput => {
 
 // ── Chat creation helper ───────────────────────────────────────────────────────
 
-const DEFAULT_MODEL = "zhida-thinking-1p5";
+const DEFAULT_MODEL = "gpt-4o-mini";
 
 // ── Production wiring ──────────────────────────────────────────────────────────
 
-const ZHIHU_ACCESS_SECRET = process.env.ZHIHU_ACCESS_SECRET;
-const ZHIHU_MODEL = process.env.ZHIHU_MODEL ?? DEFAULT_MODEL;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL ?? DEFAULT_MODEL;
 
 let excerptStoreSingleton: Promise<ExcerptStore> | null = null;
 let threadStoreSingleton: Promise<ThreadArtifactStore> | null = null;
@@ -330,16 +326,18 @@ const getOrCreateThreadStoreInstance = async (): Promise<ThreadArtifactStore> =>
 };
 
 const createChatWrapper = async (secret: string, model: string) =>
-  makeZhihuDirectAnswerCompletions({
-    accessSecret: secret,
+  makeOpenAiChatCompletions({
+    apiKey: secret,
     model,
-    transport: makeFetchZhihuDirectAnswerTransport({ timeoutMs: 30_000 }),
+    transport: makeFetchOpenAiTransport({ timeoutMs: "90 seconds" }),
+    baseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+    timeoutMs: "90 seconds",
   });
 
 export const generateThreadArtifactFn = createServerFn({ method: "POST" })
   .validator(parseInput)
   .handler(async ({ data }): Promise<GenerateThreadResponse> => {
-    if (!ZHIHU_ACCESS_SECRET) {
+    if (!OPENAI_API_KEY) {
       return {
         success: false as const,
         code: "MISSING_MODEL_KEY",
@@ -348,8 +346,8 @@ export const generateThreadArtifactFn = createServerFn({ method: "POST" })
     }
 
     return createGenerateThreadHandler({
-      getSecret: () => ZHIHU_ACCESS_SECRET,
-      getModel: () => ZHIHU_MODEL,
+      getSecret: () => OPENAI_API_KEY,
+      getModel: () => OPENAI_MODEL,
       createExcerptStore: getOrCreateExcerptStoreInstance,
       createThreadStore: getOrCreateThreadStoreInstance,
       createChat: createChatWrapper,

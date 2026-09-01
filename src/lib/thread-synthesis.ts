@@ -21,7 +21,6 @@
 
 import { Data, Effect } from "effect";
 
-import type { ZhihuDirectAnswerCompletions } from "./zhihu-direct-answer-adapter";
 import type { TimelineStage, LearningNodeKind, EvidenceRef } from "./thread-artifact";
 
 // ── Banned wording patterns (author-respect) ───────────────────────────────────
@@ -72,7 +71,12 @@ export interface SynthesisInput {
 
 export interface ThreadSynthesisDeps {
   readonly model: string;
-  readonly chat: ZhihuDirectAnswerCompletions;
+  readonly chat: {
+    readonly complete: (request: {
+      readonly model: string;
+      readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string }>;
+    }) => Effect.Effect<string, unknown>;
+  };
 }
 
 export interface ThreadSynthesisResult {
@@ -87,12 +91,12 @@ const MAX_QUESTION_LENGTH = 500;
 
 // ── Answer ID map for validation ───────────────────────────────────────────────
 
-const buildAnswerIdSet = (timelineStages: readonly TimelineStage[]): Set<string> => {
-  const set = new Set<string>();
+const buildAnswerIdMap = (timelineStages: readonly TimelineStage[]): Map<string, string> => {
+  const map = new Map<string, string>();
   for (const stage of timelineStages) {
-    set.add(stage.answerId);
+    map.set(stage.answerId, stage.canonicalUrl);
   }
-  return set;
+  return map;
 };
 
 // ── Excerpt fingerprint map for citation validation ─────────────────────────────
@@ -119,7 +123,7 @@ const buildExcerptCitationMap = (
 
 const validateNode = (
   raw: Record<string, unknown>,
-  answerIdSet: Set<string>,
+  answerIdMap: Map<string, string>,
   excerptCitationMap: Map<string, ExcerptCitationData>,
 ): SynthesizedNode | null => {
   // kind
@@ -186,16 +190,13 @@ const validateNode = (
 
   // sourceAnswerId
   const sourceAnswerId = typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
-  if (sourceAnswerId === "" || !answerIdSet.has(sourceAnswerId)) {
+  if (sourceAnswerId === "" || !answerIdMap.has(sourceAnswerId)) {
     return null;
   }
 
   // sourceUrl
   const sourceUrl = typeof raw.sourceUrl === "string" ? raw.sourceUrl.trim() : "";
-  if (
-    sourceUrl === "" ||
-    !/^https?:\/\/(www\.)?zhihu\.com\/question\/\d+\/answer\/\d+$/.test(sourceUrl)
-  ) {
+  if (sourceUrl === "" || sourceUrl !== answerIdMap.get(sourceAnswerId)) {
     return null;
   }
 
@@ -274,7 +275,7 @@ export const synthesizeThread =
       }
 
       const maxNodes = input.maxNodes ?? MAX_NODES;
-      const answerIdSet = buildAnswerIdSet(input.timelineStages);
+      const answerIdMap = buildAnswerIdMap(input.timelineStages);
       const excerptCitationMap = buildExcerptCitationMap(input.timelineStages);
 
       // Build the context payload from timeline stages
@@ -293,7 +294,9 @@ export const synthesizeThread =
         "Selected excerpts (each prefixed with [Answer ID]):",
         stagesSummary,
         "",
-        `Answer IDs: ${Array.from(answerIdSet).join(", ")}`,
+        `Answer IDs and canonical URLs: ${Array.from(answerIdMap.entries())
+          .map(([answerId, canonicalUrl]) => `${answerId} -> ${canonicalUrl}`)
+          .join("; ")}`,
         `Excerpt fingerprints: ${Array.from(excerptCitationMap.keys()).join(", ")}`,
         "",
         `Produce up to ${maxNodes} learning nodes as a JSON object {"nodes":[...]}.`,
@@ -335,7 +338,7 @@ export const synthesizeThread =
         }
         const validated = validateNode(
           nodeRaw as Record<string, unknown>,
-          answerIdSet,
+          answerIdMap,
           excerptCitationMap,
         );
         if (validated !== null) {

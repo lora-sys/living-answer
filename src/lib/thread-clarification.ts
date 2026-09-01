@@ -14,8 +14,6 @@
 
 import { Data, Effect } from "effect";
 
-import type { ZhihuDirectAnswerCompletions } from "./zhihu-direct-answer-adapter";
-
 // ── Errors ─────────────────────────────────────────────────────────────────────
 
 export class ClarificationWorkflowError extends Data.TaggedError("ClarificationWorkflowError")<{
@@ -46,7 +44,12 @@ export interface ClarificationInput {
 
 export interface ThreadClarificationDeps {
   readonly model: string;
-  readonly chat: ZhihuDirectAnswerCompletions;
+  readonly chat: {
+    readonly complete: (request: {
+      readonly model: string;
+      readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string }>;
+    }) => Effect.Effect<string, unknown>;
+  };
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
