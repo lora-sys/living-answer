@@ -37,7 +37,7 @@ const TASK_TITLE = "extract-claims";
  * Version of the extraction prompt schema.  Bump when the expected model
  * response changes.
  */
-const TASK_VERSION = "1";
+const TASK_VERSION = "2";
 
 /**
  * Per-claim limits must stay aligned with the domain record factory.  The
@@ -67,6 +67,7 @@ type ExtractionPrompt = Readonly<{
   readonly version: typeof TASK_VERSION;
   readonly excerpt: string;
   readonly expectedResponse: Readonly<{
+    readonly description: string;
     readonly claims: ReadonlyArray<
       Readonly<{
         readonly claimText: string;
@@ -79,12 +80,19 @@ type ExtractionPrompt = Readonly<{
   }>;
 }>;
 
-const buildPrompt = (excerpt: string): ExtractionPrompt =>
+export const buildPrompt = (excerpt: string): ExtractionPrompt =>
   Object.freeze({
     task: TASK_TITLE,
     version: TASK_VERSION,
     excerpt,
     expectedResponse: Object.freeze({
+      description: Object.freeze(
+        `Return at most ${MAX_CLAIMS} claims. ` +
+          `Identify only decision-relevant premises from the excerpt. ` +
+          `If more than ${MAX_CLAIMS} qualify, return only the ${MAX_CLAIMS} with the highest decisionRelevance (high > medium > low). ` +
+          `If fewer than ${MAX_CLAIMS} qualify, return only those. ` +
+          `If none qualify, return an empty claims array [].`,
+      ),
       claims: Object.freeze([
         Object.freeze({
           claimText: `A concise restatement of a premise (${CLAIM_TEXT_MIN}-${CLAIM_TEXT_MAX} chars).`,

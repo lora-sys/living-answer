@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { OpenAiTransportError, type OpenAiChatCompletions } from "./openai-adapter";
 import {
   ClaimExtractionError,
+  buildPrompt,
   extractClaims,
   type ClaimExtractionWorkflowDeps,
 } from "./claim-extraction-workflow";
@@ -485,5 +486,19 @@ describe("extractClaims", () => {
 
     const err = await runError(workflow({ excerpt }));
     expect(err.reason).toBe("INVALID_ANCHOR");
+  });
+
+  // ------------------------------------------------------------------
+  // 18. Prompt explicitly states max 3 claims and "fewer is OK"
+  // ------------------------------------------------------------------
+  it("buildPrompt description states at most 3 claims and fewer is acceptable", () => {
+    const excerpt = "Some test excerpt text.";
+    const prompt = buildPrompt(excerpt);
+
+    const desc = prompt.expectedResponse.description;
+    expect(desc).toContain("at most 3");
+    expect(desc).toContain("highest decisionRelevance");
+    expect(desc).toContain("fewer than 3");
+    expect(desc).toContain("empty claims array");
   });
 });

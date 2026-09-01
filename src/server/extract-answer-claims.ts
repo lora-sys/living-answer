@@ -195,6 +195,7 @@ export const createExtractAnswerClaimsHandler =
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const FIVE_SECONDS_MS = 5_000 as const;
+const CLAIM_EXTRACTION_TIMEOUT_MS = 40_000 as const;
 
 /**
  * Lazy singleton store + provider for the server process.
@@ -247,10 +248,10 @@ export const extractAnswerClaims = createServerFn({
           apiKey,
           model: openAiModel,
           baseUrl: openAiBaseUrl,
-          timeoutMs: FIVE_SECONDS_MS,
+          timeoutMs: CLAIM_EXTRACTION_TIMEOUT_MS,
           transport: makeFetchOpenAiTransport({
             fetch: fetch,
-            timeoutMs: FIVE_SECONDS_MS,
+            timeoutMs: CLAIM_EXTRACTION_TIMEOUT_MS,
           }),
         }),
       createProvider: getOrCreateProvider,

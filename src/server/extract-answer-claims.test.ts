@@ -397,6 +397,52 @@ describe("extract-answer-claims", () => {
         expect(response.code).toBe("PROVIDER_ERROR");
       }
     });
+
+    it("hang/abort in transport layer maps to PROVIDER_ERROR instantly", async () => {
+      // Simulate AbortSignal.timeout firing by throwing AbortError from fetch.
+      // This exercises the real transport path: NETWORK_FAILED → TRANSPORT_FAILED → PROVIDER_ERROR.
+      // No real wait or sleep — the fake fetch resolves (rejects) immediately.
+      const excerpt = makeExcerpt();
+      const provider = effectfulProvider(Effect.succeed(excerpt));
+
+      const { makeOpenAiChatCompletions, makeFetchOpenAiTransport } =
+        await import("../lib/openai-adapter");
+
+      const abortError = new DOMException("The user aborted a request.", "AbortError");
+      const hangingFetch = () => Promise.reject(abortError) as Promise<Response>;
+
+      const chat = makeOpenAiChatCompletions({
+        apiKey: "test-key",
+        model: "test-model",
+        baseUrl: "http://localhost",
+        timeoutMs: 1_000,
+        transport: makeFetchOpenAiTransport({
+          fetch: hangingFetch as unknown as typeof fetch,
+          timeoutMs: 1_000,
+        }),
+      });
+
+      const h = createExtractAnswerClaimsHandler({
+        getSecret: () => ["openai-key", "zhihu-secret"] as [string | undefined, string | undefined],
+        createProvider: async () => provider,
+        createChat: () => chat,
+        createClaimStore: async () => {
+          const { store } = makeFakeClaimStore();
+          return store;
+        },
+      });
+
+      const start = Date.now();
+      const response = await call(h, { url: VALID_URL });
+      const elapsed = Date.now() - start;
+
+      expect(response.status).toBe("error");
+      if (response.status === "error") {
+        expect(response.code).toBe("PROVIDER_ERROR");
+      }
+      // Must resolve near-instantly (no real 1s wait since the fake fetch throws immediately)
+      expect(elapsed).toBeLessThan(5_000);
+    });
   });
 
   // ── Success path ────────────────────────────────────────────────────────
