@@ -17,6 +17,7 @@ import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { readAnswer } from "../server/read-answer";
 import { analyzePatch } from "../server/analyze-patch";
 import {
+  type AnswerCandidate,
   type SearchAnswerCandidatesResponse,
   searchAnswerCandidates,
 } from "../server/search-answer-candidates";
@@ -31,6 +32,28 @@ import {
 import { AnalysisResultPanel } from "../components/analysis/AnalysisResultPanel";
 import { GoldenDemoPreviewCard } from "../components/demo/GoldenDemoPreviewCard";
 import { type ListPatchChangesResponse, listPatchChanges } from "../server/list-patch-changes";
+
+type MaintenanceStatus = AnswerCandidate["maintenance"]["status"];
+
+const MAINTENANCE_STATUS_STYLES: Record<MaintenanceStatus, string> = {
+  VISIBLE: "bg-success-soft text-success",
+  DISPUTED: "bg-update-soft text-update",
+  SUPERSEDED: "bg-paper-3 text-muted",
+  RESOLVED: "bg-success-soft text-success",
+  WITHDRAWN: "bg-paper-3 text-muted",
+  unknown: "bg-paper-3 text-muted",
+  not_tracked: "bg-paper-3 text-muted",
+};
+
+const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
+  VISIBLE: "已维护",
+  DISPUTED: "有争议",
+  SUPERSEDED: "已替代",
+  RESOLVED: "已解决",
+  WITHDRAWN: "已撤回",
+  unknown: "状态未知",
+  not_tracked: "未跟踪",
+};
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -699,7 +722,7 @@ function Home() {
                         type="button"
                         onClick={() => handleSelectCandidate(c)}
                         className={
-                          "block w-full rounded-[2px] border border-rule bg-paper-2 px-4 py-4 text-left transition-colors duration-150 " +
+                          "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-4 text-left transition-colors duration-150 " +
                           "hover:border-accent/30 " +
                           "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                         }
@@ -707,14 +730,47 @@ function Home() {
                         <p className="text-sm font-semibold text-ink">
                           {c.title || `知乎回答 #${c.answerId}`}
                         </p>
+
                         {c.preview && (
-                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
+                          <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-ink-subtle">
                             {c.preview}
                           </p>
                         )}
-                        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-                          问题 #{c.questionId} · 回答 #{c.answerId}
-                        </p>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.04em] text-muted">
+                          {c.authorDisplayName && (
+                            <span>
+                              作者{" "}
+                              <span className="font-medium text-ink-subtle">
+                                {c.authorDisplayName}
+                              </span>
+                            </span>
+                          )}
+                          {c.editAt != null && (
+                            <span>编辑于 {formatDateFromUnixSeconds(c.editAt)}</span>
+                          )}
+                          <span>
+                            问题 #{c.questionId} · 回答 #{c.answerId}
+                          </span>
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-2">
+                          <span
+                            className={[
+                              "inline-flex items-center rounded-[4px] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em]",
+                              MAINTENANCE_STATUS_STYLES[c.maintenance.status],
+                            ].join(" ")}
+                          >
+                            {MAINTENANCE_STATUS_LABELS[c.maintenance.status]}
+                            {c.maintenance.evidenceCount != null &&
+                              c.maintenance.status !== "not_tracked" &&
+                              c.maintenance.status !== "unknown" && (
+                                <span className="ml-1 opacity-70">
+                                  ({c.maintenance.evidenceCount} 条证据)
+                                </span>
+                              )}
+                          </span>
+                        </div>
                       </button>
                     </li>
                   ))}

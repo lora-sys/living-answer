@@ -11,6 +11,9 @@ import type { ExcerptStore } from "../lib/excerpt-store";
 import { StoreError } from "../lib/excerpt-store";
 import type { DailyQuotaGuard } from "../lib/daily-quota";
 import { QuotaExceededError, DailyQuotaStoreError } from "../lib/daily-quota";
+import type { PatchLifecycleStore } from "../lib/patch-lifecycle-store";
+import { PatchLifecycleStoreError } from "../lib/patch-lifecycle-store";
+import type { PatchLifecycleRecordWithStatus } from "../lib/patch-lifecycle-store";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +57,14 @@ vi.mock("../lib/sqlite-daily-quota-store", async (importOriginal) => {
   };
 });
 
+vi.mock("../lib/patch-lifecycle-store", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../lib/patch-lifecycle-store")>();
+  return {
+    ...original,
+    makeSqlitePatchLifecycleStore: vi.fn(),
+  };
+});
+
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 type FakeStorePair = { readonly store: ExcerptStore; readonly saved: AnswerExcerpt[] };
@@ -80,12 +91,63 @@ const makeFailingStorePair = (): FakeStorePair => ({
   saved: [],
 });
 
-// Base daily quota deps — tests that need to inspect consume override it.
-const makeDeps = (secret?: string, storePair?: FakeStorePair): SearchAnswerCandidatesDeps => ({
+// ── Lifecycle store helpers ──────────────────────────────────────────────
+
+type LifecycleLookup = (fingerprint: string) => PatchLifecycleRecordWithStatus | null;
+
+const buildLifecycleLookup = (
+  entries: Record<string, PatchLifecycleRecordWithStatus>,
+): LifecycleLookup => {
+  return (fingerprint: string): PatchLifecycleRecordWithStatus | null => {
+    if (fingerprint in entries) return entries[fingerprint];
+    return null;
+  };
+};
+
+const makeFakeLifecycleStore = (
+  lookup: LifecycleLookup,
+  history: readonly PatchLifecycleRecordWithStatus[] = [],
+): PatchLifecycleStore => ({
+  saveVisible: vi.fn(() =>
+    Effect.succeed({ ...lookup(""), status: "VISIBLE" } as PatchLifecycleRecordWithStatus),
+  ),
+  supersedeByExcerptFingerprint: vi.fn(() => Effect.succeed(0)),
+  dispute: vi.fn(() => Effect.succeed(true)),
+  resolve: vi.fn(() => Effect.succeed(true)),
+  withdraw: vi.fn(() => Effect.succeed(true)),
+  findCurrentByExcerptFingerprint: vi.fn((fp: string) => Effect.succeed(lookup(fp))),
+  findHistoryByAnswer: vi.fn(() => Effect.succeed(history)),
+  findAll: vi.fn(() => Effect.succeed([])),
+});
+
+const makeFailingLifecycleStore = (): PatchLifecycleStore => ({
+  saveVisible: vi.fn(() => Effect.succeed({} as PatchLifecycleRecordWithStatus)),
+  supersedeByExcerptFingerprint: vi.fn(() => Effect.succeed(0)),
+  dispute: vi.fn(() => Effect.succeed(true)),
+  resolve: vi.fn(() => Effect.succeed(true)),
+  withdraw: vi.fn(() => Effect.succeed(true)),
+  findCurrentByExcerptFingerprint: vi.fn(() =>
+    Effect.fail(new PatchLifecycleStoreError({ reason: "db locked" })),
+  ),
+  findHistoryByAnswer: vi.fn(() =>
+    Effect.fail(new PatchLifecycleStoreError({ reason: "db locked" })),
+  ),
+  findAll: vi.fn(() => Effect.succeed([])),
+});
+
+const makeDeps = (
+  secret?: string,
+  storePair?: FakeStorePair,
+  lifecycleStore?: PatchLifecycleStore,
+): SearchAnswerCandidatesDeps => ({
   getSecret: vi.fn(() => secret),
   createStore: vi.fn(async () => {
     if (storePair) return storePair.store;
     return makeFakeStore().store;
+  }),
+  createLifecycleStore: vi.fn(async () => {
+    if (lifecycleStore) return lifecycleStore;
+    return makeFakeLifecycleStore(buildLifecycleLookup({}));
   }),
   createQuotaGuard: vi.fn(async () => ({
     consume: vi.fn(() => Effect.succeed(void 0)),
@@ -352,6 +414,7 @@ describe("search-answer-candidates", () => {
         getSecret: vi.fn(() => "test-secret"),
         createStore: vi.fn(async () => storePair.store),
         createQuotaGuard: vi.fn(async () => quotaGuard),
+        createLifecycleStore: vi.fn(async () => makeFakeLifecycleStore(buildLifecycleLookup({}))),
       });
       const result = await h({ query: "test" });
 
@@ -369,6 +432,7 @@ describe("search-answer-candidates", () => {
         getSecret: vi.fn(() => "secret"),
         createStore: vi.fn(async () => makeFakeStore().store),
         createQuotaGuard: vi.fn(async () => quotaGuard),
+        createLifecycleStore: vi.fn(async () => makeFakeLifecycleStore(buildLifecycleLookup({}))),
       });
       const result = await h({ query: "test" });
 
@@ -388,12 +452,180 @@ describe("search-answer-candidates", () => {
         getSecret: vi.fn(() => "secret"),
         createStore: vi.fn(async () => makeFakeStore().store),
         createQuotaGuard: vi.fn(async () => quotaGuard),
+        createLifecycleStore: vi.fn(async () => makeFakeLifecycleStore(buildLifecycleLookup({}))),
       });
       const result = await h({ query: "test" });
 
       expect(result.status).toBe("error");
       if (result.status === "error") {
         expect(result.code).toBe("SEARCH_ERROR");
+      }
+    });
+  });
+
+  // ── Author, edit, and lifecycle metadata ────────────────────────────────
+
+  describe("author and edit metadata", () => {
+    it("projects AuthorName and EditTime into candidate display fields", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const items = [
+        {
+          ContentType: "Answer",
+          Title: "Test answer",
+          AuthorName: "Alice Chen",
+          Url: "https://www.zhihu.com/question/1/answer/1",
+          ContentID: "1",
+          EditTime: 1_700_000_000,
+          ContentText: "Some content",
+        },
+      ];
+
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockReturnValue(Effect.succeed(items));
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "test" });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0].authorDisplayName).toBe("Alice Chen");
+        expect(result.candidates[0].editAt).toBe(1_700_000_000);
+        expect(result.candidates[0].maintenance.status).toBe("not_tracked");
+        expect(result.candidates[0].maintenance.evidenceCount).toBeUndefined();
+      }
+    });
+
+    it("falls back to no author when AuthorName is missing", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const items = [
+        {
+          ContentType: "Answer",
+          Title: "No-author answer",
+          Url: "https://www.zhihu.com/question/1/answer/1",
+          ContentID: "1",
+          EditTime: 1_700_000_000,
+          ContentText: "Content without author",
+        },
+      ];
+
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockReturnValue(Effect.succeed(items));
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "test" });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0].authorDisplayName).toBeUndefined();
+        expect(result.candidates[0].editAt).toBe(1_700_000_000);
+      }
+    });
+  });
+
+  describe("lifecycle-derived maintenance state", () => {
+    it("shows VISIBLE with evidence count when a lifecycle record exists", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const items = [
+        {
+          ContentType: "Answer",
+          Title: "Maintained answer",
+          AuthorName: "Bob",
+          Url: "https://www.zhihu.com/question/5/answer/50",
+          ContentID: "99",
+          EditTime: 1_600_000_000,
+          ContentText: "Pre-update content",
+        },
+      ];
+
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockReturnValue(Effect.succeed(items));
+
+      const storePair = makeFakeStore();
+      const history: PatchLifecycleRecordWithStatus[] = [];
+      const lifecycleStore = makeFakeLifecycleStore(() => null, history);
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", storePair, lifecycleStore));
+
+      const result = await h({ query: "test" });
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        const excerpt = storePair.saved[0];
+        history.push({
+          questionId: excerpt.questionId,
+          answerId: excerpt.answerId,
+          excerptFingerprint: excerpt.fingerprint,
+          reason: "price changed",
+          selectedEvidenceFingerprints: ["v1:aaaaaaaaaaaaaaaa", "v1:bbbbbbbbbbbbbbbb"],
+          evidence: [],
+          capturedAt: 1_700_000_000_000,
+          eventAt: 1_700_000_000_000,
+          recordFingerprint: "v1:cccccccccccccccc",
+          status: "VISIBLE",
+        });
+
+        const secondResult = await h({ query: "test" });
+        expect(secondResult.status).toBe("ok");
+        if (secondResult.status === "ok") {
+          expect(secondResult.candidates).toHaveLength(1);
+          expect(secondResult.candidates[0].maintenance.status).toBe("VISIBLE");
+          expect(secondResult.candidates[0].maintenance.evidenceCount).toBe(2);
+        }
+      }
+    });
+
+    it("shows not_tracked when no lifecycle record exists for the excerpt", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const items = [
+        {
+          ContentType: "Answer",
+          Title: "Untracked answer",
+          Url: "https://www.zhihu.com/question/7/answer/70",
+          ContentID: "1",
+          EditTime: 1_500_000_000,
+          ContentText: "Old content",
+        },
+      ];
+
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockReturnValue(Effect.succeed(items));
+
+      const h = createSearchAnswerCandidatesHandler(
+        makeDeps("secret", makeFakeStore(), makeFakeLifecycleStore(buildLifecycleLookup({}))),
+      );
+      const result = await h({ query: "test" });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0].maintenance.status).toBe("not_tracked");
+        expect(result.candidates[0].maintenance.evidenceCount).toBeUndefined();
+      }
+    });
+
+    it("shows unknown when lifecycle lookup fails and still returns the candidate", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const items = [
+        {
+          ContentType: "Answer",
+          Title: "Answer with broken lifecycle",
+          Url: "https://www.zhihu.com/question/9/answer/90",
+          ContentID: "1",
+          EditTime: 1_500_000_000,
+          ContentText: "Some text",
+        },
+      ];
+
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockReturnValue(Effect.succeed(items));
+
+      const h = createSearchAnswerCandidatesHandler(
+        makeDeps("secret", makeFakeStore(), makeFailingLifecycleStore()),
+      );
+      const result = await h({ query: "test" });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0].maintenance.status).toBe("unknown");
+        expect(result.candidates[0].maintenance.evidenceCount).toBeUndefined();
+        expect(result.candidates[0].title).toBe("Answer with broken lifecycle");
       }
     });
   });
