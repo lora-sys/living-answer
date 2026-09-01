@@ -17,6 +17,8 @@ import {
   type SubmitPatchFeedbackResponse,
 } from "../server/submit-patch-feedback";
 
+import { type ClarifyFeedbackResponse, clarifyFeedbackFn } from "../server/clarify-feedback";
+
 import { GeneralizedRealResultRead } from "../components/analysis/GeneralizedRealResultRead";
 
 export const Route = createFileRoute("/read/answer/$questionId/$answerId")({
@@ -92,6 +94,7 @@ function ReadAnswerPage() {
   const boundResolve = useServerFn(resolvePatchLifecycle);
   const boundWithdraw = useServerFn(withdrawPatchLifecycle);
   const boundSubmitFeedback = useServerFn(submitPatchFeedback);
+  const boundClarify = useServerFn(clarifyFeedbackFn);
   const [result, setResult] = useState<ReadAnswerResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [lifecycleAction, setLifecycleAction] = useState<"dispute" | "resolve" | "withdraw" | null>(
@@ -234,6 +237,26 @@ function ReadAnswerPage() {
       };
     };
 
+    const handleClarify = async (input: {
+      questionId: string;
+      answerId: string;
+      excerptFingerprint: string;
+      excerptText: string;
+      recordFingerprint?: string;
+      currentReason?: string;
+      conversation: readonly { role: string; content: string }[];
+    }): Promise<ClarifyFeedbackResponse> => {
+      const response = await boundClarify({ data: input }).catch(() => null);
+      if (response?.success) {
+        return response;
+      }
+      return {
+        success: false,
+        code: response?.code ?? "CLARIFICATION_UNAVAILABLE",
+        message: response?.message ?? "澄清服务暂时不可用，请稍后再试。",
+      };
+    };
+
     return (
       <main className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
         <div className="mx-auto w-full max-w-[1120px] space-y-6">
@@ -250,6 +273,7 @@ function ReadAnswerPage() {
             isLifecyclePending={lifecycleAction !== null}
             lifecycleError={lifecycleError}
             onSubmitFeedback={handleSubmitFeedback}
+            onClarify={handleClarify}
           />
         </div>
       </main>

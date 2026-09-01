@@ -35,6 +35,7 @@ import { UpdateAdvisoryCard } from "./UpdateAdvisoryCard";
 import { PatchFeedbackPanel } from "../read/PatchFeedbackPanel";
 import type { PatchFeedbackReason } from "../../lib/patch-feedback";
 import type { SubmitPatchFeedbackResponse } from "../../server/submit-patch-feedback";
+import type { ClarifyFeedbackResponse } from "../../server/clarify-feedback";
 
 // ── Types ────────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,15 @@ export interface RealResultReadProps {
     readonly evidenceUrl?: string;
     readonly evidenceQuote?: string;
   }) => Promise<SubmitPatchFeedbackResponse>;
+  readonly onClarify?: (input: {
+    readonly questionId: string;
+    readonly answerId: string;
+    readonly excerptFingerprint: string;
+    readonly excerptText: string;
+    readonly recordFingerprint?: string;
+    readonly currentReason?: string;
+    readonly conversation: readonly { readonly role: string; readonly content: string }[];
+  }) => Promise<ClarifyFeedbackResponse>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
@@ -391,6 +401,7 @@ export function RealResultRead({
         questionId={excerpt.questionId}
         answerId={excerpt.answerId}
         excerptFingerprint={excerpt.fingerprint}
+        excerptText={excerpt.excerpt}
         {...(result.lifecycle === undefined
           ? {}
           : { recordFingerprint: result.lifecycle.recordFingerprint })}

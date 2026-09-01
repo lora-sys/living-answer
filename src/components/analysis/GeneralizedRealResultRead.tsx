@@ -3,6 +3,7 @@ import type { AnswerExcerpt } from "../../lib/answer-excerpt";
 import type { PatchFeedbackReason } from "../../lib/patch-feedback";
 import type { PatchLifecycleStatus } from "../../lib/patch-lifecycle";
 import type { SubmitPatchFeedbackResponse } from "../../server/submit-patch-feedback";
+import type { ClarifyFeedbackResponse } from "../../server/clarify-feedback";
 import type {
   ReadAnswerAdvisoryDecision,
   ReadAnswerHistoryEntry,
@@ -31,6 +32,15 @@ export interface GeneralizedRealResultReadProps {
     readonly evidenceUrl?: string;
     readonly evidenceQuote?: string;
   }) => Promise<SubmitPatchFeedbackResponse>;
+  readonly onClarify?: (input: {
+    readonly questionId: string;
+    readonly answerId: string;
+    readonly excerptFingerprint: string;
+    readonly excerptText: string;
+    readonly recordFingerprint?: string;
+    readonly currentReason?: string;
+    readonly conversation: readonly { readonly role: string; readonly content: string }[];
+  }) => Promise<ClarifyFeedbackResponse>;
 }
 
 const LIFECYCLE_LABELS: Record<PatchLifecycleStatus, string> = {
@@ -336,6 +346,7 @@ export function GeneralizedRealResultRead({
   isLifecyclePending = false,
   lifecycleError = null,
   onSubmitFeedback,
+  onClarify,
 }: GeneralizedRealResultReadProps) {
   const showActiveAnalysis = lifecycle.status === "VISIBLE";
 
@@ -365,8 +376,10 @@ export function GeneralizedRealResultRead({
         questionId={excerpt.questionId}
         answerId={excerpt.answerId}
         excerptFingerprint={excerpt.fingerprint}
+        excerptText={excerpt.excerpt}
         recordFingerprint={lifecycle.recordFingerprint}
         onSubmitFeedback={onSubmitFeedback}
+        onClarify={onClarify}
       />
     </div>
   );
