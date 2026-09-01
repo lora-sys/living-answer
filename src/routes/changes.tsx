@@ -7,11 +7,11 @@ import { APP_NAME } from "../lib/app-info";
 import { formatTimestamp } from "../lib/failure-messages";
 
 const STATUS_STYLES: Record<string, string> = {
-  VISIBLE: "bg-paper text-ink-subtle border-rule",
-  DISPUTED: "bg-update-soft text-update border-update/30",
-  SUPERSEDED: "bg-paper text-muted border-rule",
-  RESOLVED: "bg-success-soft text-success border-success/30",
-  WITHDRAWN: "bg-paper text-muted border-rule",
+  VISIBLE: "border-rule bg-paper text-ink-subtle",
+  DISPUTED: "border-update/32 bg-update-soft text-update",
+  SUPERSEDED: "border-rule bg-paper text-muted",
+  RESOLVED: "border-success/32 bg-success-soft text-success",
+  WITHDRAWN: "border-rule bg-paper text-muted",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -56,17 +56,22 @@ function ChangesPage() {
   const changes = result?.status === "ok" ? result.changes : [];
 
   return (
-    <main className="flex min-h-screen items-start bg-paper px-5 py-12 text-ink sm:px-8">
-      <div className="mx-auto w-full max-w-4xl space-y-10">
+    <main className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
+      <div className="mx-auto w-full max-w-[1120px] space-y-12">
         <section>
           <Link
             to="/"
-            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+            className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
           >
-            &larr; 返回首页
+            <span aria-hidden="true">&larr;</span> 返回首页
           </Link>
-          <h1 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-ink">变更时间线</h1>
-          <p className="mt-2 text-base leading-7 text-ink-subtle">
+          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+            CHANGE LEDGER
+          </p>
+          <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
+            变更时间线
+          </h1>
+          <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">
             所有回答前提的生命周期事件，按最新事件时间倒序排列。
           </p>
         </section>
@@ -75,12 +80,9 @@ function ChangesPage() {
           <div
             role="status"
             aria-live="polite"
-            className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-6"
+            className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-6"
           >
-            <span
-              aria-hidden="true"
-              className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
-            />
+            <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
             <div className="space-y-2">
               <p className="text-sm text-ink-subtle">正在加载变更记录…</p>
               <div className="flex gap-3">
@@ -100,13 +102,13 @@ function ChangesPage() {
         {!loading && result?.status === "error" && (
           <div
             role="alert"
-            className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5"
+            className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载变更记录</p>
             <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
             <Link
               to="/"
-              className="mt-3 inline-block text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors duration-150 hover:text-accent-active"
             >
               返回首页
             </Link>
@@ -114,14 +116,14 @@ function ChangesPage() {
         )}
 
         {!loading && result?.status === "ok" && changes.length === 0 && (
-          <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-8 text-center">
+          <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-8">
             <p className="text-sm font-medium text-ink-subtle">变更时间线为空</p>
             <p className="mt-1 text-sm text-muted">
               目前还没有记录任何变更。当回答的前提或判断发生变化时，事件会出现在这里。
             </p>
             <Link
               to="/"
-              className="mt-4 inline-block rounded-xl border border-rule bg-paper-2 px-5 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent/30 hover:text-accent-hover"
+              className="mt-4 inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper-3 px-5 text-sm font-medium text-ink transition-colors duration-150 hover:border-accent/42"
             >
               返回首页继续浏览
             </Link>
@@ -135,43 +137,34 @@ function ChangesPage() {
               const badgeClass = STATUS_STYLES[c.status] ?? "bg-paper text-ink-subtle border-rule";
 
               return (
-                <li key={c.recordFingerprint} className="relative pl-8 pb-8 last:pb-0">
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full border border-rule bg-paper"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-[5px] top-[13px] h-full w-px bg-rule last:hidden"
-                  />
-
-                  <div className="rounded-2xl border border-rule bg-paper-2 p-5 transition-colors hover:border-accent/30 sm:p-6">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <li key={c.recordFingerprint} className="border-t border-rule pt-4 pb-4 last:pb-0">
+                  <div className="rounded-[2px] border border-rule bg-paper-2 p-5 sm:p-6">
+                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                       <span
                         className={[
-                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                          "inline-flex min-h-8 items-center rounded-[2px] border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]",
                           badgeClass,
                         ].join(" ")}
                       >
                         {STATUS_LABELS[c.status] ?? c.status}
                       </span>
-                      <span className="text-xs text-muted">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
                         问题 #{c.questionId} · 回答 #{c.answerId}
                       </span>
                     </div>
 
-                    <p className="mt-3 break-words text-sm leading-6 text-ink-subtle">
+                    <p className="mt-4 max-w-[68ch] break-words text-sm leading-6 text-ink-subtle">
                       {truncateReason(c.reason)}
                     </p>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
                       <span>证据 {c.evidenceCount} 条</span>
                       <span>摘录时间 {formatTimestamp(c.capturedAt)}</span>
                       <a
                         href={zhihuUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-accent transition-colors hover:text-accent-hover"
+                        className="text-accent-text transition-colors duration-150 hover:text-accent-active"
                       >
                         查看知乎来源 &rarr;
                       </a>

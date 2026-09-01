@@ -71,7 +71,7 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
   const paragraphs = splitParagraphs(excerpt.excerpt);
 
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
       <div className="space-y-4">
         {paragraphs.map((para, i) => (
           <p key={i} className="text-base leading-7 text-ink sm:text-lg sm:leading-8">
@@ -80,7 +80,7 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
         ))}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
         <span>
           知乎问题 <span className="font-medium text-ink-subtle">#{excerpt.questionId}</span>
         </span>
@@ -89,7 +89,7 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
         </span>
         <span>摘录时间 {new Date(excerpt.capturedAt).toLocaleDateString("zh-CN")}</span>
       </div>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
         来源编辑时间 {new Date(excerpt.sourceEditTime).toLocaleDateString("zh-CN")}
       </p>
     </div>
@@ -101,8 +101,10 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
 function ContextView({ text }: { readonly text: string }) {
   if (text.trim() === "") return null;
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-4">
-      <p className="text-xs font-medium text-muted">维护备注</p>
+    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+        维护备注
+      </p>
       <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink-subtle">{text}</p>
     </div>
   );
@@ -127,13 +129,11 @@ interface NoPatchViewProps {
 
 function NoPatchView({ decision }: NoPatchViewProps) {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-          前提未变化
-        </span>
-      </div>
-      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+        NO_PATCH
+      </p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
       <p className="mt-3 text-xs text-muted">未检测到需要更新回答的关键前提。</p>
     </div>
   );
@@ -147,13 +147,11 @@ interface UnknownViewProps {
 
 function UnknownView({ decision }: UnknownViewProps) {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-          无法确定
-        </span>
-      </div>
-      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+    <div className="rounded-[2px] border border-accent/32 bg-accent-soft px-5 py-5 sm:px-6">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
+        UNKNOWN
+      </p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
       <p className="mt-3 text-xs text-muted">
         当前可获取的信息不足以形成明确结论。建议查阅更多来源或稍后再试。
       </p>
@@ -165,12 +163,12 @@ function UnknownView({ decision }: UnknownViewProps) {
 
 function DisputedPatchView() {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-          已暂停
+    <div className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5 sm:px-6">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
+          DISPUTED
         </span>
-        <span className="text-xs text-muted">变更提示有争议</span>
+        <span className="text-sm font-medium text-ink-subtle">变更提示有争议</span>
       </div>
       <p className="mt-4 text-base leading-7 text-ink-subtle">
         这条补充提示已被标记为有争议，当前不再作为有效提示显示。
@@ -223,13 +221,15 @@ function LifecycleView({
   return (
     <div
       aria-busy={isDisputePending}
-      className="rounded-2xl border border-rule bg-paper-2 px-5 py-4 sm:px-6"
+      className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4 sm:px-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-ink-subtle">变更状态</p>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+            变更状态
+          </p>
           {lifecycle !== undefined && (
-            <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
+            <span className="inline-flex min-h-8 items-center rounded-[2px] border border-rule bg-paper px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
               {lifecycleStatusLabel(lifecycle.status)}
             </span>
           )}
@@ -242,7 +242,7 @@ function LifecycleView({
                 type="button"
                 onClick={onDispute}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
+                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 标记有争议
               </button>
@@ -252,7 +252,7 @@ function LifecycleView({
                 type="button"
                 onClick={onResolve}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
+                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 标记已解决
               </button>
@@ -262,7 +262,7 @@ function LifecycleView({
                 type="button"
                 onClick={onWithdraw}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-rule bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
+                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 撤回补丁
               </button>
@@ -272,7 +272,7 @@ function LifecycleView({
                 type="button"
                 onClick={onRecheck}
                 disabled={isDisputePending}
-                className="inline-flex items-center rounded-full border border-rule bg-paper-2 px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
+                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper-2 px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
               >
                 重新检查
               </button>

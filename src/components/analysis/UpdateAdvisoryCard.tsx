@@ -32,21 +32,21 @@ const truncate = (text: string, max: number): string =>
 
 export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCardProps) {
   return (
-    <div className="rounded-2xl border border-update/30 bg-update-soft px-5 py-5 sm:px-6">
-      {/* Badge */}
-
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-update-soft px-2.5 py-0.5 text-xs font-medium text-update">
-          信息已更新
-        </span>
-        <span className="text-xs text-muted">前提变化提示</span>
+    <div className="rounded-[2px] border border-update/30 bg-update-soft px-5 py-5 sm:px-6">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-update/24 pb-4">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
+          UPDATE
+        </p>
+        <p className="text-sm font-medium text-ink-subtle">前提变化提示</p>
       </div>
 
       {/* 原文受影响前提 */}
 
       {decision.affectedWording !== undefined && (
-        <div className="mt-4 rounded-xl border border-update/20 bg-paper-2 px-4 py-3">
-          <p className="text-xs font-medium text-update">原文受影响前提</p>
+        <div className="mt-5 rounded-[2px] border border-update/24 bg-paper-2 px-4 py-3">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-update">
+            原文受影响前提
+          </p>
           <p className="mt-1 text-sm leading-6 text-ink">
             {excerptText !== undefined ? (
               <>
@@ -64,7 +64,9 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.currentState !== undefined && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-muted">当前状况</p>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            当前状况
+          </p>
           <p className="mt-1 text-sm leading-6 text-ink">{decision.currentState}</p>
         </div>
       )}
@@ -73,25 +75,29 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.impactOnAnswer !== undefined && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-muted">对回答的影响</p>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            对回答的影响
+          </p>
           <p className="mt-1 text-sm leading-6 text-ink">{decision.impactOnAnswer}</p>
         </div>
       )}
 
       {/* Generic reason (always shown) */}
 
-      <p className="mt-4 text-base leading-7 text-ink">{decision.reason}</p>
+      <p className="mt-5 max-w-[68ch] text-base leading-7 text-ink">{decision.reason}</p>
 
       {/* 匹配证据 */}
 
       {decision.matchedEvidence !== undefined && decision.matchedEvidence.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">匹配证据</p>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            匹配证据
+          </p>
           <ul className="space-y-2">
             {decision.matchedEvidence.map((ev) => (
               <li
                 key={ev.fingerprint}
-                className="rounded-lg border border-rule bg-paper-2 px-3 py-2"
+                className="rounded-[2px] border border-rule bg-paper-2 px-4 py-3"
               >
                 <p className="text-xs leading-5 text-ink-subtle">{ev.quote}</p>
                 <a
@@ -112,7 +118,9 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
 
       {decision.evidenceSummary.length > 0 && (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted">参考来源</p>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            参考来源
+          </p>
           <ul className="space-y-1.5">
             {decision.evidenceSummary.map((ev) => (
               <li key={ev.fingerprint}>

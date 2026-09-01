@@ -277,10 +277,10 @@ describe("AnalysisResultPanel", () => {
       expect(html).not.toContain("bg-update-soft");
     });
 
-    it("UNKNOWN uses paper-2/rule (neutral) styling", () => {
+    it("UNKNOWN uses blue information styling", () => {
       const html = renderPanel({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-paper-2");
-      expect(html).toContain("border-rule");
+      expect(html).toContain("bg-accent-soft");
+      expect(html).toContain("border-accent/32");
       // No amber styling
       expect(html).not.toContain("bg-update-soft");
       expect(html).not.toContain("bg-update-soft");

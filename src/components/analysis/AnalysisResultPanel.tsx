@@ -56,11 +56,8 @@ export interface AnalysisResultPanelProps {
 
 function LoadingView() {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper-2 px-5 py-4">
-      <span
-        aria-hidden="true"
-        className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
-      />
+    <div className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+      <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
       <p className="text-sm text-ink-subtle">正在分析前提变化…</p>
     </div>
   );
@@ -76,7 +73,7 @@ interface ErrorViewProps {
 function ErrorView({ message, isFormError }: ErrorViewProps) {
   return (
     <div
-      className={`rounded-2xl border px-5 py-4 ${
+      className={`rounded-[2px] border px-5 py-4 ${
         isFormError ? "border-danger/30 bg-danger-soft" : "border-rule bg-paper-2"
       }`}
     >
@@ -103,13 +100,11 @@ interface NoPatchViewProps {
 
 function NoPatchView({ decision }: NoPatchViewProps) {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-          前提未变化
-        </span>
-      </div>
-      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+        NO_PATCH
+      </p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
       <p className="mt-3 text-xs text-muted">未检测到需要更新回答的关键前提。</p>
     </div>
   );
@@ -121,13 +116,11 @@ interface UnknownViewProps {
 
 function UnknownView({ decision }: UnknownViewProps) {
   return (
-    <div className="rounded-2xl border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-0.5 text-xs font-medium text-ink-subtle">
-          无法确定
-        </span>
-      </div>
-      <p className="mt-4 text-base leading-7 text-ink-subtle">{decision.reason}</p>
+    <div className="rounded-[2px] border border-accent/32 bg-accent-soft px-5 py-5 sm:px-6">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
+        UNKNOWN
+      </p>
+      <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">{decision.reason}</p>
       <p className="mt-3 text-xs text-muted">
         当前可获取的信息不足以形成明确结论。建议查阅更多来源或稍后再试。
       </p>
@@ -169,7 +162,7 @@ export function AnalysisResultPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted">分析完成</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">DONE</p>
 
       {resultDecision.verdict === "UPDATE" && <UpdateView decision={resultDecision} />}
 

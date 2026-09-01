@@ -88,11 +88,11 @@ function ReadGoldenDemo() {
   }, [openParagraphId]);
 
   return (
-    <main className="min-h-screen bg-paper px-5 py-12 text-ink sm:px-8">
-      <div className="mx-auto w-full max-w-5xl">
+    <main className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
+      <div className="mx-auto w-full max-w-[1120px]">
         <Link
           to="/"
-          className="mb-8 inline-flex items-center gap-1 text-sm text-accent-text transition-colors hover:text-accent-active"
+          className="mb-8 inline-flex min-h-11 items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
         >
           <span aria-hidden="true">&larr;</span> 返回首页
         </Link>
@@ -106,31 +106,34 @@ function ReadGoldenDemo() {
         <article className="min-w-0 flex-1">
           <AnswerHeader fixture={fixture} />
 
-          <section className="rounded-[14px] border border-rule bg-paper-2 p-7 shadow-[var(--shadow-card)] sm:p-10">
+          <section className="rounded-[2px] border border-rule bg-paper-2 p-5 shadow-[var(--shadow-card)] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+              <h1 className="font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[42px] sm:leading-[46px]">
                 {fixture.displayTitle}
               </h1>
-              <span className="inline-flex items-center rounded-full border border-update/30 bg-update-soft px-2.5 py-1 text-xs font-semibold text-update">
-                {fixture.patches.length} 处补丁
+              <span className="inline-flex shrink-0 items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
+                <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
+                {fixture.patches.length} PATCHES
               </span>
             </div>
 
-            <p className="mt-3 inline-flex items-center rounded-full border border-rule bg-paper px-3 py-1 text-xs font-medium text-ink-subtle">
+            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
               {fixture.topic}
             </p>
 
-            <p className="mt-4 text-sm leading-6 text-ink-subtle">{fixture.description}</p>
+            <p className="mt-4 max-w-[68ch] text-sm leading-6 text-ink-subtle sm:text-base sm:leading-7">
+              {fixture.description}
+            </p>
 
-            <div className="mt-6 flex flex-wrap gap-2 border-t border-rule pt-5">
+            <div className="mt-7 flex flex-wrap gap-2 border-t border-rule pt-5">
               {fixture.patches.map((patch, index) => (
                 <button
                   key={patch.id}
                   type="button"
                   onClick={() => openPatch(patch.paragraphId, patch.id)}
                   className={[
-                    "inline-flex min-h-11 items-center rounded-[8px] border border-rule bg-paper px-3 py-2",
-                    "text-left text-xs font-medium text-ink-subtle transition-colors hover:border-accent/35 hover:text-ink",
+                    "inline-flex min-h-11 items-center rounded-[2px] border border-rule bg-paper px-3 py-2",
+                    "font-mono text-[11px] uppercase tracking-[0.06em] text-ink-subtle transition-colors duration-150 hover:border-accent/42 hover:text-ink",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   ].join(" ")}
                 >
@@ -155,7 +158,9 @@ function ReadGoldenDemo() {
                     id={pid}
                     className={[
                       "scroll-mt-24",
-                      isOpen ? "ring-2 ring-update-soft ring-offset-2 rounded-lg" : "",
+                      isOpen
+                        ? "rounded-[2px] border-l-2 border-update bg-paper-2 pl-4 pr-3 py-2"
+                        : "",
                     ].join(" ")}
                   >
                     <p className="text-ink-subtle">{paragraph}</p>
@@ -184,7 +189,7 @@ function ReadGoldenDemo() {
         {openParagraphId && (
           <aside
             ref={desktopPanelRef}
-            className="sticky top-24 hidden h-fit lg:block lg:w-[380px] shrink-0"
+            className="sticky top-24 hidden h-fit min-w-0 lg:block lg:w-[380px] shrink-0"
           >
             <PatchPanel
               patches={fixture.patches}

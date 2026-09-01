@@ -191,12 +191,13 @@ describe("RealResultRead", () => {
       expect(html).toContain("insufficient or inconclusive");
     });
 
-    it("uses paper-2/rule neutral styling", () => {
+    it("uses accent informational styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("bg-accent-soft");
+      expect(html).toContain("border-accent/32");
     });
 
-    it("does not render amber styling for UNKNOWN", () => {
+    it("does not render update styling for UNKNOWN", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
       expect(html).not.toContain("bg-update-soft");
       expect(html).not.toContain("bg-update-soft");
@@ -454,10 +455,10 @@ describe("RealResultRead", () => {
       expect(html).toContain("border-rule");
     });
 
-    it("UNKNOWN uses paper-2/rule (neutral) styling", () => {
+    it("UNKNOWN uses accent informational styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
-      expect(html).toContain("bg-paper-2");
-      expect(html).toContain("border-rule");
+      expect(html).toContain("bg-accent-soft");
+      expect(html).toContain("border-accent/32");
     });
   });
 });

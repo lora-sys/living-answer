@@ -27,9 +27,9 @@ export function InlinePatchMarker({
       type="button"
       data-paragraph-id={paragraphId}
       className={[
-        "inline-flex items-center rounded-full border border-update/30 bg-update-soft",
-        "min-h-11 px-3 py-2 text-xs font-medium text-update",
-        "cursor-pointer transition-colors hover:bg-update-soft active:bg-update active:scale-[0.98]",
+        "inline-flex items-center rounded-[2px] border border-update/32 bg-update-soft",
+        "min-h-11 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-update",
+        "cursor-pointer transition-colors duration-150 hover:border-update/56 active:translate-y-px",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
       ].join(" ")}
       aria-expanded={isOpen}
@@ -37,7 +37,7 @@ export function InlinePatchMarker({
       aria-label={label}
       onClick={onClick}
     >
-      <span aria-hidden="true" className="mr-1 inline-block h-1 w-1 rounded-full bg-accent" />
+      <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 bg-update" />
       {label}
       <svg
         aria-hidden="true"

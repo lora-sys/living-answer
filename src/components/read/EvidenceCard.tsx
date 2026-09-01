@@ -13,11 +13,11 @@ interface EvidenceCardProps {
  */
 export function EvidenceCard({ evidence }: EvidenceCardProps) {
   return (
-    <div className="rounded-xl border border-rule bg-paper-2 px-4 py-3">
+    <div className="border border-rule bg-paper-2 px-4 py-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-medium text-ink">{evidence.title}</h4>
-          <p className="text-xs text-muted">
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold leading-6 text-ink">{evidence.title}</h4>
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
             {evidence.organization} · {evidence.sourceType} ·{" "}
             {formatDateYYYYMMDD(evidence.publishedAt)}
           </p>
@@ -46,9 +46,9 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
           </a>
         )}
       </div>
-      <p className="mt-2 text-xs leading-5 text-ink-subtle">{evidence.supportedFact}</p>
+      <p className="mt-3 text-xs leading-5 text-ink-subtle">{evidence.supportedFact}</p>
       {evidence.quote && (
-        <blockquote className="mt-2 border-l-2 border-rule-strong pl-3 text-xs italic text-muted">
+        <blockquote className="mt-3 border-l-2 border-rule-strong pl-3 text-xs leading-5 text-muted">
           "{evidence.quote}"
         </blockquote>
       )}

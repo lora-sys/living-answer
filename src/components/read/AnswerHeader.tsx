@@ -12,55 +12,36 @@ interface AnswerHeaderProps {
  * and provenance metadata grounded in the public search summary source.
  */
 
-function initialsFromName(name: string): string {
-  // For CJK names, take the first character; for mixed names, take first char of each part
-  const parts = name.replace(/[\s　]/g, "").split(/(?=[一-鿿])|(?<=[a-zA-Z])/);
-  if (parts.length >= 2 && parts[0].match(/[a-zA-Z]/)) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.charAt(0);
-}
-
 export function AnswerHeader({ fixture }: AnswerHeaderProps) {
   const { source, capturedAt } = fixture;
   const freshnessNotice = buildFreshnessNotice(fixture.patches.length, latestAsOf(fixture));
-  const avatarInitials = initialsFromName(source.authorDisplayName);
 
   return (
-    <header className="mb-8">
-      {/* Author row */}
-      <div className="flex items-center gap-3">
-        <div
-          aria-hidden="true"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rule text-xs font-semibold text-ink-subtle"
-        >
-          {avatarInitials}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-ink">{source.authorDisplayName}</p>
-          <p className="text-xs text-ink-subtle">
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-ink"
-            >
-              {source.questionTitle}
-            </a>
-            {" · "}
-            知乎回答 · 捕获于 {formatDateYYYYMMDD(capturedAt)}
-          </p>
-        </div>
-      </div>
-
-      {/* Provenance label */}
-      <p className="mt-4 inline-flex items-center rounded-full border border-rule bg-paper px-3 py-1 text-xs font-medium text-ink-subtle">
-        <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 rounded-full bg-update" />
-        精选演示 · 从公开搜索摘要整理 · 非实时抓取
+    <header className="mb-8 border-b border-rule pb-6">
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+        ORIGINAL ARTIFACT
       </p>
+      <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+        <p className="text-lg font-semibold text-ink">{source.authorDisplayName}</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+          ZHIHU · {formatDateYYYYMMDD(capturedAt)}
+        </p>
+      </div>
+      <a
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 inline-block max-w-[68ch] break-words text-base font-medium text-accent-text transition-colors duration-150 hover:text-accent-active focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      >
+        {source.questionTitle}
+      </a>
 
-      {/* Freshness notice */}
-      <p className="mt-4 text-sm leading-6 text-update">{freshnessNotice}</p>
+      <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 border-t border-rule pt-4">
+        <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted">
+          CURATED DEMO · SUMMARY SOURCE
+        </p>
+        <p className="text-sm leading-6 text-update">{freshnessNotice}</p>
+      </div>
     </header>
   );
 }
