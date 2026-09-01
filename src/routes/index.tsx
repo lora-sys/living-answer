@@ -55,6 +55,16 @@ const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
   not_tracked: "未跟踪",
 };
 
+const MAINTENANCE_STATUS_HINTS: Partial<Record<MaintenanceStatus, string>> = {
+  VISIBLE: "已有关键前提更新记录",
+  DISPUTED: "有人提出异议，先复核证据",
+  SUPERSEDED: "已有更新的维护结论",
+  RESOLVED: "争议已按证据处理",
+  WITHDRAWN: "记录已撤回",
+  not_tracked: "还没有维护记录，可先进入阅读页",
+  unknown: "维护状态暂不可用，可直接检查原文摘录",
+};
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -163,6 +173,7 @@ function Home() {
       setServerResult({ status: "error", code: "PROVIDER_ERROR" });
     }
     setLoading(false);
+    scrollToAnswerEntry();
   };
 
   // ── Search handler ─────────────────────────────────────────────────────────
@@ -186,6 +197,13 @@ function Home() {
       setSearchResult({ status: "error", code: "SEARCH_ERROR", message: "搜索失败，请稍后再试。" });
     }
     setSearchLoading(false);
+    scrollToAnswerEntry();
+  };
+
+  const scrollToAnswerEntry = (): void => {
+    requestAnimationFrame(() => {
+      document.getElementById("answer-entry")?.scrollIntoView({ block: "start" });
+    });
   };
 
   useEffect(() => {
@@ -233,7 +251,10 @@ function Home() {
 
     setEntryMode("url");
     setSearchResult(null);
-    setSearchQuery("");
+    setServerResult({
+      status: "error",
+      code: readResponse?.status === "no_excerpt" ? "ANSWER_NOT_FOUND" : "PROVIDER_ERROR",
+    });
   };
 
   // ── Analysis handler ───────────────────────────────────────────────────────
@@ -434,7 +455,6 @@ function Home() {
             type="button"
             onClick={() => {
               setEntryMode("search");
-              setSearchQuery("React 19 还值得学吗");
             }}
             className="inline-flex h-10 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
@@ -491,62 +511,49 @@ function Home() {
             <GoldenDemoPreviewCard demo={goldenDemos[0]} variant="hero" />
           </div>
         </div>
-      </section>
 
-      <div className="mx-auto w-full max-w-[1120px] space-y-16 px-5 sm:px-8">
-        {/* ═══ Dual entry: URL or search ═════════════════════════════════════ */}
-        <section id="answer-entry" className="scroll-mt-20 pt-12">
-          <div className="max-w-3xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
-              START
-            </p>
-            <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
-              粘贴知乎回答，或先搜索一个问题
-            </h2>
-            <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-              系统先取得摘录，再抽取候选前提、检索来源，最后在证据充分时给出可争议的更新记录。
-            </p>
-          </div>
+        <div className="mx-auto w-full max-w-[1120px] px-5 pb-14 sm:px-8">
+          <div className="mx-auto max-w-3xl rounded-[2px] border border-paper/22 bg-paper p-5 shadow-[var(--shadow-panel)] sm:p-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-text">
+                START HERE
+              </p>
+              <p className="text-xs text-muted">不替换原文 · 只补充可核对的前提变化</p>
+            </div>
 
-          {/* ── Segmented control ─────────────────────────────────────────── */}
-          {/* ── Segmented control ─────────────────────────────────────────── */}
-          <div
-            role="tablist"
-            aria-label="选择入口方式"
-            className="mt-8 inline-flex rounded-[6px] border border-rule bg-paper p-1"
-          >
-            {(["url", "search"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                role="tab"
-                aria-selected={entryMode === mode}
-                onClick={() => setEntryMode(mode)}
-                disabled={isPending || disputeLoading}
-                className={[
-                  "min-h-11 rounded-[4px] px-4 py-2 text-sm font-semibold transition-colors duration-150",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                  entryMode === mode
-                    ? "border border-rule-strong bg-paper-3 text-ink"
-                    : "border border-transparent text-muted hover:text-ink",
-                ].join(" ")}
-              >
-                {mode === "url" ? "粘贴链接" : "搜索问题"}
-              </button>
-            ))}
-          </div>
-
-          {entryMode === "url" && (
-            <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
-              <div>
-                <label
-                  htmlFor="answer-url"
-                  className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+            <div
+              role="tablist"
+              aria-label="快速选择入口方式"
+              className="mt-4 inline-flex rounded-[6px] border border-rule bg-paper-2 p-1"
+            >
+              {(["url", "search"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="tab"
+                  aria-selected={entryMode === mode}
+                  onClick={() => setEntryMode(mode)}
+                  disabled={isPending || disputeLoading}
+                  className={[
+                    "min-h-10 rounded-[4px] px-4 text-sm font-semibold transition-colors duration-150",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    entryMode === mode
+                      ? "bg-paper-3 text-ink shadow-[0_0_0_1px_var(--color-rule-strong)]"
+                      : "text-muted hover:text-ink",
+                  ].join(" ")}
                 >
-                  ZHIHU ANSWER URL
+                  {mode === "url" ? "粘贴链接" : "搜索问题"}
+                </button>
+              ))}
+            </div>
+
+            {entryMode === "url" && (
+              <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-3">
+                <label htmlFor="hero-answer-url" className="sr-only">
+                  知乎回答链接
                 </label>
                 <input
-                  id="answer-url"
+                  id="hero-answer-url"
                   type="url"
                   value={url}
                   onChange={(e) => {
@@ -556,36 +563,67 @@ function Home() {
                   placeholder="https://www.zhihu.com/question/42/answer/100"
                   disabled={isPending || disputeLoading}
                   autoComplete="off"
-                  className={
-                    "mt-2 block h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink " +
-                    "placeholder:text-muted " +
-                    "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
-                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
-                  }
+                  className="h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
                 />
-              </div>
+                <button
+                  type="submit"
+                  disabled={isPending || disputeLoading}
+                  className="inline-flex h-12 items-center justify-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
+                >
+                  {isPending ? "正在获取摘录" : "开始核对"}
+                </button>
+                {errorState && !isPending && (
+                  <p className="text-sm text-update">{errorState.message}</p>
+                )}
+              </form>
+            )}
 
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={isPending || disputeLoading}
-                    className={
-                      "inline-flex h-12 items-center rounded-[6px] px-5 text-sm font-semibold text-on-accent " +
-                      "bg-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active " +
-                      "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
-                      "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
-                    }
-                  >
-                    {isPending ? "获取中" : "获取摘录"}
-                  </button>
-                  {isPending && <span className="text-sm text-muted">正在检索回答摘录…</span>}
-                </div>
-                <p className="text-xs text-muted">
-                  粘贴后点击获取摘录，查看该回答的前提是否已变化。
+            {entryMode === "search" && (
+              <form onSubmit={handleSearch} noValidate className="mt-4 flex flex-col gap-3">
+                <label htmlFor="hero-search-query" className="sr-only">
+                  搜索知乎问题
+                </label>
+                <input
+                  id="hero-search-query"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                  }}
+                  placeholder="例如：React 19 还值得学吗"
+                  disabled={searchLoading || disputeLoading}
+                  autoComplete="off"
+                  className="h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
+                />
+                <button
+                  type="submit"
+                  disabled={searchLoading || disputeLoading}
+                  className="inline-flex h-12 items-center justify-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
+                >
+                  {searchLoading ? "正在搜索" : "搜索回答"}
+                </button>
+              </form>
+            )}
+
+            <div className="mt-4 grid gap-3 border-t border-rule pt-4 sm:grid-cols-3">
+              {["获取回答摘录", "识别候选前提", "检索可查证据"].map((step, index) => (
+                <p key={step} className="text-sm leading-6 text-ink-subtle">
+                  <span className="mr-2 font-mono text-xs font-semibold text-accent-text">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {step}
                 </p>
-              </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
+      <div className="mx-auto w-full max-w-[1120px] space-y-16 px-5 sm:px-8">
+        {/* ═══ Answer workspace ═════════════════════════════════════════════ */}
+        <section id="answer-entry" tabIndex={-1} className="scroll-mt-20 pt-12">
+          {entryMode === "url" ? (
+            <div className="max-w-3xl space-y-5">
               {showLoading && (
                 <div className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <span
@@ -639,10 +677,8 @@ function Home() {
                 </div>
               )}
 
-              {/* ── Claims extraction section ───────────────────────────────── */}
               <ClaimsSection loading={claimsLoading} result={claimsResult} onRetry={retryClaims} />
 
-              {/* ── Evidence candidates section ──────────────────────────────── */}
               {claimsResult?.status === "ok" && claimsResult.claims.length > 0 && (
                 <EvidenceCandidatesSection
                   loading={evidenceLoading}
@@ -650,53 +686,9 @@ function Home() {
                   onRetrieve={retryEvidence}
                 />
               )}
-            </form>
-          )}
-
-          {entryMode === "search" && (
-            <form onSubmit={handleSearch} noValidate className="mt-6 space-y-4">
-              <div>
-                <label
-                  htmlFor="search-query"
-                  className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
-                >
-                  SEARCH ZHIHU
-                </label>
-                <input
-                  id="search-query"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                  }}
-                  placeholder="例如：React 19 还值得学吗"
-                  disabled={searchLoading || disputeLoading}
-                  autoComplete="off"
-                  className={
-                    "mt-2 block h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink " +
-                    "placeholder:text-muted " +
-                    "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
-                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
-                  }
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={searchLoading || disputeLoading}
-                  className={
-                    "inline-flex h-12 items-center rounded-[6px] px-5 text-sm font-semibold text-on-accent " +
-                    "bg-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active " +
-                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
-                    "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
-                  }
-                >
-                  {searchLoading ? "搜索中" : "搜索"}
-                </button>
-                {searchLoading && <span className="text-sm text-muted">正在搜索知乎回答…</span>}
-              </div>
-
+            </div>
+          ) : (
+            <div className="max-w-3xl space-y-5">
               {searchResult?.status === "error" && (
                 <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm font-medium text-ink-subtle">{searchResult.message}</p>
@@ -711,33 +703,50 @@ function Home() {
                   <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-subtle">
                     当前接口只返回回答类内容；换一个更具体的问题关键词，通常比粘贴完整链接更容易命中。
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode("url")}
+                    className="mt-4 inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper-3 px-4 text-sm font-semibold text-ink transition-colors duration-150 hover:border-accent/42 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    改用粘贴回答链接
+                  </button>
                 </div>
               )}
 
               {searchResult?.status === "ok" && searchResult.candidates.length > 0 && (
-                <ul className="space-y-2" role="list">
+                <ul className="space-y-3" role="list">
                   {searchResult.candidates.map((c) => (
                     <li key={c.answerId}>
                       <button
                         type="button"
                         onClick={() => handleSelectCandidate(c)}
                         className={
-                          "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-4 text-left transition-colors duration-150 " +
-                          "hover:border-accent/30 " +
+                          "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
+                          "hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] " +
                           "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                         }
                       >
-                        <p className="text-sm font-semibold text-ink">
-                          {c.title || `知乎回答 #${c.answerId}`}
-                        </p>
+                        <div className="flex min-w-0 items-start justify-between gap-x-4 gap-y-2">
+                          <p className="min-w-0 text-[17px] font-semibold leading-7 text-ink">
+                            {c.title || `知乎回答 #${c.answerId}`}
+                          </p>
+                          <span
+                            className={[
+                              "inline-flex shrink-0 items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.06em]",
+                              MAINTENANCE_STATUS_STYLES[c.maintenance.status],
+                            ].join(" ")}
+                          >
+                            {MAINTENANCE_STATUS_LABELS[c.maintenance.status]}
+                          </span>
+                        </div>
 
                         {c.preview && (
-                          <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-ink-subtle">
+                          <p className="mt-2.5 line-clamp-2 text-sm leading-6 text-ink-subtle">
                             {c.preview}
                           </p>
                         )}
 
-                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.04em] text-muted">
+                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.04em] text-muted">
                           {c.authorDisplayName && (
                             <span>
                               作者{" "}
@@ -754,29 +763,15 @@ function Home() {
                           </span>
                         </div>
 
-                        <div className="mt-2 flex items-center gap-2">
-                          <span
-                            className={[
-                              "inline-flex items-center rounded-[4px] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em]",
-                              MAINTENANCE_STATUS_STYLES[c.maintenance.status],
-                            ].join(" ")}
-                          >
-                            {MAINTENANCE_STATUS_LABELS[c.maintenance.status]}
-                            {c.maintenance.evidenceCount != null &&
-                              c.maintenance.status !== "not_tracked" &&
-                              c.maintenance.status !== "unknown" && (
-                                <span className="ml-1 opacity-70">
-                                  ({c.maintenance.evidenceCount} 条证据)
-                                </span>
-                              )}
-                          </span>
-                        </div>
+                        <p className="mt-3 text-sm font-medium text-accent-text">
+                          {MAINTENANCE_STATUS_HINTS[c.maintenance.status]}
+                        </p>
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-            </form>
+            </div>
           )}
 
           {/* Maintenance context and analysis — available after successful excerpt */}
@@ -802,7 +797,7 @@ function Home() {
                   className={
                     "mt-2 block w-full rounded-[4px] border border-rule bg-paper-3 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
-                    "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
+                    "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
                     "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted " +
                     "resize-y"
                   }
@@ -872,14 +867,21 @@ function Home() {
                 id="recent-maintained-heading"
                 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]"
               >
-                最近维护的回答
+                最近被核对的回答
               </h2>
               <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
                 这些回答已经有可核对的维护记录，可以直接进入专属阅读页。
               </p>
             </div>
 
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+            <ul
+              className={
+                maintainedAnswers.length === 3
+                  ? "mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  : "mt-8 grid gap-4 sm:grid-cols-2"
+              }
+              role="list"
+            >
               {maintainedAnswers.map((entry) => (
                 <li key={entry.recordFingerprint}>
                   <Link
@@ -888,11 +890,28 @@ function Home() {
                       questionId: entry.questionId,
                       answerId: entry.answerId,
                     }}
-                    className="block h-full rounded-[2px] border border-rule bg-paper-2 p-5 transition-colors duration-150 hover:border-accent/30 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                    className="block h-full rounded-[2px] border border-rule bg-paper-2 p-5 shadow-[var(--shadow-card)] transition-colors duration-150 hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                   >
-                    <p className="line-clamp-2 text-sm font-semibold text-ink">{entry.reason}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span
+                        className={[
+                          "inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.06em]",
+                          MAINTENANCE_STATUS_STYLES[entry.status as MaintenanceStatus] ??
+                            MAINTENANCE_STATUS_STYLES.unknown,
+                        ].join(" ")}
+                      >
+                        {MAINTENANCE_STATUS_LABELS[entry.status as MaintenanceStatus] ??
+                          MAINTENANCE_STATUS_LABELS.unknown}
+                      </span>
+                      <span className="font-mono text-[11px] uppercase tracking-[0.04em] text-muted">
+                        {formatTimestamp(entry.eventAt)}
+                      </span>
+                    </div>
+                    <p className="mt-4 line-clamp-3 text-sm font-semibold leading-6 text-ink">
+                      {entry.reason}
+                    </p>
                     <p className="mt-3 text-xs leading-5 text-muted">
-                      问题 #{entry.questionId} · 回答 #{entry.answerId}
+                      证据 {entry.evidenceCount} 条 · 回答 #{entry.answerId}
                     </p>
                     <p className="mt-4 text-sm font-medium text-accent-text">打开阅读页 &rarr;</p>
                   </Link>
@@ -912,7 +931,7 @@ function Home() {
               id="demo-heading"
               className="mt-3 text-[32px] font-semibold leading-10 tracking-[-0.02em] sm:text-[38px] sm:leading-11"
             >
-              两份补充记录
+              三条可查记录
             </h2>
             <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">
               上方是精选记录；这里继续展示同一套阅读方式：保留作者原答，指出今天需要核对的前提，再把结论放回来源旁边。
@@ -1022,7 +1041,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
               <div className="mt-2.5 space-y-1.5">
                 <p className="text-xs text-muted">
                   锚点文本{" "}
-                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono font-mono text-xs leading-5 text-ink-subtle">
+                  <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs leading-5 text-ink-subtle">
                     {claim.anchorText.length > 60
                       ? claim.anchorText.slice(0, 57) + "…"
                       : claim.anchorText}

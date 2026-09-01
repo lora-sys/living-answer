@@ -68,7 +68,7 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
           </p>
         </div>
 
-        <div className="px-4 py-5 sm:px-6">
+        <div className="px-4 py-5 sm:px-5">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">证据</p>
           <ul className="mt-3 space-y-3">
             {patch.evidence.slice(0, variant === "hero" ? 2 : 1).map((evidence) => (
