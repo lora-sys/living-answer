@@ -1,289 +1,198 @@
-# Design — Living Answer
+# Design — Revision Desk
 
-Locked design system for all product surfaces. Future Hallmark runs and UI
-changes read this file first. Do not introduce page-local colors, fonts, radii,
-or shadows.
+Living Answer is not a generic article site. It is a controlled repair desk for
+old answers: the original author remains intact, while the UI marks what the
+world has changed since. The interface should feel like a precision instrument
+and a public archive at the same time.
 
-## System
+This system replaces the previous visual system. Do not preserve the old warm
+orange landing language.
 
-- Genre · modern editorial product
-- Theme · studied-DNA: warm paper base, black/orange hierarchy, hairline rules
-- DNA source · public reference sites: cofounder.co, lineaprompt.com,
-  senthora.ai
-- Voice · calm, evidence-first, product-like; no decorative gradients
+## 1. Product attitude
 
-## Color Tokens
+- The page reads like a public record, not marketing.
+- The old answer is the stable artifact; patches are explicit interventions.
+- Evidence is never decoration. Every color signal has a meaning.
+- The hero must answer three things in ten seconds: what is repaired, why it is
+  trustworthy, and where the user starts.
+- Product copy is short, factual, and Chinese-first. Latin product names may use
+  the display font.
 
-`src/styles.css` is canonical. Use semantic Tailwind tokens only.
+## 2. Color
+
+`src/styles.css` owns tokens. Components consume semantic Tailwind token names,
+never raw hex values.
 
 ```css
 @theme {
-  /* Background and surfaces */
-  --color-paper: #f5f5f2; /* page canvas */
-  --color-paper-2: #fbfbf8; /* raised panel / card / input */
-  --color-paper-3: #ffffff; /* optional high-contrast embedded surface */
+  --color-paper: #f0f0ea;
+  --color-paper-2: #f8f8f4;
+  --color-paper-3: #ffffff;
 
-  /* Text */
-  --color-ink: #171717; /* headings and primary body */
-  --color-ink-subtle: #434343; /* secondary body */
-  --color-muted: #666666; /* supporting text */
-  --color-faint: #8c8c8c; /* timestamps and disabled labels only */
+  --color-ink: #101413;
+  --color-ink-subtle: #3d4340;
+  --color-muted: #646a66;
+  --color-faint: #878d89;
 
-  /* Rules and chrome */
-  --color-rule: #e3e3dc; /* default hairline */
-  --color-rule-strong: #d2d2ca;
+  --color-rule: #d8d9cf;
+  --color-rule-strong: #b9bab1;
 
-  /* Orange accent */
-  --color-accent: #ff6730; /* filled controls and small marks */
-  --color-accent-hover: #f05a22;
-  --color-accent-active: #dd4a19;
-  --color-accent-text: #d1501e; /* links and text-level accent */
-  --color-accent-soft: #fff1e9;
-  --color-on-accent: #171717; /* black on orange for contrast */
+  /* Source blue is the sole action color. */
+  --color-accent: #1746ff;
+  --color-accent-hover: #0c2fd2;
+  --color-accent-active: #08249f;
+  --color-accent-text: #1640da;
+  --color-accent-soft: #e8edff;
+  --color-on-accent: #ffffff;
 
-  /* Semantic status */
-  --color-update: #b45309;
-  --color-update-soft: #fff4e2;
-  --color-success: #177245;
-  --color-success-soft: #e9f6ee;
+  /* Vermilion is reserved for revision, dispute, and correction. */
+  --color-update: #c6271a;
+  --color-update-soft: #fbeae7;
+  --color-success: #0d6b52;
+  --color-success-soft: #e6f2ec;
   --color-danger: #b42318;
   --color-danger-soft: #fdeceb;
-  --color-info: #3b5bdb;
+  --color-info: #274b8f;
   --color-info-soft: #e8edfb;
 
-  --color-focus: #ff6730;
+  --color-focus: #1746ff;
 }
 ```
 
-### Usage
+Usage:
 
-- Page background: `bg-paper`.
-- Cards, inputs, panels: `bg-paper-2`; use `bg-paper-3` only inside a card when
-  a nested surface needs more separation.
-- Primary text: `text-ink`; secondary: `text-ink-subtle`; supporting:
-  `text-muted`; timestamps: `text-faint`.
-- Rules: `border-rule`; emphasized dividers: `border-rule-strong`.
-- Accent is a small signal, not a large wash. Filled buttons, active markers,
-  and short data highlights may use it. Large panels use `bg-paper-2`.
-- Links: `text-accent-text`, hover `text-accent-active`.
-- Forbidden: Tailwind `stone`, `amber`, `red`, `emerald`, `white`, raw hex,
-  `rgb()`/`hsl()` values, and local one-off colors in `.tsx` files.
+- Page background is `bg-paper`; raised evidence surfaces are `bg-paper-2`.
+- Use `bg-paper-3` only for a small card inside a larger panel.
+- Blue is for primary action, active state, link, and selected input focus.
+- Vermilion is for UPDATE/CORRECTION and dispute states only. It is a warning,
+  not the brand accent.
+- Black panels may be used for the hero and primary result header only. They
+  create the sense that the original answer is the fixed artifact.
 
-## Typography
+## 3. Type
+
+Use a three-voice system:
 
 ```css
---font-sans:
-  Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
---font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+--font-display: "Instrument Serif", "Noto Serif SC", "Songti SC", "SimSun", serif;
+--font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+--font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 ```
 
-Use `font-sans` as the base. Use `font-mono` for IDs, fingerprints, field codes,
-timestamps in data rows, and compact operational labels. Do not add another
-display face.
-
-| Role       | Mobile | Desktop |  Weight | Line height |    Tracking |
-| ---------- | -----: | ------: | ------: | ----------: | ----------: |
-| Display H1 |  38/44 |   54/58 |     600 |       tight |     -0.03em |
-| Page H1    |  30/38 |   38/44 |     600 |       tight |     -0.03em |
-| Section H2 |  24/32 |   30/36 |     600 |       tight |     -0.02em |
-| Card H3    |  18/26 |   20/28 |     600 |      normal |     -0.01em |
-| Body large |  16/28 |   17/30 |     400 |      normal |           0 |
-| Body       |  15/26 |   16/28 |     400 |      normal |           0 |
-| Secondary  |  14/22 |   14/22 |     400 |      normal |           0 |
-| Label      |  12/16 |   12/16 | 500-600 |        none | 0.06-0.08em |
-| Mono data  |  12/18 |   13/20 | 400-500 |      normal |           0 |
+| Role          | Type    | Mobile | Desktop | Notes                                                       |
+| ------------- | ------- | -----: | ------: | ----------------------------------------------------------- |
+| Display       | display |  44/48 |   78/82 | For the home H1 and major page statements only. Weight 400. |
+| Page title    | display |  32/38 |   52/56 | For a section-defining page title.                          |
+| Section title | sans    |  20/28 |   26/34 | Weight 650, tracking `-0.02em`.                             |
+| Card title    | sans    |  17/26 |   19/28 | Weight 650.                                                 |
+| Body          | sans    |  15/27 |   16/29 | Weight 420-450.                                             |
+| Metadata      | mono    |  11/17 |   12/19 | IDs, dates, source fingerprints, coordinates.               |
 
 Rules:
 
-- Headings use `font-semibold` and the tracking values above. Never italicize
-  headings.
-- A section has one H1. Product copy favors sentence case.
-- Use Chinese-first copy with concise Latin/product terms where appropriate.
-- Do not center long prose; left-align editorial and result content.
+- Display text is sentence case, never italic.
+- Mono text can be uppercase only for short labels under twelve characters.
+- Do not use display font for buttons or input values.
+- Long Chinese paragraphs use a max width of 68 characters.
 
-## Spacing
+## 4. Structure
 
-Use a 4-pt scale. Keep spacing deliberate and uneven only where hierarchy needs
-it.
+- Page shell uses a centered 1120px working area, with 20px mobile padding and
+  32px desktop padding.
+- Landing order: fixed nav → black hero with integrated entry → three proof
+  patches → workflow explanation → public archive footer.
+- The hero is not a text-only banner. It contains the URL/search entry and one
+  featured patch proof.
+- Cards use square geometry. No rounded 2xl, no floating card-clouds.
+- A patch record is a ledger row, not a generic product card: index, status,
+  original premise, revision, source.
 
-| Context                  |        Mobile |        Desktop |
-| ------------------------ | ------------: | -------------: |
-| Page horizontal padding  |          20px |           32px |
-| Page top / bottom        |   64px / 80px |   96px / 112px |
-| Main content max width   |          100% |         1120px |
-| Narrow content max width |          100% |          880px |
-| Section gap              |          56px |           88px |
-| Card to card gap         |          16px |           24px |
-| Card padding             |          20px |        28-32px |
-| Element gap              | 8 / 12 / 16px | 12 / 16 / 24px |
-| Label to value           |           4px |            6px |
-
-Rules:
-
-- `main` uses a centered content shell. Do not let body copy exceed 720px.
-- Dashboard-like card grids use `minmax(0, 1fr)` so Chinese text cannot force
-  horizontal overflow.
-- Panels need visible breathing room: never place text within less than 16px of
-  a card border.
-- Long strings use `break-words` / `min-w-0`; timestamps and labels may remain
-  nowrap.
-
-## Shape, Border, Shadow
+## 5. Shape, rules, shadow
 
 ```css
---radius-control: 8px; /* segmented controls and compact controls */
---radius-input: 10px;
---radius-card: 14px;
---radius-panel: 18px;
---radius-pill: 999px;
+--radius-control: 6px;
+--radius-input: 4px;
+--radius-card: 2px;
+--radius-panel: 4px;
 
---shadow-card:
-  0 0 0 1px rgba(23, 23, 23, 0.04), 0 1px 2px rgba(23, 23, 23, 0.04),
-  0 16px 40px rgba(23, 23, 23, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.72);
-
---shadow-panel:
-  0 0 0 1px rgba(23, 23, 23, 0.05), 0 2px 4px rgba(23, 23, 23, 0.05),
-  0 24px 64px rgba(23, 23, 23, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-
---shadow-pop:
-  0 0 0 1px rgba(23, 23, 23, 0.06), 0 8px 16px rgba(23, 23, 23, 0.08),
-  0 32px 80px rgba(23, 23, 23, 0.12);
+--shadow-flat: 0 0 0 1px var(--color-rule);
+--shadow-card: 0 1px 0 var(--color-rule-strong), 0 18px 40px rgb(16 20 19 / 0.06);
+--shadow-panel: 0 1px 0 var(--color-rule-strong), 0 32px 72px rgb(16 20 19 / 0.1);
 ```
 
-Tailwind mapping:
+Cards and panels use 1px hard rules. Shadows are subtle and never colored.
+Ordinary UI never uses Tailwind `shadow-lg`, `shadow-xl`, `rounded-3xl`, or
+`backdrop-blur`.
 
-| Component                 | Classes                                                                     |
-| ------------------------- | --------------------------------------------------------------------------- |
-| Standard card             | `rounded-[14px] border border-rule bg-paper-2 shadow-[var(--shadow-card)]`  |
-| Large result panel        | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-panel)]` |
-| Popover / modal           | `rounded-[18px] border border-rule bg-paper-2 shadow-[var(--shadow-pop)]`   |
-| Input / textarea          | `rounded-[10px] border border-rule bg-paper-2`                              |
-| Badge / tag               | `rounded-full border border-rule bg-paper`                                  |
-| Compact segmented control | `rounded-[8px]`                                                             |
+## 6. Components
 
-Do not use `rounded-3xl`, `rounded-[2rem]`, Tailwind `shadow-lg/xl/2xl`, or
-`backdrop-blur` for ordinary cards.
+### Navigation
 
-## Navigation
+- Height 64px, bottom rule only.
+- Left: `LIVING ANSWER` in mono, letter-spacing `.18em`.
+- Right: `时间线` and `来源`.
+- Active link has a 2px blue underline, not a pill background.
+- Mobile links are full-height rows in a white sheet with a 1px top rule.
 
-- Sticky top navigation, height 64px.
-- Background: `bg-paper/88` with `backdrop-blur-md`.
-- Bottom border: `border-rule`; no vertical side borders.
-- Logo / product name left; primary actions right.
-- Desktop nav links: 14px, `text-ink-subtle`, hover `text-ink`.
-- Active nav link: `text-ink` with a 2px accent underline offset by 8px.
-- Mobile: 48px minimum target; use a disclosure menu rather than horizontal
-  scroll.
-
-## Buttons
-
-All buttons use 44px minimum height on mobile and 40px on desktop, 6px/24px
-horizontal padding, `font-semibold`, pill radius, and 180ms transition.
-
-### Primary
+### Primary button
 
 ```text
-rounded-full bg-accent px-6 text-on-accent
-hover:bg-accent-hover
-active:bg-accent-active
-focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus
-disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint
-```
-
-### Secondary
-
-```text
-rounded-full border border-rule bg-paper-2 px-6 text-ink
-hover:border-accent/35 hover:bg-paper
-active:translate-y-[1px]
-focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus
-disabled:cursor-not-allowed disabled:border-rule disabled:bg-paper disabled:text-faint
-```
-
-### Tertiary / link
-
-```text
-inline-flex items-center gap-1 text-sm font-medium text-accent-text
-underline-offset-4 transition-colors hover:text-accent-active hover:underline
+h-12 rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent
+hover:bg-accent-hover active:bg-accent-active
 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus
 ```
 
-Destructive actions use `text-danger`, never a filled red button unless the
-action is irreversible.
+Use one primary action per visual region. Secondary buttons are bordered, not
+filled.
 
-## Inputs
+### Input / search
 
-- Text inputs: `h-12 rounded-[10px] border border-rule bg-paper-2 px-4`.
-- Textareas: `rounded-[10px] border border-rule bg-paper-2 p-4`.
-- Placeholder: `text-faint`; label: 14px `text-ink-subtle`; helper: 13px
-  `text-muted`.
-- Hover: `border-rule-strong`.
-- Focus: `border-accent` plus `ring-4 ring-accent/18`.
-- Error: `border-danger` plus `ring-4 ring-danger/14`; error text is
-  `text-danger`.
-- Disabled: `bg-paper text-faint border-rule cursor-not-allowed`.
-- Selected segmented item: `bg-ink text-paper`; unselected:
-  `bg-paper-2 text-ink-subtle hover:text-ink`.
+- Height 56px on the landing hero; 44px elsewhere.
+- Square-corner 4px radius.
+- Label sits above the field in mono.
+- On focus: 2px blue border plus a 3px outer ring using 18% accent.
+- Never hide validation inside a tooltip.
 
-## Cards And Content Patterns
+### Patch proof
 
-- Evidence card: paper-2 panel, 14px radius, hairline border, title 16/24
-  600, quote 14/22 muted, source link accent-text.
-- Result / analysis panel: 18px radius, 28-32px padding, status row first, then
-  primary conclusion, then evidence.
-- Update notice: `bg-update-soft border-update/28 text-update` for the status
-  badge only; body text remains `text-ink-subtle`.
-- Success / danger notices use their respective soft and normal tokens.
-- Timeline: 8px dot, 1px `bg-rule` line, 24px card gap.
-- Empty state: one 18/28 600 title, one secondary line, and at most one
-  secondary action. No illustration required.
-- Loading state: pulse an 8px accent dot, keep actual layout stable, and use
-  `aria-live="polite"`.
+The main proof record has three columns on desktop and stacked rows on mobile:
 
-## Interaction And Motion
+1. `原文前提` — paper background, black text, fixed artifact.
+2. `现在变化` — vermilion top rule, neutral body text.
+3. `证据` — source name, publication month, and external link.
 
-- Duration: 160ms for hover/focus, 220ms for state/layout reveals.
-- Easing: `cubic-bezier(0.16, 1, 0.3, 1)`.
-- Animate only `opacity` and `transform`; do not animate layout properties,
-  shadows, or focus rings.
-- Hover card lift: `hover:-translate-y-0.5`; active: `translate-y-[1px]`.
-- Do not use bouncy easing, parallax, decorative gradients, or full-page scroll
-  reveals.
-- Focus ring appears instantly and has at least 3:1 visible contrast.
-- Loading controls disable themselves and preserve their width.
-- Async errors are inline, actionable, and use `role="alert"`.
+The metadata strip uses mono text and always shows `UPDATE / date / source
+count`. Do not turn evidence into decorative badges.
 
-## State Matrix
+### Status
 
-| State         | Required treatment                                                  |
-| ------------- | ------------------------------------------------------------------- |
-| Default       | Semantic token style                                                |
-| Hover         | Subtle background/border or text transition; no scale jump          |
-| Focus visible | 2px `outline-focus` ring, 2px offset                                |
-| Active        | One-pixel press or slightly deeper color                            |
-| Disabled      | Reduced contrast and no pointer affordance                          |
-| Loading       | Disabled control + accessible status + stable layout                |
-| Error         | `danger` tokens, inline message, retry path when possible           |
-| Success       | `success` tokens or quiet confirmation; no confetti/toast inflation |
+- `UPDATE`, `CORRECTION`, `DISPUTED`: vermilion signal.
+- `NO_PATCH`: neutral black on paper.
+- `UNKNOWN`: blue information signal.
+- `VISIBLE`: success green.
+- Loading uses a 10px accent dot and preserves layout height.
 
-## Layout Composition
+## 7. Motion
 
-- Landing flow: product promise -> primary dual-entry workflow -> three golden
-  demos -> supporting routes/footer. Keep the first screen focused on usage.
-- Workflow blocks use an asymmetric 12-column grid: workflow panel around 7
-  columns, context/proof around 5 columns on desktop.
-- Golden demos use three equal cards on desktop and one column on mobile; each
-  card shows original premise, current change, and evidence count without
-  hiding the demo boundary.
-- Read view uses a single content column with a sticky patch rail only when
-  viewport width permits both without compression.
-- Sources / changes pages use the 880px narrow shell and one card per record.
+- 150ms for hover and focus; 220ms for reveal.
+- Easing: `cubic-bezier(0.2, 0.8, 0.2, 1)`.
+- Cards do not lift. Their top rule changes from rule-strong to accent.
+- Buttons may translate down 1px on active.
+- Respect `prefers-reduced-motion`.
 
-## Verification
+## 8. Responsive floor
 
-- No horizontal scroll at 320, 375, 414, 768, 1024, and 1440px.
-- No style-level raw color literals in source files.
-- Interactive controls expose hover, focus-visible, active, disabled, loading,
-  error, and success behavior where applicable.
-- Route screenshots must show one consistent paper system: same canvas, card
-  surface, radius family, accent footprint, and heading rhythm.
+- No horizontal scroll at 320, 375, 768, and 1440px.
+- Every action has a 44px minimum target.
+- Grid tracks that contain text use `minmax(0, 1fr)`.
+- Metadata can wrap, but buttons and nav labels do not wrap to two lines.
+
+## 9. Implementation slices
+
+1. Token reset: colors, fonts, radii, shadows, body background, nav.
+2. Landing reset: black hero, integrated entry, proof ledger, archive footer.
+3. Read reset: same patch language, stronger source strip, sticky evidence.
+4. Lifecycle/sources/changes reset into ledger tables and timeline records.
+5. Final polish: focus, empty states, loading, error, and motion.
+
+Each slice must preserve tests, product invariants, and honest failure states.

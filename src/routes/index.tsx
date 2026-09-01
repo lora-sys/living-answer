@@ -10,7 +10,7 @@ import type {
   AnalyzePatchServerFailureCode,
 } from "../server/analyze-patch-response";
 import { failureMessage, formatTimestamp } from "../lib/failure-messages";
-import { APP_NAME, PRODUCT_TAGLINE } from "../lib/app-info";
+import { PRODUCT_TAGLINE } from "../lib/app-info";
 import { resolveAnswerExcerpt } from "../server/resolve-answer-excerpt";
 import { analyzePatch } from "../server/analyze-patch";
 import { disputePatchLifecycle } from "../server/dispute-patch-lifecycle";
@@ -415,7 +415,6 @@ function Home() {
     GOLDEN_DEMOS["delayed-retirement"],
   ];
   const supportingDemos = goldenDemos.slice(1);
-
   // ── Derive display state ───────────────────────────────────────────────────
 
   const isPending = loading;
@@ -444,75 +443,73 @@ function Home() {
   const showExtractSuccess = showSuccess && resultData !== null;
 
   return (
-    <main className="flex min-h-screen items-start bg-paper px-5 py-12 text-ink sm:px-8">
-      <div className="mx-auto w-full max-w-4xl space-y-14">
-        {/* ═══ Hero and product preview ═══════════════════════════════════════ */}
-        <section className="grid gap-8 lg:grid-cols-[minmax(0,44fr)_minmax(0,56fr)] lg:items-start lg:gap-12">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-accent-text">
-              知乎回答维护阅读器
+    <main className="min-h-screen bg-paper pb-20 text-ink">
+      {/* ═══ Revision desk hero ═════════════════════════════════════════════ */}
+      <section className="bg-ink text-paper">
+        <div className="mx-auto grid w-full max-w-[1120px] gap-12 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[minmax(0,52fr)_minmax(0,48fr)] lg:gap-16 lg:pb-20 lg:pt-16">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/70">
+              ZHIHU REVISION DESK
             </p>
-            <h1 className="mt-4 text-[38px] font-semibold leading-[1.08] tracking-[-0.03em] text-ink lg:text-[54px]">
-              {APP_NAME}
+            <h1 className="mt-6 font-display text-[44px] leading-[48px] font-normal tracking-[-0.01em] text-paper lg:text-[78px] lg:leading-[82px]">
+              让旧回答与今天核对
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
+            <p className="mt-6 max-w-[62ch] text-base leading-7 text-paper/78 sm:text-lg sm:leading-8">
               {PRODUCT_TAGLINE}
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to="/sources"
-                className="inline-flex h-11 items-center rounded-full border border-rule bg-paper-2 px-6 text-sm font-semibold text-ink transition-colors hover:border-accent/35 hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                查看证据来源
-              </Link>
-              <Link
-                to="/changes"
-                className="inline-flex h-11 items-center rounded-full px-6 text-sm font-semibold text-accent-text transition-colors hover:text-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                查看变更时间线
-              </Link>
-            </div>
-
-            <dl className="mt-8 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-rule pt-6 sm:grid-cols-3">
+            <dl className="mt-10 grid grid-cols-1 gap-x-6 gap-y-4 border-t border-paper/24 pt-6 sm:grid-cols-3">
               <div>
-                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-paper/64">
                   原文边界
                 </dt>
-                <dd className="mt-1 text-sm leading-6 text-ink-subtle">不替换原文</dd>
+                <dd className="mt-2 text-sm leading-6 text-paper/86">不替换原文</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-paper/64">
                   证据门槛
                 </dt>
-                <dd className="mt-1 text-sm leading-6 text-ink-subtle">证据不足时不生成补丁</dd>
+                <dd className="mt-2 text-sm leading-6 text-paper/86">证据不足时不生成补丁</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium uppercase tracking-[0.06em] text-muted">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.12em] text-paper/64">
                   来源可查
                 </dt>
-                <dd className="mt-1 text-sm leading-6 text-ink-subtle">每条变化回到一手来源</dd>
+                <dd className="mt-2 text-sm leading-6 text-paper/86">每条变化回到一手来源</dd>
               </div>
             </dl>
           </div>
 
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted">
-              产品预览 · 精选演示
+          <div className="min-w-0">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-paper/64">
+              FEATURED PATCH
             </p>
             <GoldenDemoPreviewCard demo={goldenDemos[0]} variant="hero" />
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ═══ Dual entry: URL or search ═════════════════════════════════════════ */}
-        <section id="answer-entry" className="border-t border-rule pt-10">
-          <h2 className="text-sm font-medium text-ink-subtle">找到要检索的回答</h2>
+      <div className="mx-auto w-full max-w-[1120px] space-y-16 px-5 sm:px-8">
+        {/* ═══ Dual entry: URL or search ═════════════════════════════════════ */}
+        <section id="answer-entry" className="scroll-mt-20 pt-12">
+          <div className="max-w-3xl">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+              START
+            </p>
+            <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+              粘贴知乎回答，或先搜索一个问题
+            </h2>
+            <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
+              系统先取得摘录，再抽取候选前提、检索来源，最后在证据充分时给出可争议的更新记录。
+            </p>
+          </div>
 
+          {/* ── Segmented control ─────────────────────────────────────────── */}
           {/* ── Segmented control ─────────────────────────────────────────── */}
           <div
             role="tablist"
             aria-label="选择入口方式"
-            className="mt-4 inline-flex rounded-[8px] border border-rule bg-paper p-0.5"
+            className="mt-8 inline-flex rounded-[6px] border border-rule bg-paper p-1"
           >
             {(["url", "search"] as const).map((mode) => (
               <button
@@ -523,11 +520,11 @@ function Home() {
                 onClick={() => setEntryMode(mode)}
                 disabled={isPending || disputeLoading}
                 className={[
-                  "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors",
+                  "min-h-11 rounded-[4px] px-4 py-2 text-sm font-semibold transition-colors duration-150",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                   entryMode === mode
-                    ? "border border-rule-strong bg-paper-2 text-ink"
-                    : "border border-transparent text-muted hover:text-ink-subtle",
+                    ? "border border-rule-strong bg-paper-3 text-ink"
+                    : "border border-transparent text-muted hover:text-ink",
                 ].join(" ")}
               >
                 {mode === "url" ? "粘贴链接" : "搜索问题"}
@@ -538,8 +535,11 @@ function Home() {
           {entryMode === "url" && (
             <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
               <div>
-                <label htmlFor="answer-url" className="block text-sm font-medium text-ink-subtle">
-                  知乎回答链接
+                <label
+                  htmlFor="answer-url"
+                  className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                >
+                  ZHIHU ANSWER URL
                 </label>
                 <input
                   id="answer-url"
@@ -553,7 +553,7 @@ function Home() {
                   disabled={isPending || disputeLoading}
                   autoComplete="off"
                   className={
-                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-2 block h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink " +
                     "placeholder:text-muted " +
                     "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
                     "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
@@ -567,13 +567,13 @@ function Home() {
                     type="submit"
                     disabled={isPending || disputeLoading}
                     className={
-                      "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
-                      "bg-accent hover:bg-accent-hover " +
+                      "inline-flex h-12 items-center rounded-[6px] px-5 text-sm font-semibold text-on-accent " +
+                      "bg-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active " +
                       "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                       "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                     }
                   >
-                    {isPending ? "获取中..." : "获取摘录"}
+                    {isPending ? "获取中" : "获取摘录"}
                   </button>
                   {isPending && <span className="text-sm text-muted">正在检索回答摘录…</span>}
                 </div>
@@ -583,23 +583,23 @@ function Home() {
               </div>
 
               {showLoading && (
-                <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <div className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <span
                     aria-hidden="true"
-                    className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
+                    className="h-2.5 w-2.5 animate-pulse rounded-[6px] bg-accent"
                   />
                   <p className="text-sm text-ink-subtle">正在获取回答摘录…</p>
                 </div>
               )}
 
               {errorState && !isPending && (
-                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm font-medium text-ink-subtle">{errorState.message}</p>
                 </div>
               )}
 
               {showError && serverErrorCode && (
-                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm font-medium text-ink-subtle">
                     {failureMessage(serverErrorCode)}
                   </p>
@@ -607,12 +607,12 @@ function Home() {
               )}
 
               {showSuccess && resultData && (
-                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-5 sm:px-6 sm:py-6">
+                <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6 sm:py-6">
                   <p className="whitespace-pre-wrap break-words text-base leading-7 text-ink-subtle sm:text-lg sm:leading-8">
                     {resultData.excerpt.excerpt}
                   </p>
 
-                  <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
+                  <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-[0.06em] text-muted">
                     <span>
                       知乎问题{" "}
                       <span className="font-medium text-ink-subtle">
@@ -650,8 +650,11 @@ function Home() {
           {entryMode === "search" && (
             <form onSubmit={handleSearch} noValidate className="mt-6 space-y-4">
               <div>
-                <label htmlFor="search-query" className="block text-sm font-medium text-ink-subtle">
-                  搜索知乎问题
+                <label
+                  htmlFor="search-query"
+                  className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
+                >
+                  SEARCH ZHIHU
                 </label>
                 <input
                   id="search-query"
@@ -664,7 +667,7 @@ function Home() {
                   disabled={searchLoading || disputeLoading}
                   autoComplete="off"
                   className={
-                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-2 block h-14 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink " +
                     "placeholder:text-muted " +
                     "focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 " +
                     "disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
@@ -677,25 +680,25 @@ function Home() {
                   type="submit"
                   disabled={searchLoading || disputeLoading}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
-                    "bg-accent hover:bg-accent-hover " +
+                    "inline-flex h-12 items-center rounded-[6px] px-5 text-sm font-semibold text-on-accent " +
+                    "bg-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                     "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                   }
                 >
-                  {searchLoading ? "搜索中..." : "搜索"}
+                  {searchLoading ? "搜索中" : "搜索"}
                 </button>
                 {searchLoading && <span className="text-sm text-muted">正在搜索知乎回答…</span>}
               </div>
 
               {searchResult?.status === "error" && (
-                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm font-medium text-ink-subtle">{searchResult.message}</p>
                 </div>
               )}
 
               {searchResult?.status === "ok" && searchResult.candidates.length === 0 && (
-                <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+                <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                   <p className="text-sm text-ink-subtle">没有找到包含回答的搜索结果。</p>
                 </div>
               )}
@@ -708,12 +711,12 @@ function Home() {
                         type="button"
                         onClick={() => handleSelectCandidate(c.url)}
                         className={
-                          "block w-full rounded-xl border border-rule bg-paper-2 px-4 py-3 text-left transition-colors " +
+                          "block w-full rounded-[2px] border border-rule bg-paper-2 px-4 py-4 text-left transition-colors duration-150 " +
                           "hover:border-accent/30 " +
                           "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                         }
                       >
-                        <p className="text-sm font-medium text-ink">
+                        <p className="text-sm font-semibold text-ink">
                           {c.title || `知乎回答 #${c.answerId}`}
                         </p>
                         {c.preview && (
@@ -721,7 +724,7 @@ function Home() {
                             {c.preview}
                           </p>
                         )}
-                        <p className="mt-1 text-xs text-muted">
+                        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
                           问题 #{c.questionId} · 回答 #{c.answerId}
                         </p>
                       </button>
@@ -734,13 +737,13 @@ function Home() {
 
           {/* Maintenance context and analysis — available after successful excerpt */}
           {showExtractSuccess && (
-            <div className="mt-8 space-y-4 border-t border-rule pt-6">
+            <div className="mt-10 space-y-5 border-t border-rule pt-8">
               <div>
                 <label
                   htmlFor="analysis-context"
-                  className="block text-sm font-medium text-ink-subtle"
+                  className="block font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted"
                 >
-                  维护备注 · 第 3 步（可选）
+                  MAINTENANCE CONTEXT
                 </label>
                 <textarea
                   id="analysis-context"
@@ -753,7 +756,7 @@ function Home() {
                   rows={3}
                   disabled={analysisLoading || disputeLoading}
                   className={
-                    "mt-1.5 block w-full rounded-[10px] border border-rule bg-paper-2 px-4 py-3 text-base text-ink " +
+                    "mt-2 block w-full rounded-[4px] border border-rule bg-paper-3 px-4 py-3 text-base text-ink " +
                     "placeholder:text-muted " +
                     "border-rule focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 " +
                     "disabled:cursor-not-allowed disabled:bg-paper disabled:text-muted " +
@@ -768,13 +771,13 @@ function Home() {
                   onClick={handleAnalyze}
                   disabled={analysisDisabled}
                   className={
-                    "inline-flex items-center rounded-full px-6 py-2.5 text-sm font-semibold text-on-accent " +
-                    "bg-accent hover:bg-accent-hover " +
+                    "inline-flex h-12 items-center rounded-[6px] px-5 text-sm font-semibold text-on-accent " +
+                    "bg-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active " +
                     "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent " +
                     "disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
                   }
                 >
-                  {claimsLoading || evidenceLoading ? "准备分析中…" : "分析前提变化"}
+                  {claimsLoading || evidenceLoading ? "准备分析中" : "分析前提变化"}
                 </button>
                 {analysisLoading && <span className="text-sm text-muted">正在分析…</span>}
               </div>
@@ -804,23 +807,24 @@ function Home() {
           )}
         </section>
 
-        {/* ═══ Patched demo archive ════════════════════════════════════════════ */}
+        {/* ═══ Patch proof ledger ══════════════════════════════════════════════ */}
         <section aria-labelledby="demo-heading">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2
-                id="demo-heading"
-                className="text-[30px] font-semibold leading-9 tracking-[-0.02em] text-ink"
-              >
-                补丁档案
-              </h2>
-              <p className="mt-2 max-w-2xl text-base leading-7 text-ink-subtle">
-                三个完整示例展示同一套阅读方式：保留作者原答，标注今天需要核对的前提，并给出可查证来源。
-              </p>
-            </div>
+          <div className="max-w-3xl">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+              PROOF LEDGER
+            </p>
+            <h2
+              id="demo-heading"
+              className="mt-3 text-[32px] font-semibold leading-10 tracking-[-0.02em] sm:text-[38px] sm:leading-11"
+            >
+              两份补充记录
+            </h2>
+            <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">
+              上方是精选记录；这里继续展示同一套阅读方式：保留作者原答，指出今天需要核对的前提，再把结论放回来源旁边。
+            </p>
           </div>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="mt-8 space-y-5">
             {supportingDemos.map((demo) => (
               <GoldenDemoPreviewCard key={demo.id} demo={demo} />
             ))}
@@ -828,10 +832,32 @@ function Home() {
         </section>
 
         {/* ═══ Closing statement ═════════════════════════════════════════════════ */}
-        <p className="border-t border-rule pt-6 text-center text-xs text-muted">
-          Living Answer
-          为过去的知乎回答补充已变化的关键前提与证据源，不替换原文，也不生成通用最新答复。
-        </p>
+        <footer className="border-t border-rule pt-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink">
+                LIVING ANSWER
+              </p>
+              <p className="mt-3 max-w-[68ch] text-sm leading-6 text-muted">
+                为过去的知乎回答补充已变化的关键前提与证据源，不替换原文，也不生成通用最新答复。
+              </p>
+            </div>
+            <div className="flex gap-6">
+              <Link
+                to="/changes"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              >
+                时间线
+              </Link>
+              <Link
+                to="/sources"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              >
+                来源
+              </Link>
+            </div>
+          </div>
+        </footer>
       </div>
     </main>
   );
@@ -848,11 +874,8 @@ interface ClaimsSectionProps {
 function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-        <span
-          aria-hidden="true"
-          className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
-        />
+      <div className="flex items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+        <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-[6px] bg-accent" />
         <p className="text-sm text-ink-subtle">正在分析摘录前提…</p>
       </div>
     );
@@ -860,13 +883,13 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
 
   if (result?.status === "error") {
     return (
-      <div className="rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+      <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-medium text-ink-subtle">{failureMessage(result.code)}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex shrink-0 items-center rounded-full px-4 py-1.5 text-xs font-semibold text-on-accent bg-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            className="inline-flex shrink-0 items-center rounded-[6px] px-4 py-1.5 text-xs font-semibold text-on-accent bg-accent hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           >
             重试
           </button>
@@ -881,7 +904,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
         <div>
           <h3 className="text-sm font-medium text-ink-subtle">前提候选 · 第 1 步</h3>
           <span className="text-xs text-muted">摘录级候选 · 尚未核验</span>
-          <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+          <div className="mt-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
             <p className="text-sm text-muted">该摘录中未发现需要关注的关键前提。</p>
           </div>
         </div>
@@ -898,7 +921,7 @@ function ClaimsSection({ loading, result, onRetry }: ClaimsSectionProps) {
           {result.claims.map((claim) => (
             <div
               key={claim.claimFingerprint}
-              className="rounded-xl border border-rule bg-paper-2 px-5 py-4"
+              className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4"
             >
               <p className="break-words text-sm font-medium text-ink">{claim.claimText}</p>
               <div className="mt-2.5 space-y-1.5">
@@ -978,11 +1001,8 @@ function EvidenceCandidatesSection({
 }: EvidenceCandidatesSectionProps) {
   if (loading) {
     return (
-      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
-        <span
-          aria-hidden="true"
-          className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-accent"
-        />
+      <div className="mt-4 flex items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+        <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-[6px] bg-accent" />
         <p className="text-sm text-ink-subtle">正在检索候选证据…</p>
       </div>
     );
@@ -990,13 +1010,13 @@ function EvidenceCandidatesSection({
 
   if (result?.status === "error") {
     return (
-      <div className="mt-4 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+      <div className="mt-4 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <h3 className="text-sm font-medium text-ink-subtle">证据候选 · 第 2 步</h3>
           <button
             type="button"
             onClick={onRetrieve}
-            className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            className="inline-flex shrink-0 items-center rounded-[6px] bg-accent px-4 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           >
             重试
           </button>
@@ -1021,7 +1041,7 @@ function EvidenceCandidatesSection({
         </div>
 
         {allCandidates.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-rule bg-paper/60 px-5 py-4">
+          <div className="mt-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
             <p className="text-sm text-muted">
               {result.isPartial
                 ? `${partialRetrievalMessage(result.partialState)}。已有结果不代表前提正确或过时。`
@@ -1038,7 +1058,7 @@ function EvidenceCandidatesSection({
                     {claimResult.candidates.map((candidate) => (
                       <div
                         key={candidate.candidateFingerprint}
-                        className="rounded-xl border border-rule bg-paper-2 px-5 py-4"
+                        className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4"
                       >
                         <a
                           href={candidate.sourceUrl}
@@ -1084,7 +1104,7 @@ function EvidenceCandidatesSection({
       <button
         type="button"
         onClick={onRetrieve}
-        className="rounded-xl border border-rule bg-paper-2 px-5 py-3 text-sm font-medium text-ink-subtle transition-colors hover:bg-paper hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="rounded-[2px] border border-rule bg-paper-2 px-5 py-3 text-sm font-medium text-ink-subtle transition-colors hover:bg-paper hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         重新检索候选证据
       </button>

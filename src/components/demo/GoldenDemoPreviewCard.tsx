@@ -18,96 +18,80 @@ function formatEvidencePeriod(publishedAt: number): string {
 
 export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoPreviewCardProps) {
   const patch = demo.patches[0];
-  const hero = variant === "hero";
   const href = `/read/golden-demo/${demo.id}`;
 
   return (
     <Link
       to={href as unknown as Parameters<typeof Link>[0]["to"]}
       className={[
-        "group block min-w-0 overflow-hidden rounded-[14px] border border-rule",
-        "bg-paper-2 shadow-[var(--shadow-card)] transition-all duration-[160ms]",
-        "hover:-translate-y-0.5 hover:border-accent/35",
+        "group block min-w-0 overflow-hidden rounded-[2px] border border-rule bg-paper-2",
+        "shadow-[var(--shadow-card)] transition-colors duration-150",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
       ].join(" ")}
     >
-      <div className={hero ? "p-6 sm:p-7" : "p-5 sm:p-6"}>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="inline-flex items-center rounded-full bg-paper px-2.5 py-1 text-xs font-medium text-muted">
-            {demo.topic}
-          </span>
-          <span className="inline-flex items-center rounded-full border border-update/30 bg-update-soft px-2.5 py-1 text-xs font-semibold text-update">
-            {PATCH_TYPE_LABELS[patch.type]}
-          </span>
-          <span className="inline-flex items-center rounded-full border border-rule bg-paper px-2.5 py-1 text-xs font-medium text-muted">
-            真实知乎来源
-          </span>
-        </div>
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-5 gap-y-2 border-b border-rule bg-paper px-4 py-3 sm:px-6">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+          {variant === "hero" ? "FEATURED" : "PATCH RECORD"} · {formatDateYYYYMMDD(patch.asOf)}
+        </span>
+        <span className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
+          <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
+          {PATCH_TYPE_LABELS[patch.type]}
+        </span>
+      </div>
 
-        <h3
-          className={[
-            "mt-4 font-semibold tracking-tight text-ink",
-            hero ? "text-lg leading-7 sm:text-xl sm:leading-8" : "text-lg leading-7",
-          ].join(" ")}
-        >
+      <div className="border-b border-rule px-4 py-5 sm:px-6">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{demo.topic}</p>
+        <h3 className="mt-3 max-w-[68ch] text-[19px] font-semibold leading-7 tracking-[-0.02em] text-ink sm:text-[21px] sm:leading-8">
           {demo.displayTitle}
         </h3>
-
-        <p
-          className={[
-            "mt-2 text-ink-subtle",
-            hero ? "text-sm leading-6" : "text-sm leading-6",
-          ].join(" ")}
-        >
+        <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle sm:text-[15px] sm:leading-7">
           {demo.description}
         </p>
       </div>
 
-      <div className="grid border-t border-rule">
-        <div className="border-b border-rule bg-paper px-5 py-3.5 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">原文前提</p>
-          <p className="mt-2 break-words text-sm leading-6 text-ink-subtle">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="border-b border-rule px-4 py-5 sm:px-6 lg:border-b-0 lg:border-r">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">原文前提</p>
+          <p className="mt-3 max-w-[58ch] break-words text-sm leading-6 text-ink-subtle">
             {truncatePreview(patch.originalExcerpt)}
           </p>
         </div>
 
-        <div className="border-b border-update/28 bg-update-soft px-5 py-3.5 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-update">现在变化</p>
-          <p className="mt-2 break-words text-sm leading-6 text-ink-subtle">
+        <div className="border-b border-rule px-4 py-5 sm:px-6 lg:border-b-0 lg:border-r">
+          <div className="flex items-center gap-2 border-t-2 border-update pt-3 lg:border-t-0 lg:pt-0">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-update">
+              现在变化
+            </p>
+          </div>
+          <p className="mt-3 max-w-[58ch] break-words text-sm leading-6 text-ink-subtle">
             {truncatePreview(patch.currentChange)}
           </p>
         </div>
 
-        <div className="px-5 py-3.5 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">证据来源</p>
-          <ul className="mt-2 space-y-2">
-            {patch.evidence.slice(0, hero ? 2 : 1).map((evidence) => (
-              <li
-                key={evidence.sourceUrl}
-                className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"
-              >
-                <span className="break-words text-sm font-medium text-ink">
+        <div className="px-4 py-5 sm:px-6">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">证据</p>
+          <ul className="mt-3 space-y-3">
+            {patch.evidence.slice(0, variant === "hero" ? 2 : 1).map((evidence) => (
+              <li key={evidence.sourceUrl} className="min-w-0">
+                <p className="break-words text-sm font-semibold text-ink">
                   {evidence.organization}
-                </span>
-                <span className="font-mono text-xs text-muted">
-                  {formatEvidencePeriod(evidence.publishedAt)}
-                </span>
+                </p>
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+                  SOURCE · {formatEvidencePeriod(evidence.publishedAt)}
+                </p>
               </li>
             ))}
           </ul>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 border-t border-rule bg-paper px-5 py-3.5 sm:px-6">
-        <span className="text-xs text-muted">更新截至 {formatDateYYYYMMDD(patch.asOf)}</span>
-        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent-text transition-colors group-hover:text-accent-active">
-          打开补丁
-          <span
-            aria-hidden="true"
-            className="transition-transform duration-[160ms] group-hover:translate-x-0.5"
-          >
-            &rarr;
-          </span>
+      <div className="flex min-h-11 items-center justify-between gap-4 border-t border-rule bg-paper px-4 py-3 sm:px-6">
+        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
+          {demo.source.authorDisplayName}
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-accent-text transition-colors duration-150 group-hover:text-accent-active">
+          打开记录
+          <span aria-hidden="true">&rarr;</span>
         </span>
       </div>
     </Link>
