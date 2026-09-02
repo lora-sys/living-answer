@@ -383,6 +383,33 @@ function QuestionThreadEntry() {
               </h2>
             </div>
 
+            {searchLoading && searchResult === null && (
+              <div className="mt-6 max-w-3xl space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-paper-2 rounded-[2px] border border-rule animate-pulse"
+                    style={{ height: 120 }}
+                  >
+                    <div className="space-y-3 p-5">
+                      <div
+                        className="rounded-[2px] bg-rule"
+                        style={{ width: i % 2 === 0 ? "75%" : "60%", height: 14 }}
+                      />
+                      <div
+                        className="rounded-[2px] bg-rule/60"
+                        style={{ width: "90%", height: 12 }}
+                      />
+                      <div
+                        className="rounded-[2px] bg-rule/40"
+                        style={{ width: "55%", height: 12 }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {searchResult?.status === "error" && (
               <div className="mt-6 max-w-3xl rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
                 <p className="text-sm font-medium text-ink-subtle">{searchResult.message}</p>
@@ -487,9 +514,14 @@ function QuestionThreadEntry() {
                 }
               >
                 {generation.status === "loading"
-                  ? "正在生成学习线程…"
+                  ? "正在生成…"
                   : `生成学习线程 (${selectedCount} 个候选)`}
               </button>
+              {generation.status === "loading" && (
+                <p className="mt-3 text-[11px] text-muted font-mono tracking-[0.04em]">
+                  正在综合学习意图，生成学习节点…
+                </p>
+              )}
               {generation.status === "error" && (
                 <p className="mt-3 text-sm text-update">{generation.message}</p>
               )}

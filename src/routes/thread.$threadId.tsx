@@ -104,12 +104,11 @@ function ThreadView() {
     return (
       <main className="min-h-screen bg-paper pb-20 text-ink">
         <div className="mx-auto w-full max-w-[1120px] px-5 pt-10 sm:px-8">
-          <div className="flex min-h-20 items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="h-2.5 w-2.5 animate-pulse rounded-[6px] bg-accent"
-            />
-            <p className="text-sm text-ink-subtle">正在加载学习线程…</p>
+          <div className="space-y-4">
+            <div className="h-7 w-2/3 bg-paper-2 rounded animate-pulse" />
+            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
+            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
+            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
           </div>
         </div>
       </main>
