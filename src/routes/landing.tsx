@@ -37,17 +37,17 @@ function Landing() {
   return (
     <main className="min-h-screen bg-paper pb-20 text-ink">
       {/* ═══ Hero ───────────────────────────────────────────────────────── */}
-      <header className="bg-ink text-paper">
+      <header className="relative overflow-hidden bg-paper bg-halftone text-ink">
         <div className="mx-auto w-full max-w-[1120px] px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">
             LIVING ANSWER
           </p>
-          <h1 className="mt-6 font-display text-[40px] leading-[46px] font-normal tracking-[-0.02em] sm:text-[56px] sm:leading-[62px]">
+          <h1 className="mt-6 font-mono font-bold text-[40px] leading-tight sm:text-[56px]">
             让旧回答
             <br />
-            <span className="text-accent-soft">持续生长</span>
+            <span className="text-accent-text">持续生长</span>
           </h1>
-          <div className="mt-4 h-[2px] w-16 bg-accent" aria-hidden="true" />
+          <div className="mt-5 h-[2px] w-24 bg-accent" aria-hidden="true" />
           <p className="mt-6 max-w-[56ch] text-lg leading-8 text-paper/85">{PRODUCT_TAGLINE}</p>
           <p className="mt-3 max-w-[48ch] text-sm leading-6 text-paper/60">
             真实的回答会随着时间变化。AI 帮你追踪哪些回答已经过时，为什么。
@@ -55,19 +55,27 @@ function Landing() {
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <Link
               to="/"
-              className="inline-flex h-13 items-center rounded-[6px] bg-accent px-9 text-sm font-semibold text-on-accent transition-all duration-150 hover:bg-accent-hover hover:shadow-[0_4px_16px_rgb(23_70_255/0.35)] active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex h-13 items-center rounded-none border-2 border-accent bg-accent px-9 text-sm font-semibold text-on-accent transition-all duration-150 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               开始学习线程
             </Link>
             <button
               type="button"
               onClick={handleWatchDemo}
-              className="inline-flex min-h-13 items-center rounded-[6px] border border-paper/25 px-6 text-sm font-medium text-paper/85 transition-colors duration-150 hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="inline-flex min-h-13 items-center rounded-none border-2 border-rule-strong px-6 text-sm font-medium text-ink transition-colors duration-150 hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               查看示例记录
             </button>
           </div>
         </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-8 top-8 hidden h-32 w-32 rotate-12 border-2 border-accent/20 sm:block"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-4 bottom-12 h-16 w-16 rounded-full bg-accent/10"
+        />
       </header>
 
       {/* ═══ Three pillars ──────────────────────────────────────────────── */}
@@ -90,7 +98,16 @@ function Landing() {
               kana: "LIVING",
             },
           ].map((pillar, idx) => (
-            <div key={pillar.kana} className="border-l-2 border-accent/25 pl-5">
+            <div
+              key={pillar.kana}
+              className="relative overflow-hidden border-2 border-rule-strong bg-paper-2 p-6 shadow-[3px_3px_0_var(--color-accent)] transition-shadow duration-150 hover:shadow-[5px_5px_0_var(--color-accent)]"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-2 -top-4 font-mono text-[72px] font-bold leading-none text-ink/[0.04] select-none"
+              >
+                {String(idx + 1).padStart(2, "0")}
+              </span>
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
                 {pillar.kana}
               </p>
@@ -98,12 +115,6 @@ function Landing() {
                 {pillar.title}
               </h2>
               <p className="mt-3 text-sm leading-6 text-ink-subtle">{pillar.body}</p>
-              <span
-                aria-hidden="true"
-                className="mt-4 block font-mono text-[28px] font-bold leading-none text-rule"
-              >
-                {String(idx + 1).padStart(2, "0")}
-              </span>
             </div>
           ))}
         </div>
