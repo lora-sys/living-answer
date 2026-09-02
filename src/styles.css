@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Instrument Serif", "Noto Serif SC", "Songti SC", SimSun, serif;
+  --font-display: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   --font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Background and surfaces */
-  --color-paper: #f0f0ea;
-  --color-paper-2: #f8f8f4;
-  --color-paper-3: #ffffff;
+  --color-paper: #0a0a0a;
+  --color-paper-2: #141414;
+  --color-paper-3: #1a1a1a;
 
   /* Text */
-  --color-ink: #101413;
-  --color-ink-subtle: #3d4340;
-  --color-muted: #646a66;
-  --color-faint: #878d89;
+  --color-ink: #f5f3ee;
+  --color-ink-subtle: #c4c0b6;
+  --color-muted: #8a8a8a;
+  --color-faint: #5c5c5c;
 
   /* Rules and chrome */
-  --color-rule: #d8d9cf;
-  --color-rule-strong: #b9bab1;
+  --color-rule: #2a2a2a;
+  --color-rule-strong: #3a3a3a;
 
   /* Source blue is the only action color. */
-  --color-accent: #1746ff;
-  --color-accent-hover: #0c2fd2;
-  --color-accent-active: #08249f;
-  --color-accent-text: #1640da;
-  --color-accent-soft: #e8edff;
-  --color-on-accent: #ffffff;
+  --color-accent: #1e3fd8;
+  --color-accent-hover: #1832b5;
+  --color-accent-active: #112790;
+  --color-accent-text: #4a6cf7;
+  --color-accent-soft: rgba(30, 63, 216, 0.15);
+  --color-on-accent: #f5f3ee;
 
   /* Semantic status */
   --color-update: #c6271a;
-  --color-update-soft: #fbeae7;
+  --color-update-soft: rgba(198, 39, 26, 0.18);
   --color-success: #0d6b52;
-  --color-success-soft: #e9f6ee;
+  --color-success-soft: rgba(13, 107, 82, 0.18);
   --color-danger: #b42318;
-  --color-danger-soft: #fdeceb;
+  --color-danger-soft: rgba(180, 35, 24, 0.18);
   --color-info: #274b8f;
-  --color-info-soft: #e8edfb;
+  --color-info-soft: rgba(39, 75, 143, 0.18);
 
   /* Learning node border colors */
   --color-node-relationship: #1746ff;
@@ -49,15 +49,28 @@
   --color-node-premise: #92400e;
   --color-node-unknown: #646a66;
 
-  --color-focus: #1746ff;
+  --color-focus: #1e3fd8;
 
-  --radius-control: 6px;
-  --radius-input: 4px;
-  --radius-card: 2px;
-  --radius-panel: 4px;
+  --radius-control: 2px;
+  --radius-input: 2px;
+  --radius-card: 1px;
+  --radius-panel: 2px;
 
-  --shadow-card: 0 1px 0 var(--color-rule-strong), 0 18px 40px rgb(16 20 19 / 0.06);
-  --shadow-panel: 0 1px 0 var(--color-rule-strong), 0 32px 72px rgb(16 20 19 / 0.1);
+  --shadow-card: 1px 1px 0 var(--color-rule-strong);
+  --shadow-panel: 2px 2px 0 var(--color-rule-strong);
+}
+
+.bg-halftone {
+  background-image: radial-gradient(circle, rgba(245, 243, 238, 0.07) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+.bg-halftone-accent {
+  background-image: radial-gradient(circle, rgba(30, 63, 216, 0.18) 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+.bg-halftone-dense {
+  background-image: radial-gradient(circle, rgba(245, 243, 238, 0.12) 1px, transparent 1px);
+  background-size: 3px 3px;
 }
 
 html {
