@@ -585,6 +585,16 @@ function QuestionThreadEntry() {
               </div>
             )}
 
+            {searchResult?.status === "ok" && searchResult.candidates.length === 1 && (
+              <div className="mt-6 max-w-3xl border border-rule bg-paper-2 px-5 py-5">
+                <p className="text-sm font-semibold text-ink">这条搜索线只有 1 个回答</p>
+                <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-subtle">
+                  单一来源无法判断共识、分歧和时间变化。你可以勾选它先建立基础线，
+                  也可以点击备选查询或换一个更具体的关键词，让学习线获得对照证据。
+                </p>
+              </div>
+            )}
+
             {searchResult?.status === "ok" && searchResult.candidates.length > 0 && (
               <div className="mt-6 max-w-3xl space-y-3">
                 {searchResult.candidates.map((c) => {
@@ -776,12 +786,9 @@ function QuestionThreadEntry() {
               </p>
             </div>
             <div className="flex gap-6">
-              <Link
-                to="/landing"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                了解产品
-              </Link>
+              <span className="font-mono text-[11px] tracking-[0.08em] text-muted">
+                摘要级知识 · 证据可回指
+              </span>
             </div>
           </div>
         </footer>

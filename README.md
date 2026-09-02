@@ -28,7 +28,6 @@ src/
     index.tsx    — 问题学习线程入口
     thread/
       $threadId.tsx — 线程阅读器
-    landing.tsx  — 产品故事
   server/        — 服务端函数
     clarify-question.ts    — 澄清模糊问题
     generate-thread-artifact.ts — 生成并持久化线程
@@ -69,6 +68,12 @@ pnpm build      # 生产构建
 7. **阅读**：在 `/thread/$threadId` 查看学习桥、学习节点和来源
 8. **追问**：使用 Study Agent 在线程上下文中追问，证据不足会明确说明
 9. **沉淀**：收藏线程，或导出 Markdown / JSON
+
+## 搜索边界
+
+搜索结果过少时，产品会显式说明单一来源无法构成共识、分歧或时间对照，
+并提供换词和备选查询路径。Study Agent 建议补充来源时，会回到首页并把
+查询词填入搜索框，由用户确认后重新搜索。
 
 ## 许可证
 

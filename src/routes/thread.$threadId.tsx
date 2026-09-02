@@ -329,7 +329,6 @@ function ThreadView() {
         return;
       }
       if (action.type === "search_supplement" && action.query) {
-        copyText(action.query);
         void navigate({
           to: "/",
           search: { q: action.query, clarify: false },

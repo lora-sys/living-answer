@@ -10,17 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LandingRouteImport } from './routes/landing'
 import { Route as ThreadThreadIdRouteImport } from './routes/thread.$threadId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LandingRoute = LandingRouteImport.update({
-  id: '/landing',
-  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ThreadThreadIdRoute = ThreadThreadIdRouteImport.update({
@@ -31,31 +25,27 @@ const ThreadThreadIdRoute = ThreadThreadIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/landing': typeof LandingRoute
   '/thread/$threadId': typeof ThreadThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/landing': typeof LandingRoute
   '/thread/$threadId': typeof ThreadThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/landing': typeof LandingRoute
   '/thread/$threadId': typeof ThreadThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/landing' | '/thread/$threadId'
+  fullPaths: '/' | '/thread/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/landing' | '/thread/$threadId'
-  id: '__root__' | '/' | '/landing' | '/thread/$threadId'
+  to: '/' | '/thread/$threadId'
+  id: '__root__' | '/' | '/thread/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LandingRoute: typeof LandingRoute
   ThreadThreadIdRoute: typeof ThreadThreadIdRoute
 }
 
@@ -66,13 +56,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/landing': {
-      id: '/landing'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/thread/$threadId': {
@@ -87,7 +70,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LandingRoute: LandingRoute,
   ThreadThreadIdRoute: ThreadThreadIdRoute,
 }
 export const routeTree = rootRouteImport

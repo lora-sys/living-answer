@@ -13,6 +13,9 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 | `/`                 | 合并入口：搜索提问、产品解释和 30 秒 Study Badge 演示  |
 | `/thread/$threadId` | 线程阅读器：查看学习桥、学习节点、Agent 和 Study Badge |
 
+旧 `/landing` 路由已移除。产品解释和学习入口统一在 `/`，避免演示站点和
+可使用站点分裂。
+
 ## 技术架构
 
 - TanStack Start + TanStack Router（基于文件的响应式路由）
