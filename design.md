@@ -149,6 +149,15 @@ SQLite `thread_artifacts` 表：
 - 存储完整的线程 JSON 和指纹用于变化检测
 - `makeSqliteThreadArtifactStore` 是懒单例
 
+## 学习成果沉淀
+
+- 收藏状态保存在浏览器 `localStorage`，key 为 `living-answer.collectedThreads`
+- 收藏状态校验 16 位十六进制线程 ID；非法或损坏数据会被过滤
+- 导出格式包括 Markdown 与 JSON
+- Markdown 包含学习意图、AI 学习桥、学习节点、开放追问、精确摘录、知乎原文和“这是摘录，不是完整回答”边界
+- JSON 导出当前线程完整 artifact，适合后续导入个人学习空间
+- 当前是轻量本地收藏；不做登录系统和跨端同步
+
 ## 关键安全规则
 
 1. 不向客户端暴露原始凭据或凭据提示

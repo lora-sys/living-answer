@@ -3,6 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ThreadAgentAction, ThreadAgentResult } from "../lib/thread-study-agent";
+import {
+  buildThreadMarkdown,
+  readCollectedThreads,
+  removeCollectedThread,
+  saveCollectedThread,
+} from "../lib/thread-collection";
 import { askThreadAgentFn } from "../server/ask-thread-agent";
 import { readThreadArtifactFn } from "../server/read-thread-artifact";
 
@@ -144,6 +150,8 @@ function ThreadView() {
   const [agentLoading, setAgentLoading] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [copiedQuery, setCopiedQuery] = useState<string | null>(null);
+  const [collected, setCollected] = useState(false);
+  const [collectionFeedback, setCollectionFeedback] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const agentLogRef = useRef<HTMLDivElement>(null);
   const agentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -199,6 +207,47 @@ function ThreadView() {
     if (!navigator.clipboard || !url) return;
     void navigator.clipboard.writeText(url).then(() => setCopiedShare(true));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !response?.success) return;
+    setCollected(
+      readCollectedThreads(window.localStorage).includes(response.artifact.threadId),
+    );
+  }, [response]);
+
+  const collectThread = useCallback(() => {
+    if (!response?.success) return;
+    const next = collected
+      ? removeCollectedThread(response.artifact.threadId, window.localStorage)
+      : saveCollectedThread(response.artifact.threadId, window.localStorage);
+    setCollected(next.includes(response.artifact.threadId));
+    setCollectionFeedback(collected ? "已从收藏移除" : "已加入本地收藏");
+  }, [collected, response]);
+
+  const exportThread = useCallback(
+    (format: "markdown" | "json") => {
+      if (!response?.success) return;
+      const artifact = response.artifact;
+      const content =
+        format === "markdown"
+          ? buildThreadMarkdown(artifact)
+          : JSON.stringify(artifact, null, 2);
+      const filename = `living-answer-${artifact.threadId}.${format === "markdown" ? "md" : "json"}`;
+      const blob = new Blob([content], {
+        type: format === "markdown" ? "text/markdown;charset=utf-8" : "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setCollectionFeedback(format === "markdown" ? "Markdown 已导出" : "JSON 已导出");
+    },
+    [response],
+  );
 
   const copyText = useCallback((value: string) => {
     if (!navigator.clipboard) return;
@@ -403,6 +452,13 @@ function ThreadView() {
               >
                 {copiedShare ? "链接已复制" : "复制分享链接"}
               </button>
+              <button
+                type="button"
+                onClick={collectThread}
+                className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-xs font-medium text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {collected ? "已收藏" : "收藏线程"}
+              </button>
             </div>
           </div>
         </div>
@@ -602,7 +658,7 @@ function ThreadView() {
           <section aria-labelledby="thread-meta-heading">
             <div className="border border-rule bg-paper-2 p-5">
               <h2 id="thread-meta-heading" className="text-sm font-semibold text-ink">
-                线程元信息
+                学习成果
               </h2>
               <dl className="mt-3 grid grid-cols-1 gap-3 font-mono text-[11px] text-muted sm:grid-cols-3">
                 <div>
@@ -620,12 +676,33 @@ function ThreadView() {
                   <dd className="mt-1 break-all text-ink-subtle">{artifact.fingerprint}</dd>
                 </div>
               </dl>
-              <Link
-                to="/"
-                className="mt-5 inline-flex h-11 items-center justify-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:bg-accent-hover hover:shadow-[3px_3px_0_var(--color-accent)] active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                创建新线程
-              </Link>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => exportThread("markdown")}
+                  className="inline-flex h-11 items-center justify-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:bg-accent-hover hover:shadow-[3px_3px_0_var(--color-accent)] active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  导出 Markdown
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportThread("json")}
+                  className="inline-flex h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  导出 JSON
+                </button>
+                <Link
+                  to="/"
+                  className="inline-flex h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  创建新线程
+                </Link>
+              </div>
+              {collectionFeedback && (
+                <p aria-live="polite" className="mt-3 text-xs text-success">
+                  {collectionFeedback}
+                </p>
+              )}
             </div>
           </section>
         </div>
