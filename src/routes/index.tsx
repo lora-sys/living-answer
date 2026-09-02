@@ -12,6 +12,11 @@ import {
 import { clarifyQuestionFn } from "../server/clarify-question";
 import type { ClarifyQuestionResponse } from "../server/clarify-question";
 import { generateThreadArtifactFn } from "../server/generate-thread-artifact";
+import {
+  rankAnswerCandidatesFn,
+  type RankAnswerCandidatesResponse,
+} from "../server/rank-answer-candidates";
+import type { CandidateRole } from "../lib/answer-candidate-ranker";
 
 // ── Starter questions ──────────────────────────────────────────────────────────
 
@@ -55,11 +60,30 @@ type GenerationState =
   | { status: "success"; threadId: string }
   | { status: "error"; code: string; message: string };
 
+const CANDIDATE_ROLE_LABELS: Record<CandidateRole, string> = {
+  baseline: "基础认知",
+  correction: "边界修正",
+  extension: "深化扩展",
+  counterpoint: "不同视角",
+  current_usage: "当前用法",
+  unclear: "待确认",
+};
+
+const CANDIDATE_ROLE_COLORS: Record<CandidateRole, string> = {
+  baseline: "bg-info-soft text-info",
+  correction: "bg-update-soft text-update",
+  extension: "bg-success-soft text-success",
+  counterpoint: "bg-accent-soft text-accent",
+  current_usage: "bg-paper-2 text-ink",
+  unclear: "bg-paper-2 text-muted",
+};
+
 function QuestionThreadEntry() {
   const navigate = useNavigate();
   const boundSearch = useServerFn(searchAnswerCandidates);
   const boundClarify = useServerFn(clarifyQuestionFn);
   const boundGenerate = useServerFn(generateThreadArtifactFn);
+  const boundRank = useServerFn(rankAnswerCandidatesFn);
 
   // Input state
   const [questionText, setQuestionText] = useState("");
@@ -72,6 +96,8 @@ function QuestionThreadEntry() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchRan, setSearchRan] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchAnswerCandidatesResponse | null>(null);
+  const [ranking, setRanking] = useState<RankAnswerCandidatesResponse | null>(null);
+  const [rankingLoading, setRankingLoading] = useState(false);
 
   // Selection state (Set of answerIds)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -86,17 +112,20 @@ function QuestionThreadEntry() {
       setSearchLoading(true);
       setSearchRan(true);
       setSearchResult(null);
+      setRanking(null);
+      setRankingLoading(false);
       setSelectedIds(new Set());
 
       const result = await boundSearch({ data: { query } }).catch(() => null);
       if (result) {
         setSearchResult(result as SearchAnswerCandidatesResponse);
-      } else {
-        setSearchResult({
-          status: "error",
-          message: "搜索失败，请稍后再试。",
-        } as SearchAnswerCandidatesResponse);
+        return result as SearchAnswerCandidatesResponse;
       }
+      setSearchResult({
+        status: "error",
+        message: "搜索失败，请稍后再试。",
+      } as SearchAnswerCandidatesResponse);
+      return null;
       setSearchLoading(false);
     },
     [boundSearch],
@@ -111,16 +140,56 @@ function QuestionThreadEntry() {
       const raw = await boundClarify({ data: { question } }).catch(() => null);
       if (raw && raw.success) {
         setClarification(raw);
-        await performSearch(raw.refinedQuery);
+        const searchResponse = await performSearch(raw.refinedQuery);
+        if (searchResponse?.status === "ok" && searchResponse.candidates.length > 0) {
+          setRankingLoading(true);
+          const analysis = await boundRank({
+            data: {
+              question: question.trim(),
+              refinedQuery: raw.refinedQuery,
+              learningIntent: raw.learningIntent,
+              candidates: searchResponse.candidates.map((candidate) => ({
+                answerId: candidate.answerId,
+                title: candidate.title || `知乎回答 #${candidate.answerId}`,
+                authorDisplayName: candidate.authorDisplayName ?? "知乎用户",
+                preview: candidate.preview,
+              })),
+            },
+          }).catch(() => null);
+          setRanking(analysis as RankAnswerCandidatesResponse | null);
+          setRankingLoading(false);
+        }
       } else {
-        await performSearch(question);
+        const fallbackLearningIntent =
+          raw && raw.success === false
+            ? "理解这个问题背后的关键概念、变化和不同观点。"
+            : "理解这个问题背后的关键概念、变化和不同观点。";
+        const searchResponse = await performSearch(question);
         if (raw) {
           setClarification(raw);
+        }
+        if (searchResponse?.status === "ok" && searchResponse.candidates.length > 0) {
+          setRankingLoading(true);
+          const analysis = await boundRank({
+            data: {
+              question: question.trim(),
+              refinedQuery: question.trim(),
+              learningIntent: fallbackLearningIntent,
+              candidates: searchResponse.candidates.map((candidate) => ({
+                answerId: candidate.answerId,
+                title: candidate.title || `知乎回答 #${candidate.answerId}`,
+                authorDisplayName: candidate.authorDisplayName ?? "知乎用户",
+                preview: candidate.preview,
+              })),
+            },
+          }).catch(() => null);
+          setRanking(analysis as RankAnswerCandidatesResponse | null);
+          setRankingLoading(false);
         }
       }
       setClarificationLoading(false);
     },
-    [boundClarify, performSearch],
+    [boundClarify, boundRank, performSearch],
   );
 
   const handleQuestionSubmit = async (e: React.FormEvent) => {
@@ -144,6 +213,7 @@ function QuestionThreadEntry() {
     async (altQuery: string) => {
       setSelectedIds(new Set());
       setSearchResult(null);
+      setRanking(null);
       setGeneration({ status: "idle" });
       if (clarification?.success) {
         setClarification({
@@ -151,9 +221,31 @@ function QuestionThreadEntry() {
           refinedQuery: altQuery,
         });
       }
-      await performSearch(altQuery);
+      const searchResponse = await performSearch(altQuery);
+      const learningIntent =
+        clarification && clarification.success
+          ? clarification.learningIntent
+          : "理解这个问题背后的关键概念、变化和不同观点。";
+      if (searchResponse?.status === "ok" && searchResponse.candidates.length > 0) {
+        setRankingLoading(true);
+        const analysis = await boundRank({
+          data: {
+            question: questionText.trim() || altQuery,
+            refinedQuery: altQuery,
+            learningIntent,
+            candidates: searchResponse.candidates.map((candidate) => ({
+              answerId: candidate.answerId,
+              title: candidate.title || `知乎回答 #${candidate.answerId}`,
+              authorDisplayName: candidate.authorDisplayName ?? "知乎用户",
+              preview: candidate.preview,
+            })),
+          },
+        }).catch(() => null);
+        setRanking(analysis as RankAnswerCandidatesResponse | null);
+        setRankingLoading(false);
+      }
     },
-    [clarification, performSearch],
+    [boundRank, clarification, performSearch, questionText],
   );
 
   const toggleCandidate = (candidate: AnswerCandidate) => {
@@ -325,6 +417,24 @@ function QuestionThreadEntry() {
               </h2>
             </div>
 
+            {searchResult?.status === "ok" && searchResult.candidates.length > 0 && (
+              <div aria-live="polite" className="mt-6 max-w-3xl">
+                {rankingLoading && (
+                  <div className="border border-rule bg-paper-2 px-4 py-3">
+                    <p className="text-sm text-ink-subtle">AI 正在解释候选回答在学习线中的作用…</p>
+                  </div>
+                )}
+                {!rankingLoading && ranking?.success && (
+                  <div className="border border-accent bg-accent-soft px-4 py-4">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent">
+                      AI CANDIDATE MAP
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-ink">{ranking.analysis.summary}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {clarification.success ? (
               <div className="mt-6 max-w-3xl space-y-4 border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)]">
                 <div>
@@ -447,6 +557,9 @@ function QuestionThreadEntry() {
               <div className="mt-6 max-w-3xl space-y-3">
                 {searchResult.candidates.map((c) => {
                   const isSelected = selectedIds.has(c.answerId);
+                  const candidateRanking = ranking?.success
+                    ? ranking.analysis.rankings.find((item) => item.answerId === c.answerId)
+                    : undefined;
                   return (
                     <button
                       key={c.answerId}
@@ -482,6 +595,20 @@ function QuestionThreadEntry() {
                           <p className="text-[17px] font-semibold leading-7 text-ink">
                             {c.title || `知乎回答 #${c.answerId}`}
                           </p>
+                          {candidateRanking && (
+                            <div className="mt-3 space-y-2">
+                              <span
+                                className={`inline-flex min-h-7 items-center border px-2 font-mono text-[10px] font-semibold uppercase tracking-[0.06em] ${
+                                  CANDIDATE_ROLE_COLORS[candidateRanking.role]
+                                }`}
+                              >
+                                {CANDIDATE_ROLE_LABELS[candidateRanking.role]}
+                              </span>
+                              <p className="max-w-[72ch] text-sm leading-6 text-ink-subtle">
+                                {candidateRanking.reason}
+                              </p>
+                            </div>
+                          )}
                           {c.preview && (
                             <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-subtle">
                               {c.preview}

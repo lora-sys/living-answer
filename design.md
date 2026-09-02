@@ -159,6 +159,17 @@ SQLite `thread_artifacts` 表：
 
 ## Sprint 迭代新增设计令牌（2026-09-02）
 
+### AI 学习桥角色令牌
+
+| 学习桥角色 | 中文标签 | 语义 |
+| ---------- | -------- | ---- |
+| `baseline` | 基础认知 | 建立问题、定义或基础事实 |
+| `correction` | 边界修正 | 修正旧前提、缺失条件或过度概括 |
+| `extension` | 深化扩展 | 补充原理、工程细节或跨场景延伸 |
+| `counterpoint` | 不同视角 | 保留真实分歧，不强行合并观点 |
+| `current_usage` | 当前用法 | 给出今天可直接验证的用法 |
+| `unclear` | 待确认 | 来源不足、匹配不明或证据冲突 |
+
 ### 学习节点颜色编码
 
 | 节点类型 | CSS 变量                    | 色值      |
@@ -172,6 +183,12 @@ SQLite `thread_artifacts` 表：
 | 待确认   | `--color-node-unknown`      | `#646a66` |
 
 ### 组件模式
+
+### AI 候选地图
+
+- 搜索结果先显示 `AI CANDIDATE MAP` 摘要块：`border border-accent bg-accent-soft`
+- 每个候选卡显示角色 badge 与一段入选理由
+- AI 只解释候选，不代替用户勾选；选择操作仍由用户显式完成
 
 - 学习节点卡片：`border-l-[3px]` 左侧颜色指示条，按 node.kind 映射
 - 引用回指：`[来源 #XXXXXX]` 可点击标签，`bg-accent-soft rounded-[2px] px-1.5 py-0.5 font-mono text-[9px]`
