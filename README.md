@@ -1,6 +1,6 @@
 # Living Answer
 
-输入一个模糊问题，澄清学习意图，从真实知乎回答中选取摘录，生成一份持久的学习线程。
+输入一个模糊问题，澄清学习意图，从真实知乎回答中选取摘录，生成一份可追问、可收藏的学习线程。
 
 ## 技术栈
 
@@ -31,19 +31,21 @@ src/
     landing.tsx  — 产品故事
   server/        — 服务端函数
     clarify-question.ts    — 澄清模糊问题
-    synthesize-thread.ts   — 合成学习节点
     generate-thread-artifact.ts — 生成并持久化线程
     read-thread-artifact.ts — 读取线程
     search-answer-candidates.ts — 搜索候选
+    rank-answer-candidates.ts — AI 候选解释
+    ask-thread-agent.ts — 线程内学习追问
   lib/           — 纯域层和工具
     thread-artifact.ts    — 线程域记录和工厂
     thread-artifact-store.ts — SQLite 存储
     thread-clarification.ts — 澄清工作流
     thread-synthesis.ts   — 合成工作流
-    zhihu-direct-answer-adapter.ts — zhihu 回答适配器
+    thread-study-agent.ts — grounded study agent
+    answer-candidate-ranker.ts — 候选解释工作流
+    thread-collection.ts — 本地收藏与导出
     featured-threads.ts — 首页精选真实学习线程
     app-info.ts      — 产品信息
-    failure-messages.ts — 错误地图
   components/    — 可复用 UI
   lib/           — 纯域模型、存储、工具
 ```
@@ -61,9 +63,12 @@ pnpm build      # 生产构建
 1. **输入**：用户在 `/` 输入模糊问题
 2. **澄清**：系统精炼查询，提供备选词和学习意图
 3. **搜索**：在知乎搜索候选回答，每条提供摘录预览
-4. **选择**：用户手动勾选要引用的回答
-5. **生成**：系统基于选中的摘录合成结构化学习线程
-6. **阅读**：在 `/thread/$threadId` 查看完整线程
+4. **候选解释**：AI 为候选回答标注可能的学习角色，但选择权仍在用户
+5. **选择**：用户手动勾选要引用的回答
+6. **生成**：系统基于选中的摘录合成记忆廊桥和学习线程
+7. **阅读**：在 `/thread/$threadId` 查看学习桥、学习节点和来源
+8. **追问**：使用 Study Agent 在线程上下文中追问，证据不足会明确说明
+9. **沉淀**：收藏线程，或导出 Markdown / JSON
 
 ## 许可证
 
