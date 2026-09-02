@@ -39,6 +39,7 @@ export interface ThreadAgentAction {
   readonly detail?: string;
   readonly answerId?: string;
   readonly query?: string;
+  readonly question?: string;
 }
 
 export interface ThreadAgentEvidence {
@@ -120,7 +121,7 @@ const validateInput = (
 const SYSTEM_PROMPT =
   "You are a study agent for one saved learning thread. Answer only from that thread's selected excerpts, nodes, and guide. " +
   'Return raw JSON: {"status":"grounded|evidence_gap","answer":"...","evidenceRefs":[{"answerId":"...","excerptFingerprint":"...","quote":"..."}],"nextActions":[{"type":"focus_source|search_supplement|next_question|boundary_check","label":"...","detail":"...","answerId":"...","query":"..."}],"uncertainty":0.0-1.0}. ' +
-  "If the thread does not contain enough evidence, use evidence_gap, leave evidenceRefs empty, and propose a search_supplement action with a better Chinese search query. The user must confirm it before new sources are added. " +
+  "If the thread does not contain enough evidence, use evidence_gap, leave evidenceRefs empty, and propose a search_supplement action with a better Chinese search query about the thread's knowledge topic. The query must be suitable for a search box; never return a UI instruction. " +
   "Every grounded answer must cite at least one exact quote from the provided excerpts. Never invent Zhihu content. " +
   "Never say the author was wrong; say the premise or context has changed. Next action labels must be short Chinese UI text.";
 
@@ -171,7 +172,7 @@ const buildUserPrompt = (
 
 // ── Fallback ────────────────────────────────────────────────────────────────
 
-const makeFallbackResult = (question: string): ThreadAgentResult => ({
+const makeFallbackResult = (artifact: QuestionLearningThread): ThreadAgentResult => ({
   status: "evidence_gap",
   answer: "当前线程内的摘录不足以回答这个问题。可以先检查来源摘录，或换一个更贴近线程主题的问法。",
   evidenceRefs: [],
@@ -184,12 +185,111 @@ const makeFallbackResult = (question: string): ThreadAgentResult => ({
     {
       type: "search_supplement",
       label: "搜索补充来源",
-      detail: question,
-      query: question,
+      detail: artifact.refinedQuery,
+      query: artifact.refinedQuery,
     },
   ],
   uncertainty: 1,
 });
+
+const hasAnyTerm = (value: string, terms: readonly string[]): boolean =>
+  terms.some((term) => value.includes(term));
+
+const offlineEvidenceRefs = (
+  artifact: QuestionLearningThread,
+  nodes: QuestionLearningThread["learningNodes"],
+) =>
+  nodes
+    .flatMap((node) => node.evidenceRefs.slice(0, 2))
+    .slice(0, 4)
+    .flatMap((ref) => {
+      const stage = artifact.timelineStages.find(
+        (item) => item.excerpt.fingerprint === ref.excerptFingerprint,
+      );
+      if (!stage) return [];
+      return [
+        {
+          answerId: stage.answerId,
+          excerptFingerprint: ref.excerptFingerprint,
+          quote: ref.quote,
+          sourceUrl: stage.canonicalUrl,
+        },
+      ];
+    })
+    .slice(0, 4);
+
+export const answerThreadAgentOffline = (
+  artifact: QuestionLearningThread,
+  question: string,
+): ThreadAgentResult => {
+  const normalized = question.toLowerCase();
+  const asksTimeline = hasAnyTerm(normalized, ["时间线", "脉络", "核心", "总结", "概览"]);
+  const asksDivergence = hasAnyTerm(normalized, ["分歧", "冲突", "争议", "不同", "修正"]);
+  const asksNext = hasAnyTerm(normalized, ["下一步", "追问", "继续", "练习", "行动"]);
+  const asksBoundary = hasAnyTerm(normalized, ["能回答", "不能回答", "边界", "证据"]);
+
+  if (asksTimeline || asksDivergence || asksBoundary || asksNext) {
+    const selectedNodes = artifact.learningNodes.filter((node) => {
+      if (asksDivergence) return node.kind === "divergence" || node.kind === "changed_premise";
+      return true;
+    });
+    const nodes = (selectedNodes.length > 0 ? selectedNodes : artifact.learningNodes).slice(0, 4);
+    const evidenceRefs = offlineEvidenceRefs(artifact, nodes);
+    const topic = asksDivergence
+      ? "关键分歧和前提变化"
+      : asksNext
+        ? "下一步学习动作"
+        : asksBoundary
+          ? "证据边界"
+          : "核心学习脉络";
+    const bullets = nodes.map((node) => `- ${node.title}：${node.summary}`);
+    const extra =
+      asksNext || asksBoundary
+        ? artifact.learningGuide.openQuestions
+            .slice(0, 2)
+            .map((item) => `- ${item}`)
+            .join("\n")
+        : "";
+    const uncertainty =
+      artifact.learningNodes.reduce((sum, node) => sum + node.uncertainty, 0) /
+      Math.max(1, artifact.learningNodes.length);
+
+    return {
+      status: evidenceRefs.length > 0 ? "grounded" : "evidence_gap",
+      answer: [
+        `根据当前线程保存的${topic}证据：`,
+        ...bullets,
+        extra,
+        "这些回答只能覆盖摘录内容，不能替代完整知乎回答。",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      evidenceRefs,
+      nextActions:
+        asksNext || asksBoundary
+          ? [
+              {
+                type: "boundary_check",
+                label: "检查证据边界",
+                detail: "当前模型不可用；这是基于已保存节点和开放问题的确定性摘要。",
+              },
+              ...artifact.learningGuide.openQuestions.slice(0, 2).map((item) => ({
+                type: "next_question" as const,
+                label: item.length > 22 ? `${item.slice(0, 22)}…` : item,
+                query: item,
+              })),
+            ]
+          : nodes.slice(0, 2).map((node) => ({
+              type: "focus_source" as const,
+              label: `查看来源 ${node.sourceAnswerId.slice(-6)}`,
+              answerId: node.sourceAnswerId,
+            })),
+      uncertainty,
+    };
+  }
+
+  return makeFallbackResult(artifact);
+};
 
 // ── Model output validation ─────────────────────────────────────────────────
 
@@ -219,11 +319,16 @@ const validateAction = (
   if (type === "copy_search" || type === "next_question" || type === "search_supplement") {
     const query = typeof value.query === "string" ? value.query.trim() : "";
     if (query === "" || query.length > 200) return null;
+    const question =
+      typeof value.question === "string" && value.question.trim() !== ""
+        ? value.question.trim()
+        : undefined;
     return {
       type: type as ThreadAgentActionType,
       label,
       detail,
       query,
+      question,
     };
   }
 
@@ -315,7 +420,7 @@ const parseAgentResult = (
     status: value.status,
     answer,
     evidenceRefs,
-    nextActions: nextActions.length > 0 ? nextActions : makeFallbackResult("").nextActions,
+    nextActions: nextActions.length > 0 ? nextActions : makeFallbackResult(artifact).nextActions,
     uncertainty,
   };
 };
@@ -352,7 +457,13 @@ export const askThreadAgent =
         .pipe(Effect.mapError(() => new ThreadAgentError({ reason: "TRANSPORT_FAILED" })));
 
       const parsed = parseAgentResult(raw, artifact);
+      if (parsed && !(parsed.status === "evidence_gap" && parsed.evidenceRefs.length === 0)) {
+        return parsed;
+      }
+
+      const offlineResult = answerThreadAgentOffline(artifact, validatedInput.question);
+      if (offlineResult.status === "grounded") return offlineResult;
       if (parsed) return parsed;
 
-      return makeFallbackResult(validatedInput.question);
+      return makeFallbackResult(artifact);
     });

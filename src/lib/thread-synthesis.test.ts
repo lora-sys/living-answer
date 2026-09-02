@@ -166,8 +166,17 @@ describe("thread-synthesis synthesizeThread", () => {
     const outcome = await runWorkflow(baseDeps(chat), makeInput());
     expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
-      expect(outcome.result.learningGuide.overview.headline).toBe("来源摘录学习线");
-      expect(outcome.result.learningGuide.stages[0].role).toBe("unclear");
+      expect(outcome.result.learningGuide.overview.headline).toBe("从真实摘录组织的学习线");
+      expect(outcome.result.learningGuide.stages[0].role).toBe("baseline");
+      expect(
+        outcome.result.learningGuide.overview.evidenceRefs.every((ref) =>
+          BASE_STAGES.some(
+            (stage) =>
+              stage.excerpt.fingerprint === ref.excerptFingerprint &&
+              stage.excerpt.excerpt.includes(ref.quote),
+          ),
+        ),
+      ).toBe(true);
     }
   });
 

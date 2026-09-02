@@ -3,7 +3,11 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { makeSqliteThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
-import { askThreadAgent, type ThreadAgentResult } from "../lib/thread-study-agent";
+import {
+  answerThreadAgentOffline,
+  askThreadAgent,
+  type ThreadAgentResult,
+} from "../lib/thread-study-agent";
 import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
 
 // ── JSON-safe response ──────────────────────────────────────────────────────
@@ -56,20 +60,11 @@ export const createAskThreadAgentHandler =
     const question = typeof input?.question === "string" ? input.question.trim() : "";
     const conversation = Array.isArray(input?.conversation) ? input.conversation : [];
 
-    if (threadId === "" || question === "") {
+    if (threadId === "" || question === "" || question.length > 500) {
       return {
         success: false as const,
         code: "INVALID_REQUEST",
         message: "请先选择学习线程并输入问题。",
-      };
-    }
-
-    const secret = deps.getSecret();
-    if (typeof secret !== "string" || secret.trim() === "") {
-      return {
-        success: false as const,
-        code: "MISSING_MODEL_KEY",
-        message: "AI 学习助手暂时不可用，请稍后再试。",
       };
     }
 
@@ -84,11 +79,15 @@ export const createAskThreadAgentHandler =
         };
       }
 
+      if (typeof deps.getSecret() !== "string" || deps.getSecret()!.trim() === "") {
+        return { success: true as const, response: answerThreadAgentOffline(artifact, question) };
+      }
+
       const model = deps.getModel();
-      const chat = await deps.createChat(secret, model);
+      const chat = await deps.createChat(deps.getSecret()!, model);
       const response = await Effect.runPromise(
         askThreadAgent({ model, chat })(artifact, { question, conversation }),
-      );
+      ).catch(() => answerThreadAgentOffline(artifact, question));
 
       return { success: true as const, response };
     } catch {

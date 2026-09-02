@@ -5,6 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
 import { FEATURED_THREADS } from "../lib/featured-threads";
 import {
+  readCollectedThreadSummaries,
+  type CollectedThreadSummary,
+} from "../lib/thread-collection";
+import {
   searchAnswerCandidates,
   type AnswerCandidate,
   type SearchAnswerCandidatesResponse,
@@ -111,7 +115,13 @@ function QuestionThreadEntry() {
 
   // Generation state
   const [generation, setGeneration] = useState<GenerationState>({ status: "idle" });
+  const [collectedThreads, setCollectedThreads] = useState<readonly CollectedThreadSummary[]>([]);
   const initialAgentQueryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCollectedThreads(readCollectedThreadSummaries(window.localStorage));
+  }, []);
 
   // Handlers
 
@@ -278,8 +288,16 @@ function QuestionThreadEntry() {
   };
 
   const handleGenerate = useCallback(async () => {
-    if (selectedIds.size === 0 || !clarification?.success) return;
+    const fallbackQuestion = questionText.trim();
+    if (selectedIds.size === 0 || fallbackQuestion === "") return;
     setGeneration({ status: "loading" });
+
+    const activeClarification = clarification?.success ? clarification : null;
+    const refinedQuery = activeClarification?.refinedQuery ?? fallbackQuestion;
+    const learningIntent =
+      activeClarification?.learningIntent ??
+      "理解这个问题的关键概念、常见误区、不同观点和适用边界。";
+    const confidence = activeClarification?.confidence ?? 0.4;
 
     const selectedCandidates =
       searchResult?.status === "ok"
@@ -288,10 +306,10 @@ function QuestionThreadEntry() {
 
     const raw = await boundGenerate({
       data: {
-        question: questionText.trim(),
-        refinedQuery: clarification.refinedQuery,
-        learningIntent: clarification.learningIntent,
-        confidence: clarification.confidence,
+        question: fallbackQuestion,
+        refinedQuery,
+        learningIntent,
+        confidence,
         selectedCandidates: selectedCandidates.map((c) => ({
           questionId: c.questionId,
           answerId: c.answerId,
@@ -307,6 +325,9 @@ function QuestionThreadEntry() {
     if (raw && raw.success) {
       const threadId = raw.threadId;
       setGeneration({ status: "success", threadId });
+      if (typeof window !== "undefined") {
+        setCollectedThreads(readCollectedThreadSummaries(window.localStorage));
+      }
       void navigate({ to: "/thread/$threadId", params: { threadId } });
     } else {
       setGeneration({
@@ -318,10 +339,15 @@ function QuestionThreadEntry() {
   }, [boundGenerate, clarification, questionText, searchResult, selectedIds, navigate]);
 
   // Derived state
-
   const selectedCount = selectedIds.size;
   const canGenerate =
-    selectedCount > 0 && clarification?.success && generation.status !== "loading";
+    selectedCount > 0 && questionText.trim() !== "" && generation.status !== "loading";
+  const successfulRanking = ranking?.success ? ranking.analysis : null;
+  const recommendedIds = new Set(
+    (["baseline", "correction", "counterpoint"] as const)
+      .map((role) => successfulRanking?.rankings.find((item) => item.role === role)?.answerId)
+      .filter((answerId): answerId is string => Boolean(answerId)),
+  );
 
   // Render
 
@@ -596,7 +622,38 @@ function QuestionThreadEntry() {
             )}
 
             {searchResult?.status === "ok" && searchResult.candidates.length > 0 && (
-              <div className="mt-6 max-w-3xl space-y-3">
+              <div className="mt-6 max-w-3xl space-y-4">
+                {successfulRanking && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border border-rule bg-paper-2 px-4 py-3">
+                    <p className="text-sm text-ink-subtle">
+                      AI 建议优先看基础认知、边界修正和不同视角；选择权仍在你。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedIds(new Set(recommendedIds))}
+                      disabled={recommendedIds.size === 0}
+                      className="inline-flex min-h-9 items-center border border-accent bg-paper-3 px-3 text-xs font-semibold text-accent transition-colors duration-150 hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      选择 AI 推荐组合
+                    </button>
+                  </div>
+                )}
+                {!rankingLoading && ranking && !ranking.success && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border border-update bg-update-soft px-4 py-3">
+                    <p className="text-sm text-update">{ranking.message}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleClarify(
+                          clarification?.success ? clarification.refinedQuery : questionText,
+                        )
+                      }
+                      className="inline-flex min-h-9 items-center border border-update bg-paper-3 px-3 text-xs font-semibold text-update focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-update"
+                    >
+                      重试候选分析
+                    </button>
+                  </div>
+                )}
                 {searchResult.candidates.map((c) => {
                   const isSelected = selectedIds.has(c.answerId);
                   const candidateRanking = ranking?.success
@@ -607,6 +664,7 @@ function QuestionThreadEntry() {
                       key={c.answerId}
                       type="button"
                       onClick={() => toggleCandidate(c)}
+                      aria-label={`选择回答：${c.title || `知乎回答 #${c.answerId}`}`}
                       className={
                         "block w-full border bg-paper-3 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
                         (isSelected
@@ -652,7 +710,7 @@ function QuestionThreadEntry() {
                             </div>
                           )}
                           {c.preview && (
-                            <p className="mt-2 line-clamp-2 text-sm leading-6 text-ink-subtle">
+                            <p className="mt-2 line-clamp-3 text-sm leading-6 text-ink-subtle">
                               {c.preview}
                             </p>
                           )}
@@ -716,6 +774,56 @@ function QuestionThreadEntry() {
         )}
 
         {/* Featured learning threads */}
+        {collectedThreads.length > 0 && (
+          <section aria-labelledby="my-learning-heading">
+            <div className="max-w-3xl">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                MY LEARNING SPACE
+              </p>
+              <h2
+                id="my-learning-heading"
+                className="mt-3 font-display text-[30px] font-bold leading-9 tracking-tight text-ink sm:text-[34px]"
+              >
+                我的学习空间
+              </h2>
+              <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
+                这些学习线保存在这台设备的浏览器里。继续打开可以回到证据、学习节点和 Agent 追问。
+              </p>
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {collectedThreads.map((thread) => (
+                <Link
+                  key={thread.threadId}
+                  to="/thread/$threadId"
+                  params={{ threadId: thread.threadId }}
+                  className="group flex h-full flex-col border-2 border-accent bg-accent-soft p-5 shadow-[var(--shadow-card)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[5px_5px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.12em]">
+                    <span className="text-accent">SAVED</span>
+                    <span className="text-muted">{thread.yearRange}</span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold leading-7 text-ink">
+                    {thread.question}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">
+                    {thread.sourceCount} 条摘录 · {thread.nodeCount} 个学习点
+                  </p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent">
+                    继续学习
+                    <span
+                      aria-hidden="true"
+                      className="transition-transform duration-150 group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section aria-labelledby="demo-heading">
           <div className="max-w-3xl">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">

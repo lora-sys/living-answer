@@ -72,6 +72,18 @@ export function StudyBadgeCard({ artifact, onExportMarkdown, onExportJson }: Stu
     counts[node.kind] = (counts[node.kind] ?? 0) + 1;
     return counts;
   }, {});
+  const counterIntuition =
+    artifact.learningNodes.find(
+      (node) => node.kind === "changed_premise" || node.kind === "divergence",
+    ) ?? coreNodes[1];
+  const selfChecks = [
+    openQuestions[0] ?? "这个结论在什么条件下会不成立？",
+    openQuestions[1] ?? "你能用一个真实例子解释核心证据吗？",
+  ];
+  const nextAction =
+    counterIntuition?.kind === "changed_premise"
+      ? "先写出现有方法的适用边界，再找一个反例检查它。"
+      : "选一条最新来源，用你自己的问题重述一次核心结论。";
 
   return (
     <article
@@ -196,6 +208,31 @@ export function StudyBadgeCard({ artifact, onExportMarkdown, onExportJson }: Stu
       </div>
 
       <div className="space-y-5 border-t border-rule bg-paper-2 px-5 py-5 sm:px-6">
+        {counterIntuition && (
+          <div className="border-l-2 border-accent bg-paper-3 px-4 py-4">
+            <h3 className="text-sm font-semibold text-ink">反常识提醒</h3>
+            <p className="mt-2 max-w-[72ch] text-sm leading-6 text-ink-subtle">
+              {counterIntuition.title}：{counterIntuition.summary}
+            </p>
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-semibold text-ink">自测 2 题</h3>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {selfChecks.map((question) => (
+              <li key={question} className="text-sm leading-6 text-ink-subtle">
+                {question}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="border border-rule bg-paper-3 px-4 py-4">
+          <h3 className="text-sm font-semibold text-ink">下一步行动</h3>
+          <p className="mt-2 text-sm leading-6 text-ink-subtle">{nextAction}</p>
+        </div>
+
         {openQuestions.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-ink">继续追问</h3>

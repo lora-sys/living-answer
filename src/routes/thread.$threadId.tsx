@@ -5,9 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ThreadAgentAction, ThreadAgentResult } from "../lib/thread-study-agent";
 import {
   buildThreadMarkdown,
+  readCollectedThreadSummaries,
   readCollectedThreads,
   removeCollectedThread,
+  removeCollectedThreadSummary,
   saveCollectedThread,
+  saveCollectedThreadSummary,
 } from "../lib/thread-collection";
 import { askThreadAgentFn } from "../server/ask-thread-agent";
 import { readThreadArtifactFn } from "../server/read-thread-artifact";
@@ -211,16 +214,32 @@ function ThreadView() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !response?.success) return;
-    setCollected(readCollectedThreads(window.localStorage).includes(response.artifact.threadId));
+    const ids = readCollectedThreads(window.localStorage);
+    const isCollected = ids.includes(response.artifact.threadId);
+    setCollected(isCollected);
+    if (
+      isCollected &&
+      !readCollectedThreadSummaries(window.localStorage).some(
+        (item) => item.threadId === response.artifact.threadId,
+      )
+    ) {
+      saveCollectedThreadSummary(response.artifact, window.localStorage);
+    }
   }, [response]);
 
   const collectThread = useCallback(() => {
     if (!response?.success) return;
-    const next = collected
-      ? removeCollectedThread(response.artifact.threadId, window.localStorage)
-      : saveCollectedThread(response.artifact.threadId, window.localStorage);
-    setCollected(next.includes(response.artifact.threadId));
-    setCollectionFeedback(collected ? "已从收藏移除" : "已加入本地收藏");
+    if (collected) {
+      const ids = removeCollectedThread(response.artifact.threadId, window.localStorage);
+      removeCollectedThreadSummary(response.artifact.threadId, window.localStorage);
+      setCollected(ids.includes(response.artifact.threadId));
+      setCollectionFeedback("已从收藏移除");
+      return;
+    }
+    const ids = saveCollectedThread(response.artifact.threadId, window.localStorage);
+    saveCollectedThreadSummary(response.artifact, window.localStorage);
+    setCollected(ids.includes(response.artifact.threadId));
+    setCollectionFeedback("已加入本地收藏");
   }, [collected, response]);
 
   const exportThread = useCallback(
@@ -329,9 +348,15 @@ function ThreadView() {
         return;
       }
       if (action.type === "search_supplement" && action.query) {
+        const isUiPrompt = QUICK_PROMPTS.some((prompt) => prompt === action.query);
+        const supplementQuery = isUiPrompt
+          ? response?.success
+            ? response.artifact.refinedQuery
+            : action.query
+          : action.query;
         void navigate({
           to: "/",
-          search: { q: action.query, clarify: false },
+          search: { q: supplementQuery, clarify: true },
         });
         return;
       }
@@ -389,6 +414,8 @@ function ThreadView() {
   const guide = artifact.learningGuide;
   const guideStageMap = new Map(guide.stages.map((stage) => [stage.answerId, stage]));
   const sortedStages = [...artifact.timelineStages].sort((a, b) => a.editTime - b.editTime);
+  const uniqueYears =
+    new Set(sortedStages.map((stage) => Math.floor(stage.editTime * 1000))).size > 1;
   const sortedNodes = [...artifact.learningNodes].sort((a, b) => {
     const order = [
       "relationship",
@@ -488,7 +515,9 @@ function ThreadView() {
                 记忆廊桥
               </h2>
               <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-                AI 把跨年份回答串成一条可追问的学习路径。每段解释都能回到真实摘录。
+                {uniqueYears
+                  ? "AI 把跨年份回答串成一条可追问的学习路径。每段解释都能回到真实摘录。"
+                  : "当前来源集中在相近时间。AI 先组织成观点对照线；缺少历史对照时会明确标注。"}
               </p>
             </div>
 
@@ -538,10 +567,16 @@ function ThreadView() {
                       {String(index + 1).padStart(2, "0")}
                     </span>
 
-                    {index > 0 && guideStage?.transition && (
-                      <p className="mb-3 max-w-[72ch] border-l-2 border-accent bg-paper-2 px-3 py-2 text-sm leading-6 text-ink-subtle">
-                        {guideStage.transition}
-                      </p>
+                    {index > 0 && (
+                      <div className="mb-4 border-l-2 border-accent bg-paper-2 px-3 py-2">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-accent">
+                          BRIDGE STEP
+                        </p>
+                        <p className="mt-1 max-w-[72ch] text-sm leading-6 text-ink-subtle">
+                          {guideStage?.transition ??
+                            "对照上一段证据：这段支持、修正，还是扩展了前面的理解？"}
+                        </p>
+                      </div>
                     )}
 
                     <article className="border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-card)] transition-all duration-150 hover:border-accent hover:shadow-[4px_4px_0_var(--color-accent)] sm:p-6">
@@ -569,6 +604,12 @@ function ThreadView() {
 
                       <p className="mt-3 max-w-[72ch] text-sm leading-6 text-ink-subtle">
                         {guideStage?.explanation ?? stage.excerptBoundaryNote}
+                      </p>
+                      <p className="mt-2 max-w-[72ch] border-l border-rule pl-3 text-sm leading-6 text-muted">
+                        带走这一步：
+                        {nodeKinds?.length
+                          ? `记住“${nodeKinds.join("、")}”怎么改变你的判断。`
+                          : "先判断这段证据回答了问题的哪一部分。"}
                       </p>
 
                       {evidenceRef && (
@@ -808,9 +849,9 @@ function ThreadView() {
 
                       {message.result.evidenceRefs.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {message.result.evidenceRefs.map((ref) => (
+                          {message.result.evidenceRefs.map((ref, refIndex) => (
                             <EvidenceChip
-                              key={`${ref.excerptFingerprint}-${ref.quote}`}
+                              key={`${refIndex}-${ref.excerptFingerprint}-${ref.quote}`}
                               label={truncateEvidence(ref.quote)}
                               onClick={() => openSourceByFingerprint(ref.excerptFingerprint)}
                             />
@@ -820,9 +861,9 @@ function ThreadView() {
 
                       {message.result.nextActions.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {message.result.nextActions.map((action) => (
+                          {message.result.nextActions.map((action, actionIndex) => (
                             <button
-                              key={`${action.type}-${action.label}-${action.query ?? action.answerId ?? ""}`}
+                              key={`${actionIndex}-${action.type}-${action.label}-${action.query ?? action.answerId ?? ""}`}
                               type="button"
                               onClick={() => handleAgentAction(action)}
                               className="inline-flex min-h-9 items-center border border-rule-strong bg-paper-2 px-3 text-xs font-medium text-ink transition-colors duration-150 hover:border-accent hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

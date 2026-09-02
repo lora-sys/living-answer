@@ -23,6 +23,7 @@ import { makeSqliteThreadArtifactStore } from "../lib/thread-artifact-store";
 import { makeSqliteExcerptStore } from "../lib/excerpt-store";
 import { createQuestionLearningThread } from "../lib/thread-artifact";
 import {
+  buildEvidenceOnlySynthesis,
   synthesizeThread,
   type SynthesizedNode,
   type ThreadSynthesisResult,
@@ -45,6 +46,7 @@ export type GenerateThreadResponse =
   | {
       readonly success: true;
       readonly threadId: string;
+      readonly mode: "synthesized" | "evidence_only";
     }
   | {
       readonly success: false;
@@ -107,19 +109,9 @@ export const createGenerateThreadHandler =
       };
     }
 
-    const secret = deps.getSecret();
-    if (typeof secret !== "string" || secret.trim() === "") {
-      return {
-        success: false as const,
-        code: "MISSING_MODEL_KEY",
-        message: "AI 服务暂时不可用，请稍后再试。",
-      };
-    }
-
     const model = deps.getModel();
     const excerptStore = await deps.createExcerptStore();
     const threadStore = await deps.createThreadStore();
-    const chat = await deps.createChat(secret, model);
 
     try {
       // Look up stored excerpts for each candidate
@@ -182,26 +174,27 @@ export const createGenerateThreadHandler =
 
       // Generate thread ID (opaque, random)
       const threadId = crypto.randomUUID().replace(/-/g, "").slice(0, 16).toLowerCase();
-
-      // Run synthesis
       const timelineStages =
         timelineStagesBuilder as unknown as readonly import("../lib/thread-artifact").TimelineStage[];
+
+      const synthesisInput = {
+        question,
+        refinedQuery,
+        learningIntent,
+        timelineStages,
+      };
+      const secret = deps.getSecret();
       let synthesisResult: ThreadSynthesisResult;
-      try {
+      let synthesisMode: "synthesized" | "evidence_only" = "evidence_only";
+
+      if (typeof secret === "string" && secret.trim() !== "") {
+        const chat = await deps.createChat(secret, model);
         synthesisResult = await Effect.runPromise(
-          synthesizeThread({ model, chat })({
-            question,
-            refinedQuery,
-            learningIntent,
-            timelineStages,
-          }),
+          synthesizeThread({ model, chat })(synthesisInput),
         );
-      } catch {
-        return {
-          success: false as const,
-          code: "SYNTHESIS_FAILED",
-          message: "生成学习总结时出现异常，请稍后再试。",
-        };
+        synthesisMode = "synthesized";
+      } else {
+        synthesisResult = buildEvidenceOnlySynthesis(synthesisInput);
       }
 
       // Build learning nodes
@@ -250,6 +243,7 @@ export const createGenerateThreadHandler =
       return {
         success: true,
         threadId: artifactResult.artifact.threadId,
+        mode: synthesisMode,
       };
     } catch {
       return {
@@ -340,14 +334,6 @@ const createChatWrapper = async (secret: string, model: string) =>
 export const generateThreadArtifactFn = createServerFn({ method: "POST" })
   .validator(parseInput)
   .handler(async ({ data }): Promise<GenerateThreadResponse> => {
-    if (!OPENAI_API_KEY) {
-      return {
-        success: false as const,
-        code: "MISSING_MODEL_KEY",
-        message: "AI 服务暂时不可用，请稍后再试。",
-      };
-    }
-
     return createGenerateThreadHandler({
       getSecret: () => OPENAI_API_KEY,
       getModel: () => OPENAI_MODEL,

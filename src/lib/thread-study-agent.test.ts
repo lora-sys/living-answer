@@ -2,7 +2,11 @@ import { Effect } from "effect";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { createQuestionLearningThread } from "./thread-artifact";
-import { askThreadAgent, type ThreadAgentDeps } from "./thread-study-agent";
+import {
+  answerThreadAgentOffline,
+  askThreadAgent,
+  type ThreadAgentDeps,
+} from "./thread-study-agent";
 
 const makeArtifact = () => {
   const result = createQuestionLearningThread({
@@ -91,6 +95,7 @@ describe("thread study agent", () => {
   });
 
   it("falls back to evidence gap when model output is malformed", async () => {
+    const artifact = makeArtifact();
     const result = await Effect.runPromise(
       askThreadAgent(makeDeps("not json"))(makeArtifact(), { question: "为什么会这样？" }),
     );
@@ -98,6 +103,19 @@ describe("thread study agent", () => {
     expect(result.status).toBe("evidence_gap");
     expect(result.evidenceRefs).toHaveLength(0);
     expect(result.nextActions[0].type).toBe("boundary_check");
+    expect(result.nextActions.find((action) => action.type === "search_supplement")?.query).toBe(
+      artifact.refinedQuery,
+    );
+  });
+
+  it("answers from saved nodes when the model transport is unavailable", () => {
+    const result = answerThreadAgentOffline(makeArtifact(), "请按时间线解释这条学习线的核心脉络。");
+
+    expect(result.status).toBe("grounded");
+    expect(result.answer).toContain("核心学习脉络");
+    expect(result.evidenceRefs).toHaveLength(1);
+    expect(result.evidenceRefs[0].answerId).toBe("100");
+    expect(result.evidenceRefs[0].quote).toContain("exact excerpt");
   });
 
   it("falls back to evidence gap when a grounded citation is invalid", async () => {

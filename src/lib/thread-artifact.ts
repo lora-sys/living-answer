@@ -14,6 +14,7 @@
 // ── FNV-1a fingerprint ────────────────────────────────────────────────────────
 
 import { fnv1a64 } from "./answer-excerpt";
+import { buildDeterministicLearningGuide } from "./thread-guide";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -312,28 +313,11 @@ const failure = (reason: ThreadArtifactFailureReason): ThreadArtifactFailure => 
   reason,
 });
 
-const makeFallbackLearningGuide = (stages: readonly TimelineStage[]): LearningGuide => ({
-  overview: {
-    headline: "来源摘录学习线",
-    summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
-    evidenceRefs: stages.map((stage) => ({
-      excerptFingerprint: stage.excerpt.fingerprint,
-      quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
-    })),
-  },
-  stages: stages.map((stage) => ({
-    answerId: stage.answerId,
-    role: "unclear" as LearningGuideRole,
-    explanation: "这段摘录已作为学习来源保留；当前没有可确认的 AI 解释。",
-    evidenceRefs: [
-      {
-        excerptFingerprint: stage.excerpt.fingerprint,
-        quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
-      },
-    ],
-  })),
-  openQuestions: ["读完后，这个知识点里还有哪些概念需要继续追问？"],
-});
+const makeFallbackLearningGuide = (
+  question: string,
+  stages: readonly TimelineStage[],
+  nodes: readonly LearningNode[],
+): LearningGuide => buildDeterministicLearningGuide(question, stages, nodes);
 
 const validateLearningGuide = (
   input: LearningGuideInput,
@@ -615,7 +599,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
   // 8. learning guide: missing legacy guides get a safe deterministic bridge.
   const learningGuide =
     input.learningGuide === undefined
-      ? makeFallbackLearningGuide(timelineStages)
+      ? makeFallbackLearningGuide(question, timelineStages, learningNodes)
       : validateLearningGuide(input.learningGuide, timelineStages);
   if (!learningGuide) {
     return failure("INVALID_LEARNING_GUIDE");

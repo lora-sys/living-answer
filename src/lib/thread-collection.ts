@@ -1,6 +1,16 @@
 import type { QuestionLearningThread } from "./thread-artifact";
 
 export const COLLECTED_THREADS_STORAGE_KEY = "living-answer.collectedThreads";
+export const COLLECTED_THREAD_SUMMARIES_STORAGE_KEY = "living-answer.collectedThreadSummaries";
+
+export interface CollectedThreadSummary {
+  readonly threadId: string;
+  readonly question: string;
+  readonly createdAt: number;
+  readonly sourceCount: number;
+  readonly nodeCount: number;
+  readonly yearRange: string;
+}
 
 export interface TextStorage {
   readonly getItem: (key: string) => string | null;
@@ -21,6 +31,116 @@ export const readCollectedThreads = (storage: TextStorage): readonly string[] =>
   } catch {
     return [];
   }
+};
+
+const isValidSummary = (value: unknown): value is CollectedThreadSummary => {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.threadId === "string" &&
+    /^[0-9a-f]{16}$/.test(record.threadId) &&
+    typeof record.question === "string" &&
+    record.question.trim() !== "" &&
+    typeof record.createdAt === "number" &&
+    Number.isSafeInteger(record.createdAt) &&
+    record.createdAt >= 0 &&
+    typeof record.sourceCount === "number" &&
+    Number.isSafeInteger(record.sourceCount) &&
+    record.sourceCount > 0 &&
+    typeof record.nodeCount === "number" &&
+    Number.isSafeInteger(record.nodeCount) &&
+    record.nodeCount > 0 &&
+    typeof record.yearRange === "string"
+  );
+};
+
+export const readCollectedThreadSummaries = (
+  storage: TextStorage,
+): readonly CollectedThreadSummary[] => {
+  const collectedIds = readCollectedThreads(storage);
+  if (collectedIds.length === 0) return [];
+  try {
+    const raw = storage.getItem(COLLECTED_THREAD_SUMMARIES_STORAGE_KEY);
+    const details =
+      raw === null || raw.trim() === ""
+        ? []
+        : (() => {
+            const parsed: unknown = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.filter(isValidSummary) : [];
+          })();
+    const detailMap = new Map(details.map((item) => [item.threadId, item]));
+    return collectedIds.map(
+      (threadId) =>
+        detailMap.get(threadId) ?? {
+          threadId,
+          question: "已收藏学习线程",
+          createdAt: 0,
+          sourceCount: 1,
+          nodeCount: 1,
+          yearRange: "未知",
+        },
+    );
+  } catch {
+    return collectedIds.map((threadId) => ({
+      threadId,
+      question: "已收藏学习线程",
+      createdAt: 0,
+      sourceCount: 1,
+      nodeCount: 1,
+      yearRange: "未知",
+    }));
+  }
+};
+
+const writeCollectedThreadSummaries = (
+  summaries: readonly CollectedThreadSummary[],
+  storage: TextStorage,
+): readonly CollectedThreadSummary[] => {
+  try {
+    if (summaries.length === 0) {
+      storage.removeItem(COLLECTED_THREAD_SUMMARIES_STORAGE_KEY);
+    } else {
+      storage.setItem(COLLECTED_THREAD_SUMMARIES_STORAGE_KEY, JSON.stringify(summaries));
+    }
+  } catch {
+    return summaries;
+  }
+  return summaries;
+};
+
+export const saveCollectedThreadSummary = (
+  artifact: QuestionLearningThread,
+  storage: TextStorage,
+): readonly CollectedThreadSummary[] => {
+  if (!/^[0-9a-f]{16}$/.test(artifact.threadId)) {
+    return readCollectedThreadSummaries(storage);
+  }
+
+  const years = artifact.timelineStages.map((stage) =>
+    new Date(stage.editTime * 1000).getFullYear(),
+  );
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
+  const nextSummary: CollectedThreadSummary = {
+    threadId: artifact.threadId,
+    question: artifact.question,
+    createdAt: artifact.createdAt,
+    sourceCount: artifact.timelineStages.length,
+    nodeCount: artifact.learningNodes.length,
+    yearRange: minYear === maxYear ? String(minYear) : `${minYear}—${maxYear}`,
+  };
+  const current = readCollectedThreadSummaries(storage);
+  const next = [nextSummary, ...current.filter((item) => item.threadId !== artifact.threadId)];
+  return writeCollectedThreadSummaries(next, storage);
+};
+
+export const removeCollectedThreadSummary = (
+  threadId: string,
+  storage: TextStorage,
+): readonly CollectedThreadSummary[] => {
+  const current = readCollectedThreadSummaries(storage);
+  const next = current.filter((item) => item.threadId !== threadId);
+  return writeCollectedThreadSummaries(next, storage);
 };
 
 export const saveCollectedThread = (threadId: string, storage: TextStorage): readonly string[] => {

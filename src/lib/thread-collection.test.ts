@@ -3,8 +3,11 @@ import { describe, expect, it } from "vite-plus/test";
 import { createQuestionLearningThread } from "./thread-artifact";
 import {
   buildThreadMarkdown,
+  readCollectedThreadSummaries,
   readCollectedThreads,
+  removeCollectedThreadSummary,
   removeCollectedThread,
+  saveCollectedThreadSummary,
   saveCollectedThread,
   type TextStorage,
 } from "./thread-collection";
@@ -75,6 +78,37 @@ describe("thread collection", () => {
     expect(saveCollectedThread("a1b2c3d4e5f6a7b8", storage)).toEqual(["a1b2c3d4e5f6a7b8"]);
     expect(readCollectedThreads(storage)).toEqual(["a1b2c3d4e5f6a7b8"]);
     expect(removeCollectedThread("a1b2c3d4e5f6a7b8", storage)).toEqual([]);
+  });
+
+  it("saves and removes a valid learning-space summary", () => {
+    const storage = makeStorage();
+    const artifact = makeArtifact();
+    saveCollectedThread(artifact.threadId, storage);
+    expect(saveCollectedThreadSummary(artifact, storage)).toHaveLength(1);
+    expect(readCollectedThreadSummaries(storage)[0]).toMatchObject({
+      threadId: "a1b2c3d4e5f6a7b8",
+      question: "How does it evolve?",
+      sourceCount: 1,
+      nodeCount: 1,
+      yearRange: "2023",
+    });
+    removeCollectedThread("a1b2c3d4e5f6a7b8", storage);
+    expect(removeCollectedThreadSummary("a1b2c3d4e5f6a7b8", storage)).toEqual([]);
+  });
+
+  it("shows a compatible placeholder for legacy ids without summaries", () => {
+    const storage = makeStorage();
+    saveCollectedThread("a1b2c3d4e5f6a7b8", storage);
+    expect(readCollectedThreadSummaries(storage)).toEqual([
+      {
+        threadId: "a1b2c3d4e5f6a7b8",
+        question: "已收藏学习线程",
+        createdAt: 0,
+        sourceCount: 1,
+        nodeCount: 1,
+        yearRange: "未知",
+      },
+    ]);
   });
 
   it("returns existing ids when storage writes fail", () => {

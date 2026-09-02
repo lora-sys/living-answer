@@ -30,6 +30,7 @@ import type {
   LearningGuideInput,
   LearningGuideRole,
 } from "./thread-artifact";
+import { buildDeterministicLearningGuide } from "./thread-guide";
 
 // ── Banned wording patterns (author-respect) ───────────────────────────────────
 
@@ -258,8 +259,8 @@ const makeFallbackNodes = (
     const stage = timelineStages[i];
     nodes.push({
       kind,
-      title: `Selected answer excerpt: ${stage.authorDisplayName}`,
-      summary: `Selected answer excerpt only, no synthesized learning nodes available.`,
+      title: `证据节点：${stage.authorDisplayName}`,
+      summary: stage.excerpt.excerpt.slice(0, Math.min(180, stage.excerpt.excerpt.length)),
       evidenceRefs: [
         {
           excerptFingerprint: stage.excerpt.fingerprint,
@@ -275,28 +276,34 @@ const makeFallbackNodes = (
   return nodes;
 };
 
-const makeFallbackLearningGuide = (timelineStages: readonly TimelineStage[]): LearningGuide => ({
-  overview: {
-    headline: "来源摘录学习线",
-    summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
-    evidenceRefs: timelineStages.map((stage) => ({
-      excerptFingerprint: stage.excerpt.fingerprint,
-      quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
+const makeFallbackLearningGuide = (
+  question: string,
+  timelineStages: readonly TimelineStage[],
+  nodes: readonly SynthesizedNode[],
+): LearningGuide =>
+  buildDeterministicLearningGuide(
+    question,
+    timelineStages,
+    nodes.map((node) => ({
+      kind: node.kind,
+      title: node.title,
+      summary: node.summary,
+      evidenceRefs: node.evidenceRefs,
+      sourceAnswerId: node.sourceAnswerId,
+      sourceUrl: node.sourceUrl,
+      uncertainty: node.uncertainty,
     })),
-  },
-  stages: timelineStages.map((stage) => ({
-    answerId: stage.answerId,
-    role: "unclear" as LearningGuideRole,
-    explanation: "这段摘录已作为学习来源保留；当前没有可确认的 AI 解释。",
-    evidenceRefs: [
-      {
-        excerptFingerprint: stage.excerpt.fingerprint,
-        quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
-      },
-    ],
-  })),
-  openQuestions: ["读完后，这个知识点里还有哪些概念需要继续追问？"],
-});
+  );
+
+export const buildEvidenceOnlySynthesis = (input: SynthesisInput): ThreadSynthesisResult => {
+  const nodes = makeFallbackNodes(input.timelineStages, input.maxNodes ?? MAX_NODES);
+  const learningGuide = makeFallbackLearningGuide(input.question, input.timelineStages, nodes);
+  return {
+    _tag: "success",
+    nodes,
+    learningGuide,
+  };
+};
 
 const validateGuideEvidence = (
   refs: readonly {
@@ -483,17 +490,18 @@ export const synthesizeThread =
       }
 
       if (validNodes.length === 0) {
+        const fallbackNodes = makeFallbackNodes(input.timelineStages, maxNodes);
         // All nodes failed validation — use fallback
         return {
           _tag: "success",
-          nodes: makeFallbackNodes(input.timelineStages, maxNodes),
-          learningGuide: makeFallbackLearningGuide(input.timelineStages),
+          nodes: fallbackNodes,
+          learningGuide: makeFallbackLearningGuide(question, input.timelineStages, fallbackNodes),
         };
       }
 
       const learningGuide =
         validateLearningGuide(obj.guide, input.timelineStages, answerIdMap, excerptCitationMap) ??
-        makeFallbackLearningGuide(input.timelineStages);
+        makeFallbackLearningGuide(question, input.timelineStages, validNodes);
 
       return { _tag: "success", nodes: validNodes, learningGuide };
     });
