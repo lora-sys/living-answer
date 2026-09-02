@@ -22,6 +22,15 @@ const makeArtifact = (overrides: Partial<QuestionLearningThread> = {}): Question
   createdAt: 1_700_000_000_000,
   timelineStages: [],
   learningNodes: [],
+  learningGuide: {
+    overview: {
+      headline: "Fallback guide",
+      summary: "No guide available.",
+      evidenceRefs: [],
+    },
+    stages: [],
+    openQuestions: [],
+  },
   uncertainty: 0.3,
   fingerprint: "v1:1234567890abcdef",
   ...overrides,

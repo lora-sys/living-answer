@@ -51,6 +51,70 @@ export interface EvidenceRef {
   readonly quote: string;
 }
 
+export type LearningGuideRole =
+  | "baseline"
+  | "correction"
+  | "extension"
+  | "counterpoint"
+  | "current_usage"
+  | "unclear";
+
+export interface LearningGuideEvidence {
+  readonly answerId: string;
+  readonly authorDisplayName: string;
+  readonly title: string;
+  readonly excerptFingerprint: string;
+  readonly quote: string;
+}
+
+export interface LearningGuideOverview {
+  readonly headline: string;
+  readonly summary: string;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export interface LearningGuideStage {
+  readonly answerId: string;
+  readonly role: LearningGuideRole;
+  readonly explanation: string;
+  readonly transition?: string;
+  readonly evidenceRefs: readonly EvidenceRef[];
+}
+
+export interface LearningGuide {
+  readonly overview: LearningGuideOverview;
+  readonly stages: readonly LearningGuideStage[];
+  readonly openQuestions: readonly string[];
+}
+
+export interface LearningGuideEvidenceInput {
+  readonly answerId: string;
+  readonly authorDisplayName: string;
+  readonly title: string;
+  readonly excerptFingerprint: string;
+  readonly quote: string;
+}
+
+export interface LearningGuideOverviewInput {
+  readonly headline: string;
+  readonly summary: string;
+  readonly evidenceRefs: readonly EvidenceRefInput[];
+}
+
+export interface LearningGuideStageInput {
+  readonly answerId: string;
+  readonly role: LearningGuideRole;
+  readonly explanation: string;
+  readonly transition?: string;
+  readonly evidenceRefs: readonly EvidenceRefInput[];
+}
+
+export interface LearningGuideInput {
+  readonly overview: LearningGuideOverviewInput;
+  readonly stages: readonly LearningGuideStageInput[];
+  readonly openQuestions: readonly string[];
+}
+
 export interface LearningNode {
   readonly kind: LearningNodeKind;
   readonly title: string;
@@ -68,6 +132,7 @@ export interface QuestionLearningThread {
   readonly createdAt: number;
   readonly timelineStages: readonly TimelineStage[];
   readonly learningNodes: readonly LearningNode[];
+  readonly learningGuide: LearningGuide;
   readonly uncertainty: number;
   readonly fingerprint: string;
 }
@@ -79,6 +144,7 @@ export interface ThreadArtifactInput {
   readonly createdAt: number;
   readonly timelineStages: readonly TimelineStageInput[];
   readonly learningNodes: readonly LearningNodeInput[];
+  readonly learningGuide?: LearningGuideInput;
   readonly uncertainty: number;
 }
 
@@ -127,6 +193,7 @@ export type ThreadArtifactFailureReason =
   | "INVALID_TIMELINE_STAGE"
   | "EMPTY_LEARNING_NODES"
   | "INVALID_LEARNING_NODE"
+  | "INVALID_LEARNING_GUIDE"
   | "INVALID_UNCERTAINTY"
   | "EMPTY_EXCERPT"
   | "MISMATCHED_FINGERPRINT";
@@ -177,6 +244,15 @@ const isValidLearningNodeKind = (value: unknown): value is LearningNodeKind =>
 
 const isValidUncertainty = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+
+const isValidLearningGuideRole = (value: unknown): value is LearningGuideRole =>
+  typeof value === "string" &&
+  (value === "baseline" ||
+    value === "correction" ||
+    value === "extension" ||
+    value === "counterpoint" ||
+    value === "current_usage" ||
+    value === "unclear");
 
 const isValidZhihuUrl = (value: string): boolean =>
   value !== "" && /^https?:\/\/(www\.)?zhihu\.com\/question\/\d+\/answer\/\d+$/.test(value);
@@ -235,6 +311,121 @@ const failure = (reason: ThreadArtifactFailureReason): ThreadArtifactFailure => 
   _tag: "failure",
   reason,
 });
+
+const makeFallbackLearningGuide = (
+  stages: readonly TimelineStage[],
+): LearningGuide => ({
+  overview: {
+    headline: "来源摘录学习线",
+    summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
+    evidenceRefs: stages.map((stage) => ({
+      excerptFingerprint: stage.excerpt.fingerprint,
+      quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
+    })),
+  },
+  stages: stages.map((stage) => ({
+    answerId: stage.answerId,
+    role: "unclear" as LearningGuideRole,
+    explanation: "这段摘录已作为学习来源保留；当前没有可确认的 AI 解释。",
+    evidenceRefs: [
+      {
+        excerptFingerprint: stage.excerpt.fingerprint,
+        quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
+      },
+    ],
+  })),
+  openQuestions: ["读完后，这个知识点里还有哪些概念需要继续追问？"],
+});
+
+const validateLearningGuide = (
+  input: LearningGuideInput,
+  stages: readonly TimelineStage[],
+): LearningGuide | null => {
+  const answerIdMap = new Map(stages.map((stage) => [stage.answerId, stage]));
+  const excerptMap = new Map(
+    stages.map((stage) => [stage.excerpt.fingerprint, stage.excerpt.excerpt]),
+  );
+
+  const validateEvidenceRefs = (
+    refs: readonly EvidenceRefInput[],
+  ): EvidenceRef[] | null => {
+    if (!Array.isArray(refs) || refs.length === 0) return null;
+    const output: EvidenceRef[] = [];
+    for (const ref of refs) {
+      if (
+        typeof ref !== "object" ||
+        ref === null ||
+        typeof ref.excerptFingerprint !== "string" ||
+        typeof ref.quote !== "string"
+      ) {
+        return null;
+      }
+      const excerpt = excerptMap.get(ref.excerptFingerprint);
+      const quote = normalizeText(ref.quote);
+      if (!excerpt || quote === "" || !excerpt.includes(quote)) return null;
+      output.push({ excerptFingerprint: ref.excerptFingerprint, quote });
+    }
+    return output;
+  };
+
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return null;
+  if (
+    typeof input.overview !== "object" ||
+    input.overview === null ||
+    typeof input.overview.headline !== "string" ||
+    normalizeText(input.overview.headline) === "" ||
+    typeof input.overview.summary !== "string" ||
+    normalizeText(input.overview.summary) === ""
+  ) {
+    return null;
+  }
+
+  const overviewEvidence = validateEvidenceRefs(input.overview.evidenceRefs);
+  if (!overviewEvidence) return null;
+
+  if (!Array.isArray(input.stages) || input.stages.length !== stages.length) return null;
+  const guideStages: LearningGuideStage[] = [];
+  for (const stageInput of input.stages) {
+    if (typeof stageInput !== "object" || stageInput === null) return null;
+    const stage = answerIdMap.get(stageInput.answerId);
+    if (
+      !stage ||
+      !isValidLearningGuideRole(stageInput.role) ||
+      typeof stageInput.explanation !== "string" ||
+      normalizeText(stageInput.explanation) === ""
+    ) {
+      return null;
+    }
+    const evidenceRefs = validateEvidenceRefs(stageInput.evidenceRefs);
+    if (!evidenceRefs) return null;
+    guideStages.push({
+      answerId: stageInput.answerId,
+      role: stageInput.role,
+      explanation: normalizeText(stageInput.explanation),
+      transition:
+        typeof stageInput.transition === "string" && normalizeText(stageInput.transition) !== ""
+          ? normalizeText(stageInput.transition)
+          : undefined,
+      evidenceRefs,
+    });
+  }
+
+  if (!Array.isArray(input.openQuestions)) return null;
+  const openQuestions = input.openQuestions
+    .filter((question): question is string => typeof question === "string")
+    .map(normalizeText)
+    .filter((question) => question !== "");
+
+  return {
+    overview: {
+      headline: normalizeText(input.overview.headline),
+      summary: normalizeText(input.overview.summary),
+      evidenceRefs: overviewEvidence,
+    },
+    stages: guideStages,
+    openQuestions,
+  };
+};
 
 export const createQuestionLearningThread = (input: ThreadArtifactInput): ThreadArtifactResult => {
   // 1. threadId
@@ -425,7 +616,16 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     return failure("INVALID_UNCERTAINTY");
   }
 
-  // 8. fingerprint
+  // 8. learning guide: missing legacy guides get a safe deterministic bridge.
+  const learningGuide =
+    input.learningGuide === undefined
+      ? makeFallbackLearningGuide(timelineStages)
+      : validateLearningGuide(input.learningGuide, timelineStages);
+  if (!learningGuide) {
+    return failure("INVALID_LEARNING_GUIDE");
+  }
+
+  // 9. fingerprint
 
   const fingerprint = buildThreadFingerprint(
     question,
@@ -444,6 +644,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     createdAt,
     timelineStages,
     learningNodes,
+    learningGuide: Object.freeze(learningGuide),
     uncertainty: input.uncertainty,
     fingerprint,
   });

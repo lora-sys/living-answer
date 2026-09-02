@@ -220,6 +220,8 @@ export const createGenerateThreadHandler =
         uncertainty: node.uncertainty,
       }));
 
+      const learningGuideInput = synthesisResult.learningGuide;
+
       // Create the thread artifact
       const now = Date.now();
       const artifactInput = {
@@ -229,6 +231,7 @@ export const createGenerateThreadHandler =
         createdAt: now,
         timelineStages: timelineStagesBuilder,
         learningNodes: learningNodesInput,
+        learningGuide: learningGuideInput,
         uncertainty: input.confidence,
       };
 

@@ -141,6 +141,12 @@ export const makeSqliteThreadArtifactStore = (
               ? ((obj as { learningNodes: unknown[] })
                   .learningNodes as import("./thread-artifact").LearningNodeInput[])
               : [],
+            learningGuide:
+              typeof (obj as { learningGuide?: unknown }).learningGuide === "object" &&
+              (obj as { learningGuide?: unknown }).learningGuide !== null
+                ? ((obj as { learningGuide: import("./thread-artifact").LearningGuideInput })
+                    .learningGuide)
+                : undefined,
             uncertainty:
               typeof (obj as { uncertainty?: unknown }).uncertainty === "number"
                 ? (obj as { uncertainty: number }).uncertainty

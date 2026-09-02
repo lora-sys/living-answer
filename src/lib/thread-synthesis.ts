@@ -21,7 +21,15 @@
 
 import { Data, Effect } from "effect";
 
-import type { TimelineStage, LearningNodeKind, EvidenceRef } from "./thread-artifact";
+import type {
+  TimelineStage,
+  LearningNodeKind,
+  EvidenceRef,
+  LearningGuide,
+  LearningGuideStage,
+  LearningGuideInput,
+  LearningGuideRole,
+} from "./thread-artifact";
 
 // ── Banned wording patterns (author-respect) ───────────────────────────────────
 
@@ -82,6 +90,7 @@ export interface ThreadSynthesisDeps {
 export interface ThreadSynthesisResult {
   readonly _tag: "success";
   readonly nodes: readonly SynthesizedNode[];
+  readonly learningGuide: LearningGuide;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -225,13 +234,16 @@ const validateNode = (
 // ── System prompt ──────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT =
-  "You help create learning nodes from selected Zhihu answer excerpts. For the given question and excerpts, produce learning nodes. " +
+  "You help build a learning bridge from selected Zhihu answer excerpts. Produce learning nodes and a learning guide. " +
   "Each node has: kind (relationship, cause, evolution, consensus, divergence, changed_premise, or unknown), title, summary, evidenceRefs (array of {excerptFingerprint, quote}), sourceAnswerId, sourceUrl (canonical Zhihu URL), uncertainty (0.0-1.0). " +
+  "The guide has overview {headline, summary, evidenceRefs}, one stage per selected answer with {answerId, role, explanation, transition, evidenceRefs}, and openQuestions. Roles are baseline, correction, extension, counterpoint, current_usage, or unclear. " +
   "Every evidenceRef.quote MUST be an exact substring of the corresponding excerpt text. " +
   "Never say the author was wrong; say the premise has changed. " +
   "SourceAnswerId must be one of the provided timeline stage answer IDs. " +
   "If you are not certain about a claim, use kind 'unknown' with a factual summary. " +
-  'Reply with only raw JSON: {"nodes":[...]}';
+  "Do not add fields such as id, content, evidenceRef, source, selection_reference, or misconception_reminder. " +
+  "Use exactly the requested field names. " +
+  'Reply with only raw JSON: {"nodes":[...],"guide":{...}}';
 
 // ── Fallback generation ────────────────────────────────────────────────────────
 
@@ -261,6 +273,135 @@ const makeFallbackNodes = (
   }
 
   return nodes;
+};
+
+const makeFallbackLearningGuide = (
+  timelineStages: readonly TimelineStage[],
+): LearningGuide => ({
+  overview: {
+    headline: "来源摘录学习线",
+    summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
+    evidenceRefs: timelineStages.map((stage) => ({
+      excerptFingerprint: stage.excerpt.fingerprint,
+      quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
+    })),
+  },
+  stages: timelineStages.map((stage) => ({
+    answerId: stage.answerId,
+    role: "unclear" as LearningGuideRole,
+    explanation: "这段摘录已作为学习来源保留；当前没有可确认的 AI 解释。",
+    evidenceRefs: [
+      {
+        excerptFingerprint: stage.excerpt.fingerprint,
+        quote: stage.excerpt.excerpt.slice(0, Math.min(100, stage.excerpt.excerpt.length)),
+      },
+    ],
+  })),
+  openQuestions: ["读完后，这个知识点里还有哪些概念需要继续追问？"],
+});
+
+const validateGuideEvidence = (
+  refs: readonly {
+    readonly excerptFingerprint: string;
+    readonly quote: string;
+  }[],
+  excerptCitationMap: Map<string, ExcerptCitationData>,
+): EvidenceRef[] | null => {
+  if (!Array.isArray(refs) || refs.length === 0) return null;
+  const output: EvidenceRef[] = [];
+  for (const ref of refs) {
+    if (typeof ref !== "object" || ref === null || Array.isArray(ref)) return null;
+    const fingerprint =
+      typeof ref.excerptFingerprint === "string" ? ref.excerptFingerprint.trim() : "";
+    const quote = typeof ref.quote === "string" ? ref.quote.trim() : "";
+    if (fingerprint === "" || quote === "") return null;
+    const excerpt = excerptCitationMap.get(fingerprint);
+    if (!excerpt || !excerpt.normalizedText.includes(quote)) return null;
+    output.push({ excerptFingerprint: fingerprint, quote });
+  }
+  return output;
+};
+
+const isValidGuideRole = (value: unknown): value is LearningGuideRole =>
+  typeof value === "string" &&
+  (value === "baseline" ||
+    value === "correction" ||
+    value === "extension" ||
+    value === "counterpoint" ||
+    value === "current_usage" ||
+    value === "unclear");
+
+const validateLearningGuide = (
+  raw: unknown,
+  timelineStages: readonly TimelineStage[],
+  answerIdMap: Map<string, string>,
+  excerptCitationMap: Map<string, ExcerptCitationData>,
+): LearningGuide | null => {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const input = raw as LearningGuideInput;
+
+  if (
+    typeof input.overview !== "object" ||
+    input.overview === null ||
+    typeof input.overview.headline !== "string" ||
+    input.overview.headline.trim() === "" ||
+    typeof input.overview.summary !== "string" ||
+    input.overview.summary.trim() === "" ||
+    hasBannedWording(input.overview.headline) ||
+    hasBannedWording(input.overview.summary)
+  ) {
+    return null;
+  }
+
+  const overviewEvidence = validateGuideEvidence(
+    input.overview.evidenceRefs,
+    excerptCitationMap,
+  );
+  if (!overviewEvidence) return null;
+
+  if (!Array.isArray(input.stages) || input.stages.length !== timelineStages.length) return null;
+  const stages: LearningGuideStage[] = [];
+  for (const stageInput of input.stages) {
+    if (typeof stageInput !== "object" || stageInput === null) return null;
+    if (!answerIdMap.has(stageInput.answerId) || !isValidGuideRole(stageInput.role)) return null;
+    if (
+      typeof stageInput.explanation !== "string" ||
+      stageInput.explanation.trim() === "" ||
+      hasBannedWording(stageInput.explanation)
+    ) {
+      return null;
+    }
+    const evidenceRefs = validateGuideEvidence(stageInput.evidenceRefs, excerptCitationMap);
+    if (!evidenceRefs) return null;
+    stages.push({
+      answerId: stageInput.answerId,
+      role: stageInput.role,
+      explanation: stageInput.explanation.trim(),
+      transition:
+        typeof stageInput.transition === "string" &&
+        stageInput.transition.trim() !== "" &&
+        !hasBannedWording(stageInput.transition)
+          ? stageInput.transition.trim()
+          : undefined,
+      evidenceRefs,
+    });
+  }
+
+  if (!Array.isArray(input.openQuestions)) return null;
+  const openQuestions = input.openQuestions
+    .filter((question): question is string => typeof question === "string")
+    .map((question) => question.trim())
+    .filter((question) => question !== "" && !hasBannedWording(question));
+
+  return {
+    overview: {
+      headline: input.overview.headline.trim(),
+      summary: input.overview.summary.trim(),
+      evidenceRefs: overviewEvidence,
+    },
+    stages,
+    openQuestions,
+  };
 };
 
 // ── Workflow ───────────────────────────────────────────────────────────────────
@@ -299,7 +440,7 @@ export const synthesizeThread =
           .join("; ")}`,
         `Excerpt fingerprints: ${Array.from(excerptCitationMap.keys()).join(", ")}`,
         "",
-        `Produce up to ${maxNodes} learning nodes as a JSON object {"nodes":[...]}.`,
+        `Produce up to ${maxNodes} learning nodes and the guide as a JSON object {"nodes":[...],"guide":{...}}.`,
       ].join("\n");
 
       const raw = yield* deps.chat
@@ -351,8 +492,17 @@ export const synthesizeThread =
         return {
           _tag: "success",
           nodes: makeFallbackNodes(input.timelineStages, maxNodes),
+          learningGuide: makeFallbackLearningGuide(input.timelineStages),
         };
       }
 
-      return { _tag: "success", nodes: validNodes };
+      const learningGuide =
+        validateLearningGuide(
+          obj.guide,
+          input.timelineStages,
+          answerIdMap,
+          excerptCitationMap,
+        ) ?? makeFallbackLearningGuide(input.timelineStages);
+
+      return { _tag: "success", nodes: validNodes, learningGuide };
     });

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import type { TimelineStage } from "./thread-artifact";
+import type { TimelineStage, LearningGuideInput } from "./thread-artifact";
 
 import {
   synthesizeThread,
@@ -65,7 +65,35 @@ const validNodePayload: SynthesizedNode = {
 const buildValidResponse = (nodes?: SynthesizedNode[]): string =>
   JSON.stringify({
     nodes: nodes ?? [validNodePayload],
+    guide: validGuidePayload,
   });
+
+const validGuidePayload: LearningGuideInput = {
+  overview: {
+    headline: "How the answer adds to the thread",
+    summary: "The selected excerpt anchors the learning question.",
+    evidenceRefs: [
+      {
+        excerptFingerprint: "v1:5555555555555555",
+        quote: "This is the exact excerpt text that must appear in the quote.",
+      },
+    ],
+  },
+  stages: [
+    {
+      answerId: "100",
+      role: "baseline",
+      explanation: "This answer provides the baseline premise for the thread.",
+      evidenceRefs: [
+        {
+          excerptFingerprint: "v1:5555555555555555",
+          quote: "This is the exact excerpt text that must appear in the quote.",
+        },
+      ],
+    },
+  ],
+  openQuestions: ["What changed after this answer was written?"],
+};
 
 const baseDeps = (chat: ThreadSynthesisDeps["chat"]): ThreadSynthesisDeps => ({
   model: "zhida-thinking-1p5",
@@ -107,12 +135,39 @@ describe("thread-synthesis synthesizeThread", () => {
     const outcome = await runWorkflow(baseDeps(chat), makeInput());
     expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
-      const { result } = outcome;
-      expect(result.nodes).toHaveLength(1);
-      expect(result.nodes[0].kind).toBe("evolution");
+    const { result } = outcome;
+    expect(result.nodes).toHaveLength(1);
+    expect(result.learningGuide.stages[0].answerId).toBe("100");
+    expect(result.learningGuide.stages[0].role).toBe("baseline");
+    expect(result.nodes[0].kind).toBe("evolution");
       expect(result.nodes[0].title).toBe(validNodePayload.title);
       expect(result.nodes[0].sourceAnswerId).toBe("100");
       expect(result.nodes[0].uncertainty).toBe(0.5);
+    }
+  });
+
+  it("uses a safe fallback guide when the model guide has a bad citation", async () => {
+    const response = JSON.stringify({
+      nodes: [validNodePayload],
+      guide: {
+        ...validGuidePayload,
+        overview: {
+          ...validGuidePayload.overview,
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "This quote is not in the selected excerpt.",
+            },
+          ],
+        },
+      },
+    });
+    const chat = makeSucceedChat(response);
+    const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") {
+      expect(outcome.result.learningGuide.overview.headline).toBe("来源摘录学习线");
+      expect(outcome.result.learningGuide.stages[0].role).toBe("unclear");
     }
   });
 
