@@ -236,6 +236,9 @@ function QuestionThreadEntry() {
           <p className="mt-3 max-w-[68ch] text-sm leading-6 text-paper/74 sm:text-base sm:leading-7">
             {PRODUCT_TAGLINE}
           </p>
+          <p className="mt-3 max-w-[60ch] text-base leading-7 text-ink-subtle">
+            真实的回答会随着时间变化。AI 帮你追踪哪些回答已经过时，为什么。
+          </p>
         </div>
       </header>
 
@@ -243,6 +246,7 @@ function QuestionThreadEntry() {
         {/* ═══ Question entry ══════════════════════════════════════════════ */}
         <section className="pt-10">
           <form onSubmit={handleQuestionSubmit} noValidate className="max-w-3xl">
+            <p className="text-xs text-muted">试试输入一个模糊的问题，不需要措辞完美</p>
             <label htmlFor="thread-question-input" className="sr-only">
               输入你的问题
             </label>
@@ -262,7 +266,7 @@ function QuestionThreadEntry() {
                 disabled={clarificationLoading || searchLoading || generation.status === "loading"}
                 className="inline-flex h-14 shrink-0 items-center justify-center rounded-[6px] bg-accent px-7 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
               >
-                {clarificationLoading ? "正在澄清…" : "开始学习线程"}
+                {clarificationLoading ? "正在澄清…" : "开始 →"}
               </button>
             </div>
           </form>
@@ -276,6 +280,7 @@ function QuestionThreadEntry() {
                   key={q}
                   type="button"
                   onClick={() => handleStarterClick(q)}
+                  title="AI 会自动帮你澄清意图"
                   disabled={
                     clarificationLoading || searchLoading || generation.status === "loading"
                   }
@@ -286,6 +291,9 @@ function QuestionThreadEntry() {
               ))}
             </div>
           )}
+          <p className="text-[11px] text-faint font-mono tracking-[0.04em]">
+            输入仅用于本轮 AI 澄清，不会持久化你的原始问题
+          </p>
         </section>
 
         {/* ═══ Clarification panel ───────────────────────────────────────── */}
