@@ -221,7 +221,7 @@ function ThreadView() {
   }
 
   return (
-    <main className="min-h-screen bg-paper pb-20 text-ink">
+    <main className="min-h-screen bg-paper pb-24 sm:pb-20 text-ink">
       {/* ═══ Sticky header ─────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-paper/92 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-[1120px] px-5 py-4 sm:px-8">
@@ -258,9 +258,9 @@ function ThreadView() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-[1120px] space-y-12 px-5 sm:px-8">
+      <div className="mx-auto w-full max-w-[1120px] space-y-6 sm:space-y-12 px-5 sm:px-8">
         {/* ═══ Timeline ──────────────────────────────────────────────────── */}
-        <section className="pt-10">
+        <section className="pt-6 sm:pt-10">
           <div className="max-w-3xl">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
               TIMELINE
@@ -339,7 +339,7 @@ function ThreadView() {
           </div>
         )}
         {sortedNodes.length > 0 && (
-          <section className="border-t border-rule pt-12">
+          <section className="border-t border-rule pt-6 sm:pt-12">
             <div className="max-w-3xl">
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
                 LEARNING NODES
@@ -417,7 +417,7 @@ function ThreadView() {
         )}
 
         {/* ═══ Actions ─────────────────────────────────────────────────── */}
-        <section className="border-t border-rule pt-10">
+        <section className="border-t border-rule pt-6 sm:pt-10">
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/"
@@ -439,7 +439,7 @@ function ThreadView() {
       {/* ═══ Source modal ─────────────────────────────────────────────────── */}
       {selectedSource && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/40 px-5 py-10 sm:py-16"
+          className="fixed inset-0 z-50 flex items-end sm:items-start justify-center overflow-y-auto bg-ink/40 px-0 sm:px-5 py-10 sm:py-16"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedSource(null);
           }}
@@ -448,7 +448,7 @@ function ThreadView() {
             ref={modalRef}
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-2xl rounded-[4px] bg-paper-3 shadow-[var(--shadow-panel)]"
+            className="w-full max-w-full rounded-t-[8px] rounded-b-none max-h-[85vh] overflow-y-auto bg-paper-3 shadow-[var(--shadow-panel)] sm:max-w-2xl sm:rounded-[4px]"
           >
             <div className="flex items-start justify-between px-6 pt-5">
               <div>

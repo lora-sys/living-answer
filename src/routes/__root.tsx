@@ -1,4 +1,10 @@
-import { HeadContent, Link, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Link,
+  Scripts,
+  createRootRoute,
+  useRouterState,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 
@@ -53,6 +59,13 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { location } = useRouterState();
+
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <html lang="zh-CN">
       <head>
@@ -60,7 +73,31 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <SiteNav />
-        {children}
+        <div className="pb-16 sm:pb-0">{children}</div>
+
+        <nav
+          aria-label="移动端导航"
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-rule bg-paper pb-[env(safe-area-inset-bottom)] pt-2 sm:hidden"
+        >
+          <Link
+            to="/"
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/") ? "text-accent-text" : "text-muted"}`}
+          >
+            首页
+          </Link>
+          <Link
+            to="/landing"
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/landing") ? "text-accent-text" : "text-muted"}`}
+          >
+            了解
+          </Link>
+          <Link
+            to="/changes"
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/changes") ? "text-accent-text" : "text-muted"}`}
+          >
+            时间线
+          </Link>
+        </nav>
 
         <Scripts />
       </body>
