@@ -40,6 +40,15 @@
   --color-info: #274b8f;
   --color-info-soft: #e8edfb;
 
+  /* Learning node border colors */
+  --color-node-relationship: #1746ff;
+  --color-node-cause: #c6271a;
+  --color-node-evolution: #0d6b52;
+  --color-node-consensus: #274b8f;
+  --color-node-divergence: #b42318;
+  --color-node-premise: #92400e;
+  --color-node-unknown: #646a66;
+
   --color-focus: #1746ff;
 
   --radius-control: 6px;

@@ -22,6 +22,16 @@ const UNCERTAINTY_COLORS: Record<number, string> = {
   5: "bg-update-soft text-update",
 };
 
+const NODE_BORDER_COLORS: Record<string, string> = {
+  relationship: "border-l-node-relationship",
+  cause: "border-l-node-cause",
+  evolution: "border-l-node-evolution",
+  consensus: "border-l-node-consensus",
+  divergence: "border-l-node-divergence",
+  changed_premise: "border-l-node-premise",
+  unknown: "border-l-node-unknown",
+};
+
 export const Route = createFileRoute("/thread/$threadId")({
   head: ({ params }) => ({
     title: `学习线程 #${params.threadId.slice(0, 8)} · Living Answer`,
@@ -202,6 +212,14 @@ function ThreadView() {
     unknown: "待确认",
   };
 
+  // Build: source answerId -> node kind labels that cite it
+  const sourceNodeKinds = new Map<string, string[]>();
+  for (const node of sortedNodes) {
+    const kinds = sourceNodeKinds.get(node.sourceAnswerId) ?? [];
+    kinds.push(LEARNING_NODE_LABELS[node.kind] ?? node.kind);
+    sourceNodeKinds.set(node.sourceAnswerId, kinds);
+  }
+
   return (
     <main className="min-h-screen bg-paper pb-20 text-ink">
       {/* ═══ Sticky header ─────────────────────────────────────────────────── */}
@@ -256,53 +274,70 @@ function ThreadView() {
           </div>
 
           <div className="mt-8 space-y-5">
-            {sortedStages.map((stage) => (
-              <button
-                key={stage.answerId}
-                type="button"
-                onClick={() =>
-                  setSelectedSource({
-                    url: stage.canonicalUrl,
-                    title: stage.title,
-                    excerpt: stage.excerpt.excerpt,
-                    boundary: stage.excerptBoundaryNote,
-                    author: stage.authorDisplayName,
-                  })
-                }
-                className={
-                  "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
-                  "hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] " +
-                  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-                }
-              >
-                <div className="flex min-w-0 items-start justify-between gap-x-4 gap-y-2">
-                  <p className="min-w-0 text-[17px] font-semibold leading-7 text-ink">
-                    {stage.title}
+            {sortedStages.map((stage) => {
+              const citedKinds = sourceNodeKinds.get(stage.answerId);
+              return (
+                <button
+                  key={stage.answerId}
+                  type="button"
+                  onClick={() =>
+                    setSelectedSource({
+                      url: stage.canonicalUrl,
+                      title: stage.title,
+                      excerpt: stage.excerpt.excerpt,
+                      boundary: stage.excerptBoundaryNote,
+                      author: stage.authorDisplayName,
+                    })
+                  }
+                  className={
+                    "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
+                    "hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] " +
+                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  }
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-x-4 gap-y-2">
+                    <p className="min-w-0 text-[17px] font-semibold leading-7 text-ink">
+                      {stage.title}
+                    </p>
+                    <span className="shrink-0 font-mono text-[10px] tracking-[0.06em] text-muted">
+                      #{stage.answerId}
+                    </span>
+                  </div>
+
+                  <p className="mt-2.5 line-clamp-2 text-sm leading-6 text-ink-subtle">
+                    {stage.excerpt.excerpt.slice(0, 200)}
                   </p>
-                  <span className="shrink-0 font-mono text-[10px] tracking-[0.06em] text-muted">
-                    #{stage.answerId}
-                  </span>
-                </div>
 
-                <p className="mt-2.5 line-clamp-2 text-sm leading-6 text-ink-subtle">
-                  {stage.excerpt.excerpt.slice(0, 200)}
-                </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.04em] text-muted">
+                    <span>
+                      作者{" "}
+                      <span className="font-medium text-ink-subtle">{stage.authorDisplayName}</span>
+                    </span>
+                    <span>
+                      编辑于 {new Date(stage.editTime * 1000).toLocaleDateString("zh-CN")}
+                    </span>
+                  </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] tracking-[0.04em] text-muted">
-                  <span>
-                    作者{" "}
-                    <span className="font-medium text-ink-subtle">{stage.authorDisplayName}</span>
-                  </span>
-                  <span>编辑于 {new Date(stage.editTime * 1000).toLocaleDateString("zh-CN")}</span>
-                </div>
-
-                <p className="mt-2 text-xs text-muted">{stage.excerptBoundaryNote}</p>
-              </button>
-            ))}
+                  <p className="mt-2 text-xs text-muted">{stage.excerptBoundaryNote}</p>
+                  {citedKinds && (
+                    <p className="mt-2 text-[10px] font-mono text-muted">
+                      被引用于: {citedKinds.join("、")}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
 
         {/* ═══ Learning nodes ─────────────────────────────────────────────── */}
+        {sortedNodes.length > 0 && (
+          <div className="flex items-center justify-center py-2">
+            <p className="font-mono text-[10px] tracking-[0.08em] text-muted">
+              以上 {sortedStages.length} 条来源被整合为 {sortedNodes.length} 个学习节点
+            </p>
+          </div>
+        )}
         {sortedNodes.length > 0 && (
           <section className="border-t border-rule pt-12">
             <div className="max-w-3xl">
@@ -318,41 +353,65 @@ function ThreadView() {
             </div>
 
             <div className="mt-8 space-y-5">
-              {sortedNodes.map((node) => (
-                <div
-                  key={`${node.kind}-${node.sourceAnswerId}`}
-                  className={
-                    "rounded-[2px] border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)]"
-                  }
-                >
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span className="inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.06em] bg-info-soft text-info">
-                      {LEARNING_NODE_LABELS[node.kind] ?? node.kind}
-                    </span>
-                    <span className="font-mono text-[10px] text-muted">
-                      置信度 {(node.uncertainty * 100).toFixed(0)}%
-                    </span>
+              {sortedNodes.map((node) => {
+                const nodeSourceStage = artifact.timelineStages.find(
+                  (s) => s.answerId === node.sourceAnswerId,
+                );
+
+                return (
+                  <div
+                    key={`${node.kind}-${node.sourceAnswerId}`}
+                    className={
+                      "rounded-[2px] border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)] " +
+                      `border-l-[3px] ${NODE_BORDER_COLORS[node.kind] ?? "border-l-node-unknown"}`
+                    }
+                  >
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.06em] bg-info-soft text-info">
+                        {LEARNING_NODE_LABELS[node.kind] ?? node.kind}
+                      </span>
+                      <span className="font-mono text-[10px] text-muted">
+                        置信度 {(node.uncertainty * 100).toFixed(0)}%
+                      </span>
+                    </div>
+
+                    <h3 className="mt-3 text-[17px] font-semibold leading-7 text-ink">
+                      {node.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-ink-subtle">{node.summary}</p>
+
+                    <div className="mt-4 space-y-2">
+                      {node.evidenceRefs.map((ref, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <span className="font-mono text-[10px] text-muted">&gt;</span>
+                          <p className="text-xs leading-5 text-muted">
+                            {ref.quote.slice(0, 120)}
+                            {ref.quote.length > 120 ? "…" : ""}
+                            {nodeSourceStage && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedSource({
+                                    url: nodeSourceStage.canonicalUrl,
+                                    title: nodeSourceStage.title,
+                                    excerpt: nodeSourceStage.excerpt.excerpt,
+                                    boundary: nodeSourceStage.excerptBoundaryNote,
+                                    author: nodeSourceStage.authorDisplayName,
+                                  })
+                                }
+                                className="inline-flex ml-2 items-center rounded-[2px] bg-accent-soft px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-text cursor-pointer hover:bg-accent/hover:text-accent"
+                              >
+                                [来源 #{node.sourceAnswerId.slice(-6)}]
+                              </button>
+                            )}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-
-                  <h3 className="mt-3 text-[17px] font-semibold leading-7 text-ink">
-                    {node.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-ink-subtle">{node.summary}</p>
-
-                  <div className="mt-4 space-y-2">
-                    {node.evidenceRefs.map((ref, idx) => (
-                      <div key={idx} className="flex items-start gap-2">
-                        <span className="font-mono text-[10px] text-muted">&gt;</span>
-                        <p className="text-xs leading-5 text-muted">
-                          {ref.quote.slice(0, 120)}
-                          {ref.quote.length > 120 ? "…" : ""}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
