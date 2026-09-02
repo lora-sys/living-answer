@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -22,3 +27,11 @@ jobs:
       - run: vp check
       - run: vp test
       - run: vp build
+      - name: Verify production build artifacts
+        run: |
+          test -f dist/server/server.js
+          test -f dist/client/index.html || test -d dist/client/assets
+          if grep -R --include='*.js' -E '(sk-[A-Za-z0-9]{16,}|ZHIHU_ACCESS_SECRET=|OPENAI_API_KEY=)' dist; then
+            echo 'Potential secret leaked into build output' >&2
+            exit 1
+          fi
