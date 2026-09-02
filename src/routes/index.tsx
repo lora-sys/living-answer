@@ -119,6 +119,7 @@ function QuestionThreadEntry() {
       const result = await boundSearch({ data: { query } }).catch(() => null);
       if (result) {
         setSearchResult(result as SearchAnswerCandidatesResponse);
+        setSearchLoading(false);
         return result as SearchAnswerCandidatesResponse;
       }
       setSearchResult({
@@ -126,7 +127,6 @@ function QuestionThreadEntry() {
         message: "搜索失败，请稍后再试。",
       } as SearchAnswerCandidatesResponse);
       return null;
-      setSearchLoading(false);
     },
     [boundSearch],
   );
@@ -312,10 +312,22 @@ function QuestionThreadEntry() {
     <main className="min-h-screen bg-paper pb-20 text-ink">
       {/* Hero */}
       <header className="relative overflow-hidden bg-paper bg-halftone pb-14 pt-10 sm:pb-20 sm:pt-14">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-6 top-10 hidden h-40 w-40 rounded-full halftone-patch sm:block" />
-        <div aria-hidden="true" className="pointer-events-none absolute -left-3 bottom-10 block-black h-14 w-14 sm:block" />
-        <div aria-hidden="true" className="pointer-events-none absolute right-[8%] top-[18%] hidden h-2 w-28 bar-black sm:block" />
-        <div aria-hidden="true" className="pointer-events-none absolute -right-2 bottom-0 hidden h-16 w-16 contour-lines sm:block" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-6 top-10 hidden h-40 w-40 rounded-full halftone-patch sm:block"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-3 bottom-10 block-black h-14 w-14 sm:block"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[8%] top-[18%] hidden h-2 w-28 bar-black sm:block"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-2 bottom-0 hidden h-16 w-16 contour-lines sm:block"
+        />
 
         <div className="relative z-10 mx-auto w-full max-w-[1120px] px-5 sm:px-8">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
@@ -329,14 +341,19 @@ function QuestionThreadEntry() {
                 <br />
                 <span className="relative inline-block">
                   <span className="relative z-10">串成学习线</span>
-                  <span className="absolute bottom-1 left-0 right-0 h-3 bg-accent/15 -z-0" aria-hidden="true" />
+                  <span
+                    className="absolute bottom-1 left-0 right-0 h-3 bg-accent/15 -z-0"
+                    aria-hidden="true"
+                  />
                 </span>
               </h1>
               <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
                 输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程
               </p>
               <p className="mt-2 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
-              <p className="mt-5 max-w-[56ch] text-lg leading-8 text-ink-subtle">{PRODUCT_TAGLINE}</p>
+              <p className="mt-5 max-w-[56ch] text-lg leading-8 text-ink-subtle">
+                {PRODUCT_TAGLINE}
+              </p>
             </div>
 
             {/* Right column — framed input card */}
@@ -362,13 +379,17 @@ function QuestionThreadEntry() {
                       value={questionText}
                       onChange={(e) => setQuestionText(e.target.value)}
                       placeholder="例如：React 19 还值得学吗"
-                      disabled={clarificationLoading || searchLoading || generation.status === "loading"}
+                      disabled={
+                        clarificationLoading || searchLoading || generation.status === "loading"
+                      }
                       autoComplete="off"
                       className="h-14 flex-1 border-2 border-rule-strong bg-white px-4 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
                     />
                     <button
                       type="submit"
-                      disabled={clarificationLoading || searchLoading || generation.status === "loading"}
+                      disabled={
+                        clarificationLoading || searchLoading || generation.status === "loading"
+                      }
                       className="inline-flex h-14 shrink-0 items-center justify-center border-2 border-accent bg-accent px-7 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       {clarificationLoading ? "正在澄清…" : "开始 →"}
@@ -523,14 +544,8 @@ function QuestionThreadEntry() {
                         className="bg-rule"
                         style={{ width: i % 2 === 0 ? "75%" : "60%", height: 14 }}
                       />
-                      <div
-                        className="bg-rule/60"
-                        style={{ width: "90%", height: 12 }}
-                      />
-                      <div
-                        className="bg-rule/40"
-                        style={{ width: "55%", height: 12 }}
-                      />
+                      <div className="bg-rule/60" style={{ width: "90%", height: 12 }} />
+                      <div className="bg-rule/40" style={{ width: "55%", height: 12 }} />
                     </div>
                   </div>
                 ))}
@@ -705,9 +720,13 @@ function QuestionThreadEntry() {
                   <span className="font-mono text-[10px] text-muted">{thread.yearRange}</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold leading-7 text-ink">{thread.title}</h3>
-                <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">{thread.description}</p>
+                <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">
+                  {thread.description}
+                </p>
                 <div className="mt-5 flex items-center justify-between border-t border-rule pt-4 font-mono text-[11px] text-muted">
-                  <span>{thread.stageCount} 段 · {thread.nodeCount} 个学习点</span>
+                  <span>
+                    {thread.stageCount} 段 · {thread.nodeCount} 个学习点
+                  </span>
                   <span className="text-ink transition-transform duration-150 group-hover:translate-x-1">
                     进入 →
                   </span>

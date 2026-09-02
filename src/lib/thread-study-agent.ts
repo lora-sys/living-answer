@@ -85,7 +85,10 @@ const MAX_ANSWER_LENGTH = 2000;
 
 const validateInput = (
   input: ThreadAgentInput,
-): { readonly question: string; readonly conversation: readonly ThreadAgentConversationTurn[] } | null => {
+): {
+  readonly question: string;
+  readonly conversation: readonly ThreadAgentConversationTurn[];
+} | null => {
   if (typeof input?.question !== "string") return null;
   const question = input.question.trim();
   if (question === "" || question.length > MAX_QUESTION_LENGTH) return null;
@@ -200,9 +203,10 @@ const validateAction = (
   if (typeof type !== "string" || label === "" || label.length > 40) return null;
   if (hasBannedWording(label)) return null;
 
-  const detail = typeof value.detail === "string" && value.detail.trim() !== ""
-    ? value.detail.trim()
-    : undefined;
+  const detail =
+    typeof value.detail === "string" && value.detail.trim() !== ""
+      ? value.detail.trim()
+      : undefined;
   if (detail !== undefined && detail.length > 500) return null;
 
   if (type === "focus_source") {
@@ -274,9 +278,8 @@ const parseAgentResult = (
     const answerId =
       typeof ref.answerId === "string" && answerIdMap.has(ref.answerId)
         ? ref.answerId
-        : artifact.timelineStages.find(
-            (stage) => stage.excerpt.fingerprint === excerptFingerprint,
-          )?.answerId;
+        : artifact.timelineStages.find((stage) => stage.excerpt.fingerprint === excerptFingerprint)
+            ?.answerId;
     if (!answerId) return null;
     evidenceRefs.push({
       answerId,

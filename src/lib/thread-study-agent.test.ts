@@ -79,7 +79,9 @@ describe("thread study agent", () => {
     });
     const chat = vi.fn(() => Effect.succeed(response));
     const result = await Effect.runPromise(
-      askThreadAgent(makeDeps(response, chat))(makeArtifact(), { question: "这个知识点怎么变化？" }),
+      askThreadAgent(makeDeps(response, chat))(makeArtifact(), {
+        question: "这个知识点怎么变化？",
+      }),
     );
 
     expect(result.status).toBe("grounded");

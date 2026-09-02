@@ -275,9 +275,7 @@ const makeFallbackNodes = (
   return nodes;
 };
 
-const makeFallbackLearningGuide = (
-  timelineStages: readonly TimelineStage[],
-): LearningGuide => ({
+const makeFallbackLearningGuide = (timelineStages: readonly TimelineStage[]): LearningGuide => ({
   overview: {
     headline: "来源摘录学习线",
     summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
@@ -353,10 +351,7 @@ const validateLearningGuide = (
     return null;
   }
 
-  const overviewEvidence = validateGuideEvidence(
-    input.overview.evidenceRefs,
-    excerptCitationMap,
-  );
+  const overviewEvidence = validateGuideEvidence(input.overview.evidenceRefs, excerptCitationMap);
   if (!overviewEvidence) return null;
 
   if (!Array.isArray(input.stages) || input.stages.length !== timelineStages.length) return null;
@@ -497,12 +492,8 @@ export const synthesizeThread =
       }
 
       const learningGuide =
-        validateLearningGuide(
-          obj.guide,
-          input.timelineStages,
-          answerIdMap,
-          excerptCitationMap,
-        ) ?? makeFallbackLearningGuide(input.timelineStages);
+        validateLearningGuide(obj.guide, input.timelineStages, answerIdMap, excerptCitationMap) ??
+        makeFallbackLearningGuide(input.timelineStages);
 
       return { _tag: "success", nodes: validNodes, learningGuide };
     });

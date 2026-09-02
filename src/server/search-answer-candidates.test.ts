@@ -80,10 +80,7 @@ const makeFailingStorePair = (): FakeStorePair => ({
   saved: [],
 });
 
-const makeDeps = (
-  secret?: string,
-  storePair?: FakeStorePair,
-): SearchAnswerCandidatesDeps => ({
+const makeDeps = (secret?: string, storePair?: FakeStorePair): SearchAnswerCandidatesDeps => ({
   getSecret: vi.fn(() => secret),
   createStore: vi.fn(async () => {
     if (storePair) return storePair.store;
@@ -456,5 +453,4 @@ describe("search-answer-candidates", () => {
       }
     });
   });
-
 });

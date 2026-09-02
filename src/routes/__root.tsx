@@ -79,10 +79,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           aria-label="移动端导航"
           className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t-2 border-rule-strong bg-paper/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] pt-2 sm:hidden"
         >
-          {([
-            { to: "/", label: "首页" },
-            { to: "/landing", label: "了解" },
-          ] as const).map((item) => (
+          {(
+            [
+              { to: "/", label: "首页" },
+              { to: "/landing", label: "了解" },
+            ] as const
+          ).map((item) => (
             <Link
               key={item.to}
               to={item.to}

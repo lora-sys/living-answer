@@ -48,13 +48,17 @@ export const createRankAnswerCandidatesHandler =
   (deps: RankAnswerCandidatesDeps) =>
   async (input: RankAnswerCandidatesInput): Promise<RankAnswerCandidatesResponse> => {
     const question = typeof input?.question === "string" ? input.question.trim() : "";
-    const refinedQuery =
-      typeof input?.refinedQuery === "string" ? input.refinedQuery.trim() : "";
+    const refinedQuery = typeof input?.refinedQuery === "string" ? input.refinedQuery.trim() : "";
     const learningIntent =
       typeof input?.learningIntent === "string" ? input.learningIntent.trim() : "";
     const candidates = Array.isArray(input?.candidates) ? input.candidates : [];
 
-    if (question === "" || refinedQuery === "" || learningIntent === "" || candidates.length === 0) {
+    if (
+      question === "" ||
+      refinedQuery === "" ||
+      learningIntent === "" ||
+      candidates.length === 0
+    ) {
       return {
         success: false as const,
         code: "INVALID_REQUEST",

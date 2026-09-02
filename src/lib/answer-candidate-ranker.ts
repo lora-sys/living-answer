@@ -81,12 +81,9 @@ const isValidRole = (value: unknown): value is CandidateRole =>
     value === "current_usage" ||
     value === "unclear");
 
-const validateInput = (
-  input: RankAnswerCandidatesInput,
-): RankAnswerCandidatesInput | null => {
+const validateInput = (input: RankAnswerCandidatesInput): RankAnswerCandidatesInput | null => {
   const question = typeof input?.question === "string" ? input.question.trim() : "";
-  const refinedQuery =
-    typeof input?.refinedQuery === "string" ? input.refinedQuery.trim() : "";
+  const refinedQuery = typeof input?.refinedQuery === "string" ? input.refinedQuery.trim() : "";
   const learningIntent =
     typeof input?.learningIntent === "string" ? input.learningIntent.trim() : "";
 

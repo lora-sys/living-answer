@@ -8,11 +8,11 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 ## 产品表面
 
-| 路径                    | 角色                                                        |
-| ----------------------- | ----------------------------------------------------------- |
-| `/`                     | 问题学习线程：输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程 |
-| `/thread/$threadId`     | 线程阅读器：查看完整学习线程，含时间线、学习节点和来源      |
-| `/landing`              | 产品故事：展示理念与三条真实学习线程                        |
+| 路径                | 角色                                                        |
+| ------------------- | ----------------------------------------------------------- |
+| `/`                 | 问题学习线程：输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程 |
+| `/thread/$threadId` | 线程阅读器：查看完整学习线程，含时间线、学习节点和来源      |
+| `/landing`          | 产品故事：展示理念与三条真实学习线程                        |
 
 ## 技术架构
 
@@ -37,48 +37,48 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 #### 调色板
 
-| 角色 | CSS 变量 | 色值 | 用途 |
-| ----------- | -------------------------- | -------- | -------- |
-| 纸张 1 | `--color-paper` | `#e6e7e8` | 页面主背景，浅灰 |
-| 纸张 2 | `--color-paper-2` | `#f4f4f2` | 提升区域，浅暖 |
-| 纸张 3 | `--color-paper-3` | `#ffffff` | 卡片/面板，纯白 |
-| 墨色 | `--color-ink` | `#0b0b0d` | 主文字 |
-| 墨色副 | `--color-ink-subtle` | `#4a4a5f` | 次要文字 |
-| 淡化 | `--color-muted` | `#6c6f75` | 辅助文字/标签 |
-|  faint | `--color-faint` | `#9a9da3` | 时间戳/元信息 |
-| 边界线 | `--color-rule` | `#c9c9c4` | 柔线/分隔 |
-| 边界线强 | `--color-rule-strong` | `#0b0b0d` | 边界线（加粗） |
-| 强调蓝 | `--color-accent` | `#1e3fd8` | 唯一品牌色 |
-| 强调蓝悬停 | `--color-accent-hover` | `#1626b8` | hover |
-| 强调蓝激活 | `--color-accent-active` | `#0f1d8f` | active / pressed |
-| 强调蓝焦点 | `--color-accent-focus` | `#5886ff` | focus-visible |
-| 更新琥珀 | `--color-update` | `#b45309` | 更新状态 |
-| 更新琥珀软 | `--color-update-soft` | `rgba(180, 83, 9, 0.06)` | 更新背景 |
-| 成功绿 | `--color-success` | `#15803d` | 成功状态 |
-| 成功绿软 | `--color-success-soft` | `rgba(21, 128, 61, 0.08)` | 成功背景 |
-| 危险红 | `--color-danger` | `#b42318` | 错误/危险 |
-| 信息蓝 | `--color-info` | `#1746ff` | 信息状态 |
-| 深色 (on-accent) | `--color-on-accent` | `#ffffff` | 蓝色背景上的文字 |
+| 角色             | CSS 变量                | 色值                      | 用途             |
+| ---------------- | ----------------------- | ------------------------- | ---------------- |
+| 纸张 1           | `--color-paper`         | `#e6e7e8`                 | 页面主背景，浅灰 |
+| 纸张 2           | `--color-paper-2`       | `#f4f4f2`                 | 提升区域，浅暖   |
+| 纸张 3           | `--color-paper-3`       | `#ffffff`                 | 卡片/面板，纯白  |
+| 墨色             | `--color-ink`           | `#0b0b0d`                 | 主文字           |
+| 墨色副           | `--color-ink-subtle`    | `#4a4a5f`                 | 次要文字         |
+| 淡化             | `--color-muted`         | `#6c6f75`                 | 辅助文字/标签    |
+| faint            | `--color-faint`         | `#9a9da3`                 | 时间戳/元信息    |
+| 边界线           | `--color-rule`          | `#c9c9c4`                 | 柔线/分隔        |
+| 边界线强         | `--color-rule-strong`   | `#0b0b0d`                 | 边界线（加粗）   |
+| 强调蓝           | `--color-accent`        | `#1e3fd8`                 | 唯一品牌色       |
+| 强调蓝悬停       | `--color-accent-hover`  | `#1626b8`                 | hover            |
+| 强调蓝激活       | `--color-accent-active` | `#0f1d8f`                 | active / pressed |
+| 强调蓝焦点       | `--color-accent-focus`  | `#5886ff`                 | focus-visible    |
+| 更新琥珀         | `--color-update`        | `#b45309`                 | 更新状态         |
+| 更新琥珀软       | `--color-update-soft`   | `rgba(180, 83, 9, 0.06)`  | 更新背景         |
+| 成功绿           | `--color-success`       | `#15803d`                 | 成功状态         |
+| 成功绿软         | `--color-success-soft`  | `rgba(21, 128, 61, 0.08)` | 成功背景         |
+| 危险红           | `--color-danger`        | `#b42318`                 | 错误/危险        |
+| 信息蓝           | `--color-info`          | `#1746ff`                 | 信息状态         |
+| 深色 (on-accent) | `--color-on-accent`     | `#ffffff`                 | 蓝色背景上的文字 |
 
 #### 排版
 
-| 用途 | Tailwind 类 | 说明 |
-|-----------|-----------|------|
-| 显示字体 | `font-display` | 粗 grotesque 系统无衬线：Space Grotesk / DM Sans / Noto Sans SC / ui-sans-serif |
-| 等宽标签 | `font-mono text-[11px] uppercase tracking-[0.12em]` | 仅用于 ID/日期/状态/编号 |
-| 标题 1 | `font-display text-\\[32px\\] leading-\\[38px\\]` + `sm:text-\\[52px\\]` | 页面标题 |
-| 正文 | `text-base leading-7 sm:text-lg sm:leading-8` | 舒适中文行高 |
-| 辅助 | `text-sm leading-6 text-ink-subtle` | 说明/描述 |
+| 用途     | Tailwind 类                                                              | 说明                                                                            |
+| -------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| 显示字体 | `font-display`                                                           | 粗 grotesque 系统无衬线：Space Grotesk / DM Sans / Noto Sans SC / ui-sans-serif |
+| 等宽标签 | `font-mono text-[11px] uppercase tracking-[0.12em]`                      | 仅用于 ID/日期/状态/编号                                                        |
+| 标题 1   | `font-display text-\\[32px\\] leading-\\[38px\\]` + `sm:text-\\[52px\\]` | 页面标题                                                                        |
+| 正文     | `text-base leading-7 sm:text-lg sm:leading-8`                            | 舒适中文行高                                                                    |
+| 辅助     | `text-sm leading-6 text-ink-subtle`                                      | 说明/描述                                                                       |
 
 #### 间距
 
-| 用途 | Tailwind 类 |
-|-------|------------|
-| 页面容器 | `max-w-[1120px] mx-auto` |
-| 内容区域 | `max-w-5xl` |
-| 面板宽度 | `w-[380px]`（桌面端侧栏） |
+| 用途     | Tailwind 类                              |
+| -------- | ---------------------------------------- |
+| 页面容器 | `max-w-[1120px] mx-auto`                 |
+| 内容区域 | `max-w-5xl`                              |
+| 面板宽度 | `w-[380px]`（桌面端侧栏）                |
 | 单元间距 | `space-y-6` 移动端 / `space-y-12` 桌面端 |
-| 卡片内部 | `px-5 py-5 sm:px-6` |
+| 卡片内部 | `px-5 py-5 sm:px-6`                      |
 
 #### 组件规则
 
@@ -108,12 +108,12 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 #### 交互状态
 
-| 状态 | 效果 |
-| ----------- | -------- |
-| Hover（按钮） | 硬阴影放大 + 颜色微变 |
-| Active（按钮） | `translate-y-px` + 背景色加深 |
-| Focus-visible | `outline-2 outline-offset-2 outline-accent` |
-| 悬停（卡片） | `shadow-[var(--shadow-card)]` → `shadow-[3px_3px_0_#000]` |
+| 状态           | 效果                                                      |
+| -------------- | --------------------------------------------------------- |
+| Hover（按钮）  | 硬阴影放大 + 颜色微变                                     |
+| Active（按钮） | `translate-y-px` + 背景色加深                             |
+| Focus-visible  | `outline-2 outline-offset-2 outline-accent`               |
+| 悬停（卡片）   | `shadow-[var(--shadow-card)]` → `shadow-[3px_3px_0_#000]` |
 
 #### 辅助功能
 
@@ -125,11 +125,11 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 #### 响应式断点
 
-| 断点 | Tailwind 前缀 | 典型变化 |
-| --------- |---------------| -------- |
-| 移动端（默认） | 无前缀 | 单列、紧凑间距 |
-| 平板/桌面 | `sm:` | 更大字号、展开延伸间距 |
-| 桌面 | `lg:` | 侧栏布局切换（flex-row） |
+| 断点           | Tailwind 前缀 | 典型变化                 |
+| -------------- | ------------- | ------------------------ |
+| 移动端（默认） | 无前缀        | 单列、紧凑间距           |
+| 平板/桌面      | `sm:`         | 更大字号、展开延伸间距   |
+| 桌面           | `lg:`         | 侧栏布局切换（flex-row） |
 
 ## 域模型
 
@@ -170,14 +170,14 @@ SQLite `thread_artifacts` 表：
 
 ### AI 学习桥角色令牌
 
-| 学习桥角色 | 中文标签 | 语义 |
-| ---------- | -------- | ---- |
-| `baseline` | 基础认知 | 建立问题、定义或基础事实 |
-| `correction` | 边界修正 | 修正旧前提、缺失条件或过度概括 |
-| `extension` | 深化扩展 | 补充原理、工程细节或跨场景延伸 |
-| `counterpoint` | 不同视角 | 保留真实分歧，不强行合并观点 |
-| `current_usage` | 当前用法 | 给出今天可直接验证的用法 |
-| `unclear` | 待确认 | 来源不足、匹配不明或证据冲突 |
+| 学习桥角色      | 中文标签 | 语义                           |
+| --------------- | -------- | ------------------------------ |
+| `baseline`      | 基础认知 | 建立问题、定义或基础事实       |
+| `correction`    | 边界修正 | 修正旧前提、缺失条件或过度概括 |
+| `extension`     | 深化扩展 | 补充原理、工程细节或跨场景延伸 |
+| `counterpoint`  | 不同视角 | 保留真实分歧，不强行合并观点   |
+| `current_usage` | 当前用法 | 给出今天可直接验证的用法       |
+| `unclear`       | 待确认   | 来源不足、匹配不明或证据冲突   |
 
 ### 学习节点颜色编码
 

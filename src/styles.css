@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Space Grotesk", "DM Sans", "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-display:
+    "Space Grotesk", "DM Sans", "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 
   --font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 
@@ -119,8 +120,8 @@
   position: absolute;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(30, 63, 216, 0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 63, 216, 0.10) 1px, transparent 1px);
+    linear-gradient(rgba(30, 63, 216, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 63, 216, 0.1) 1px, transparent 1px);
   background-size: 24px 24px;
   z-index: 0;
   user-select: none;

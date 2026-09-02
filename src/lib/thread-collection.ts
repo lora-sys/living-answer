@@ -23,10 +23,7 @@ export const readCollectedThreads = (storage: TextStorage): readonly string[] =>
   }
 };
 
-export const saveCollectedThread = (
-  threadId: string,
-  storage: TextStorage,
-): readonly string[] => {
+export const saveCollectedThread = (threadId: string, storage: TextStorage): readonly string[] => {
   if (!/^[0-9a-f]{16}$/.test(threadId)) {
     return readCollectedThreads(storage);
   }
@@ -63,7 +60,9 @@ const quoteText = (value: string): string => `> ${value.replace(/\n/g, "\n> ")}`
 
 export const buildThreadMarkdown = (artifact: QuestionLearningThread): string => {
   const stageMap = new Map(artifact.timelineStages.map((stage) => [stage.answerId, stage]));
-  const guideStageMap = new Map(artifact.learningGuide.stages.map((stage) => [stage.answerId, stage]));
+  const guideStageMap = new Map(
+    artifact.learningGuide.stages.map((stage) => [stage.answerId, stage]),
+  );
 
   const lines: string[] = [
     `# ${artifact.question}`,
@@ -84,9 +83,8 @@ export const buildThreadMarkdown = (artifact: QuestionLearningThread): string =>
 
   for (const ref of artifact.learningGuide.overview.evidenceRefs) {
     const stage = stageMap.get(
-      artifact.timelineStages.find(
-        (stage) => stage.excerpt.fingerprint === ref.excerptFingerprint,
-      )?.answerId ?? "",
+      artifact.timelineStages.find((stage) => stage.excerpt.fingerprint === ref.excerptFingerprint)
+        ?.answerId ?? "",
     );
     if (!stage) continue;
     lines.push(
@@ -156,5 +154,8 @@ export const buildThreadMarkdown = (artifact: QuestionLearningThread): string =>
     );
   }
 
-  return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
+  return `${lines
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd()}\n`;
 };

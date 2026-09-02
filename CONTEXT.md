@@ -27,12 +27,12 @@ Living Answer 是一个问题学习线程生成器。用户在唯一主入口输
 
 以下变量必须设置在 `.env` 中（本地未提供时 CI 会设置）：
 
-| 变量                  | 用途                                                 |
-| --------------------- | ---------------------------------------------------- |
-| `ZHIHU_ACCESS_SECRET` | Zhihu API 访问密钥 |
+| 变量                  | 用途                       |
+| --------------------- | -------------------------- |
+| `ZHIHU_ACCESS_SECRET` | Zhihu API 访问密钥         |
 | `OPENAI_BASE_URL`     | 兼容 OpenAI 的模型服务地址 |
-| `OPENAI_API_KEY`      | 模型服务密钥 |
-| `OPENAI_MODEL`        | 兼容 OpenAI 的模型名称 |
+| `OPENAI_API_KEY`      | 模型服务密钥               |
+| `OPENAI_MODEL`        | 兼容 OpenAI 的模型名称     |
 
 ## 数据流
 

@@ -312,9 +312,7 @@ const failure = (reason: ThreadArtifactFailureReason): ThreadArtifactFailure => 
   reason,
 });
 
-const makeFallbackLearningGuide = (
-  stages: readonly TimelineStage[],
-): LearningGuide => ({
+const makeFallbackLearningGuide = (stages: readonly TimelineStage[]): LearningGuide => ({
   overview: {
     headline: "来源摘录学习线",
     summary: "当前线程保留的是选中回答的公开摘录。AI 桥接暂不可用时，这些摘录仍可作为学习来源。",
@@ -346,9 +344,7 @@ const validateLearningGuide = (
     stages.map((stage) => [stage.excerpt.fingerprint, stage.excerpt.excerpt]),
   );
 
-  const validateEvidenceRefs = (
-    refs: readonly EvidenceRefInput[],
-  ): EvidenceRef[] | null => {
+  const validateEvidenceRefs = (refs: readonly EvidenceRefInput[]): EvidenceRef[] | null => {
     if (!Array.isArray(refs) || refs.length === 0) return null;
     const output: EvidenceRef[] = [];
     for (const ref of refs) {

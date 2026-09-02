@@ -135,11 +135,11 @@ describe("thread-synthesis synthesizeThread", () => {
     const outcome = await runWorkflow(baseDeps(chat), makeInput());
     expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
-    const { result } = outcome;
-    expect(result.nodes).toHaveLength(1);
-    expect(result.learningGuide.stages[0].answerId).toBe("100");
-    expect(result.learningGuide.stages[0].role).toBe("baseline");
-    expect(result.nodes[0].kind).toBe("evolution");
+      const { result } = outcome;
+      expect(result.nodes).toHaveLength(1);
+      expect(result.learningGuide.stages[0].answerId).toBe("100");
+      expect(result.learningGuide.stages[0].role).toBe("baseline");
+      expect(result.nodes[0].kind).toBe("evolution");
       expect(result.nodes[0].title).toBe(validNodePayload.title);
       expect(result.nodes[0].sourceAnswerId).toBe("100");
       expect(result.nodes[0].uncertainty).toBe(0.5);

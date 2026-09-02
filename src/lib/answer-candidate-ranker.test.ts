@@ -1,10 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import {
-  rankAnswerCandidates,
-  type CandidateRankingDeps,
-} from "./answer-candidate-ranker";
+import { rankAnswerCandidates, type CandidateRankingDeps } from "./answer-candidate-ranker";
 
 const makeInput = () => ({
   question: "Flexbox 和 Grid 怎么选？",
@@ -26,17 +23,23 @@ const makeInput = () => ({
   ],
 });
 
-const makeDeps = (
-  response: string,
-  complete = vi.fn(() => Effect.succeed(response)),
-) => ({ model: "test-model", chat: { complete } }) satisfies CandidateRankingDeps;
+const makeDeps = (response: string, complete = vi.fn(() => Effect.succeed(response))) =>
+  ({ model: "test-model", chat: { complete } }) satisfies CandidateRankingDeps;
 
 const validResponse = () =>
   JSON.stringify({
     summary: "The candidates cover both layout systems.",
     rankings: [
-      { answerId: "100", role: "baseline", reason: "This excerpt introduces Grid's core use case." },
-      { answerId: "200", role: "extension", reason: "This excerpt explains Flexbox's continuing use." },
+      {
+        answerId: "100",
+        role: "baseline",
+        reason: "This excerpt introduces Grid's core use case.",
+      },
+      {
+        answerId: "200",
+        role: "extension",
+        reason: "This excerpt explains Flexbox's continuing use.",
+      },
     ],
     confidence: 0.8,
   });
@@ -57,9 +60,7 @@ describe("answer candidate ranker", () => {
   it("fails for a missing candidate ranking", async () => {
     const response = JSON.stringify({
       summary: "Only one candidate explained.",
-      rankings: [
-        { answerId: "100", role: "baseline", reason: "Grid is introduced." },
-      ],
+      rankings: [{ answerId: "100", role: "baseline", reason: "Grid is introduced." }],
       confidence: 0.7,
     });
     const exit = await Effect.runPromiseExit(rankAnswerCandidates(makeDeps(response))(makeInput()));
@@ -70,10 +71,10 @@ describe("answer candidate ranker", () => {
   it("rejects invalid input without calling the model", async () => {
     const chat = vi.fn(() => Effect.succeed(validResponse()));
     const exit = await Effect.runPromiseExit(
-    rankAnswerCandidates({ model: "test-model", chat: { complete: chat } })({
-      ...makeInput(),
-      candidates: [],
-    }),
+      rankAnswerCandidates({ model: "test-model", chat: { complete: chat } })({
+        ...makeInput(),
+        candidates: [],
+      }),
     );
     expect(exit._tag).toBe("Failure");
     expect(chat).not.toHaveBeenCalled();

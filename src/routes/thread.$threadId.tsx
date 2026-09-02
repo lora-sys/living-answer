@@ -210,9 +210,7 @@ function ThreadView() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !response?.success) return;
-    setCollected(
-      readCollectedThreads(window.localStorage).includes(response.artifact.threadId),
-    );
+    setCollected(readCollectedThreads(window.localStorage).includes(response.artifact.threadId));
   }, [response]);
 
   const collectThread = useCallback(() => {
@@ -229,9 +227,7 @@ function ThreadView() {
       if (!response?.success) return;
       const artifact = response.artifact;
       const content =
-        format === "markdown"
-          ? buildThreadMarkdown(artifact)
-          : JSON.stringify(artifact, null, 2);
+        format === "markdown" ? buildThreadMarkdown(artifact) : JSON.stringify(artifact, null, 2);
       const filename = `living-answer-${artifact.threadId}.${format === "markdown" ? "md" : "json"}`;
       const blob = new Blob([content], {
         type: format === "markdown" ? "text/markdown;charset=utf-8" : "application/json",
@@ -572,7 +568,10 @@ function ThreadView() {
 
                       <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-rule pt-4">
                         <span className="text-xs text-muted">
-                          作者 <span className="font-medium text-ink-subtle">{stage.authorDisplayName}</span>
+                          作者{" "}
+                          <span className="font-medium text-ink-subtle">
+                            {stage.authorDisplayName}
+                          </span>
                         </span>
                         {nodeKinds && (
                           <span className="font-mono text-[10px] text-muted">

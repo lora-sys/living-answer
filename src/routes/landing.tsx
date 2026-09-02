@@ -28,11 +28,26 @@ function Landing() {
       {/* ═══ Asymmetric collage hero ════════════════════════════════════ */}
       <header className="relative overflow-hidden bg-paper bg-halftone pb-14 pt-12 sm:pb-20 sm:pt-16">
         {/* Collage geometry: blue block, halftone, black circle, contour */}
-        <div aria-hidden="true" className="pointer-events-none absolute bottom-[8%] right-[3%] hidden h-24 w-36 lg:block block-blue" />
-        <div aria-hidden="true" className="pointer-events-none absolute right-[6%] top-[14%] hidden lg:block h-44 w-44 rounded-full halftone-patch" />
-        <div aria-hidden="true" className="pointer-events-none absolute right-[20%] bottom-[10%] hidden lg:block block-black h-20 w-20 rounded-full" />
-        <div aria-hidden="true" className="pointer-events-none absolute left-[40%] top-[8%] hidden lg:block h-2 w-36 bar-black" />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden lg:block contour-lines" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[8%] right-[3%] hidden h-24 w-36 lg:block block-blue"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[6%] top-[14%] hidden lg:block h-44 w-44 rounded-full halftone-patch"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[20%] bottom-[10%] hidden lg:block block-black h-20 w-20 rounded-full"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-[40%] top-[8%] hidden lg:block h-2 w-36 bar-black"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 hidden lg:block contour-lines"
+        />
 
         <div className="relative z-10 mx-auto w-full max-w-[1120px] px-5 sm:px-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-14 lg:items-center">
@@ -49,11 +64,16 @@ function Landing() {
                 <br />
                 <span className="relative inline-block">
                   <span className="relative z-10">串成学习线</span>
-                  <span className="absolute bottom-1 left-0 right-0 h-[0.15em] bg-accent/15 -z-0" aria-hidden="true" />
+                  <span
+                    className="absolute bottom-1 left-0 right-0 h-[0.15em] bg-accent/15 -z-0"
+                    aria-hidden="true"
+                  />
                 </span>
               </h1>
               <p className="mt-6 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
-              <p className="mt-6 max-w-[56ch] text-lg leading-8 text-ink-subtle">{PRODUCT_TAGLINE}</p>
+              <p className="mt-6 max-w-[56ch] text-lg leading-8 text-ink-subtle">
+                {PRODUCT_TAGLINE}
+              </p>
               <p className="mt-3 max-w-[48ch] text-sm leading-6 text-muted">
                 真实回答分散在知乎的不同年份。AI 帮你澄清意图，并把它们串成能理解的知识路径。
               </p>
@@ -93,14 +113,16 @@ function Landing() {
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">时间线</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+                        时间线
+                      </p>
                       <p className="mt-1 text-sm text-ink">{featuredThread.yearRange}</p>
                     </div>
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">节点</p>
-                      <p className="mt-1 text-sm text-ink">
-                        {featuredThread.nodeCount} 个
+                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+                        节点
                       </p>
+                      <p className="mt-1 text-sm text-ink">{featuredThread.nodeCount} 个</p>
                     </div>
                   </div>
                   <div className="mt-5">

@@ -3,10 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { makeSqliteThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
-import {
-  askThreadAgent,
-  type ThreadAgentResult,
-} from "../lib/thread-study-agent";
+import { askThreadAgent, type ThreadAgentResult } from "../lib/thread-study-agent";
 import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
 
 // ── JSON-safe response ──────────────────────────────────────────────────────

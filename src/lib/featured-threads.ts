@@ -33,8 +33,7 @@ export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
     threadId: "a8959e9f4fe2409c",
     label: "REACT RSC",
     title: "React Server Components 为什么重要？",
-    description:
-      "从服务器资源的利用动机，到序列化模型与客户端组件边界，理解 RSC 解决的真正问题。",
+    description: "从服务器资源的利用动机，到序列化模型与客户端组件边界，理解 RSC 解决的真正问题。",
     yearRange: "2023—2024",
     stageCount: 2,
     nodeCount: 2,
