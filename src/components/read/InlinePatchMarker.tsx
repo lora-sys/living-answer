@@ -27,17 +27,17 @@ export function InlinePatchMarker({
       type="button"
       data-paragraph-id={paragraphId}
       className={[
-        "inline-flex items-center rounded-[2px] border border-update/32 bg-update-soft",
+        "inline-flex items-center justify-center gap-1.5 border-2 border-update bg-update-soft",
         "min-h-11 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-update",
-        "cursor-pointer transition-colors duration-150 hover:border-update/56 active:translate-y-px",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        "cursor-pointer transition-all duration-120 hover:bg-update/15 hover:shadow-[3px_3px_0_var(--color-accent)] active:translate-y-px",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]",
       ].join(" ")}
       aria-expanded={isOpen}
       aria-controls={panelIds}
       aria-label={label}
       onClick={onClick}
     >
-      <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 bg-update" />
+      <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
       {label}
       <svg
         aria-hidden="true"

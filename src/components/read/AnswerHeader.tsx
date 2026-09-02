@@ -17,7 +17,7 @@ export function AnswerHeader({ fixture }: AnswerHeaderProps) {
   const freshnessNotice = buildFreshnessNotice(fixture.patches.length, latestAsOf(fixture));
 
   return (
-    <header className="mb-8 border-b border-rule pb-6">
+    <header className="mb-8 border-b-2 border-rule-strong pb-6">
       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
         ORIGINAL ARTIFACT
       </p>
@@ -31,7 +31,7 @@ export function AnswerHeader({ fixture }: AnswerHeaderProps) {
         href={source.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-block max-w-[68ch] break-words text-base font-medium text-accent-text transition-colors duration-150 hover:text-accent-active focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        className="mt-3 inline-block max-w-[68ch] break-words text-base font-medium text-accent transition-colors duration-150 hover:text-accent-active focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent underline underline-offset-2 decoration-accent/30 hover:decoration-accent"
       >
         {source.questionTitle}
       </a>

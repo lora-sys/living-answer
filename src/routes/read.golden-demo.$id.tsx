@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import { PATCH_TYPE_LABELS, formatDateYYYYMMDD } from "../lib/read-presentation";
-import { AnswerHeader } from "../components/read/AnswerHeader";
 import { InlinePatchMarker } from "../components/read/InlinePatchMarker";
 import { PatchPanel } from "../components/read/PatchPanel";
 
@@ -29,7 +28,6 @@ function ReadGoldenDemo() {
   const fixture = GOLDEN_DEMOS[id] as GoldenDemoFixture | undefined;
 
   if (!fixture) {
-    // Should not reach here due to beforeLoad guard, but defensive fallback
     throw notFound();
   }
 
@@ -92,7 +90,7 @@ function ReadGoldenDemo() {
       <div className="mx-auto w-full max-w-[1120px]">
         <Link
           to="/"
-          className="mb-8 inline-flex min-h-11 items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
+          className="mb-8 inline-flex min-h-11 items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
         >
           <span aria-hidden="true">&larr;</span> 返回首页
         </Link>
@@ -104,14 +102,22 @@ function ReadGoldenDemo() {
         )}
       >
         <article className="min-w-0 flex-1">
-          <AnswerHeader fixture={fixture} />
+          <div className="mb-6">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+              GOLDEN DEMO READ
+            </p>
+            <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[42px] sm:leading-[46px]">
+              {fixture.displayTitle}
+            </h1>
+            <p className="mt-3 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
+          </div>
 
-          <section className="rounded-[2px] border border-rule bg-paper-2 p-5 shadow-[var(--shadow-card)] sm:p-8">
+          <div className="border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-card)] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[42px] sm:leading-[46px]">
                 {fixture.displayTitle}
               </h1>
-              <span className="inline-flex shrink-0 items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
+              <span className="inline-flex shrink-0 items-center gap-2 border border-update bg-update-soft px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
                 <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
                 {fixture.patches.length} PATCHES
               </span>
@@ -132,12 +138,12 @@ function ReadGoldenDemo() {
                   type="button"
                   onClick={() => openPatch(patch.paragraphId, patch.id)}
                   className={[
-                    "inline-flex min-h-11 items-center rounded-[2px] border border-rule bg-paper px-3 py-2",
-                    "font-mono text-[11px] uppercase tracking-[0.06em] text-ink-subtle transition-colors duration-150 hover:border-accent/42 hover:text-ink",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    "inline-flex min-h-11 items-center justify-center gap-1.5 border border-rule-strong bg-paper-3 px-3 py-2",
+                    "font-mono text-[11px] uppercase tracking-[0.06em] text-ink-subtle transition-all duration-120 hover:border-accent hover:text-ink hover:shadow-[2px_2px_0_var(--color-accent)]",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]",
                   ].join(" ")}
                 >
-                  <span className="mr-1.5 font-mono text-[11px] text-muted">
+                  <span className="font-mono text-[11px] text-muted">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   {PATCH_TYPE_LABELS[patch.type]} · {formatDateYYYYMMDD(patch.asOf)}
@@ -159,7 +165,7 @@ function ReadGoldenDemo() {
                     className={[
                       "scroll-mt-24",
                       isOpen
-                        ? "rounded-[2px] border-l-2 border-update bg-paper-2 pl-4 pr-3 py-2"
+                        ? "border-l-[3px] border-l-update bg-paper-2 pl-4 pr-3 py-2"
                         : "",
                     ].join(" ")}
                   >
@@ -183,7 +189,7 @@ function ReadGoldenDemo() {
                 );
               })}
             </div>
-          </section>
+          </div>
         </article>
 
         {openParagraphId && (

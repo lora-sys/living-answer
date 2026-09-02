@@ -1,15 +1,17 @@
-import { formatDateFromUnixSeconds, formatTimestamp } from "../../lib/failure-messages";
+/**
+ * GeneralizedRealResultRead — rendering the read view from a generalized
+ * backend that returns ReadAnswerResponse.
+ *
+ * @module GeneralizedRealResultRead
+ */
+
 import type { AnswerExcerpt } from "../../lib/answer-excerpt";
-import type { PatchFeedbackReason } from "../../lib/patch-feedback";
-import type { PatchLifecycleStatus } from "../../lib/patch-lifecycle";
-import type { SubmitPatchFeedbackResponse } from "../../server/submit-patch-feedback";
-import type { ClarifyFeedbackResponse } from "../../server/clarify-feedback";
 import type {
   ReadAnswerAdvisoryDecision,
   ReadAnswerHistoryEntry,
-  ReadAnswerEvidenceSummary,
   ReadAnswerLifecycleSummary,
 } from "../../server/read-answer-response";
+import { formatDateFromUnixSeconds, formatTimestamp } from "../../lib/failure-messages";
 import { PatchFeedbackPanel } from "../read/PatchFeedbackPanel";
 
 export interface GeneralizedRealResultReadProps {
@@ -27,11 +29,11 @@ export interface GeneralizedRealResultReadProps {
     readonly answerId: string;
     readonly excerptFingerprint: string;
     readonly recordFingerprint?: string;
-    readonly reason: PatchFeedbackReason;
+    readonly reason: import("../../lib/patch-feedback").PatchFeedbackReason;
     readonly question?: string;
     readonly evidenceUrl?: string;
     readonly evidenceQuote?: string;
-  }) => Promise<SubmitPatchFeedbackResponse>;
+  }) => Promise<import("../../server/submit-patch-feedback").SubmitPatchFeedbackResponse>;
   readonly onClarify?: (input: {
     readonly questionId: string;
     readonly answerId: string;
@@ -40,111 +42,27 @@ export interface GeneralizedRealResultReadProps {
     readonly recordFingerprint?: string;
     readonly currentReason?: string;
     readonly conversation: readonly { readonly role: string; readonly content: string }[];
-  }) => Promise<ClarifyFeedbackResponse>;
+  }) => Promise<import("../../server/clarify-feedback").ClarifyFeedbackResponse>;
 }
 
-const LIFECYCLE_LABELS: Record<PatchLifecycleStatus, string> = {
-  VISIBLE: "当前可见",
-  DISPUTED: "已暂停",
-  SUPERSEDED: "已被新检查替代",
-  RESOLVED: "已解决",
-  WITHDRAWN: "已撤回",
-};
+// Advisory view
 
-function splitParagraphs(text: string): string[] {
-  const trimmed = text.trim();
-  if (trimmed === "") return [];
-  return trimmed
-    .split(/\n\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter((paragraph) => paragraph.length > 0);
-}
-
-function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
-  const paragraphs = splitParagraphs(excerpt.excerpt);
-
-  return (
-    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
-      <p className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-        搜索接口摘要摘录
-      </p>
-      <div className="space-y-4">
-        {paragraphs.map((paragraph, index) => (
-          <p
-            key={`${paragraph.slice(0, 20)}-${index}`}
-            className="text-base leading-7 text-ink sm:text-lg sm:leading-8"
-          >
-            {paragraph}
-          </p>
-        ))}
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-        <span>
-          问题 <span className="font-medium text-ink-subtle">#{excerpt.questionId}</span>
-        </span>
-        <span>
-          回答 <span className="font-medium text-ink-subtle">#{excerpt.answerId}</span>
-        </span>
-        <span>摘录时间 {formatTimestamp(excerpt.capturedAt)}</span>
-      </div>
-      <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
-        来源编辑时间 {formatDateFromUnixSeconds(excerpt.sourceEditTime)}
-      </p>
-    </div>
-  );
-}
-
-function EvidenceList({
-  evidenceSummary,
-}: {
-  readonly evidenceSummary: readonly ReadAnswerEvidenceSummary[];
-}) {
-  if (evidenceSummary.length === 0) return null;
-
-  return (
-    <div className="mt-4 space-y-2">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
-        参考来源
-      </p>
-      <ul className="space-y-1.5" role="list">
-        {evidenceSummary.map((evidence) => (
-          <li key={evidence.fingerprint}>
-            {evidence.sourceUrl ? (
-              <a
-                href={evidence.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-accent-text underline underline-offset-2 transition-colors duration-150 hover:text-accent-active"
-              >
-                {evidence.sourceLabel}
-              </a>
-            ) : (
-              <span className="text-sm text-ink-subtle">{evidence.sourceLabel}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function UpdateAdvisoryView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecision }) {
+function AdvisoryView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecision }) {
   if (advisory.verdict !== "UPDATE") return null;
 
   return (
-    <div className="rounded-[2px] border border-update/30 bg-update-soft px-5 py-5 sm:px-6">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-update/24 pb-4">
+    <div className="border-2 border-update bg-update-soft px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-2 border-update/30 pb-4">
         <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
           UPDATE
         </p>
-        <p className="text-sm font-medium text-ink-subtle">已有更新</p>
+        <p className="text-sm font-medium text-ink-subtle">前提变化提示</p>
       </div>
 
       {advisory.affectedWording !== undefined && (
-        <div className="mt-5 rounded-[2px] border border-update/24 bg-paper-2 px-4 py-3">
+        <div className="mt-5 border border-update/30 bg-paper-3 px-4 py-3 shadow-[var(--shadow-card)]">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-update">
-            受影响内容
+            原文受影响前提
           </p>
           <p className="mt-1 text-sm leading-6 text-ink">{advisory.affectedWording}</p>
         </div>
@@ -169,10 +87,32 @@ function UpdateAdvisoryView({ advisory }: { readonly advisory: ReadAnswerAdvisor
       )}
 
       <p className="mt-5 max-w-[68ch] text-base leading-7 text-ink">{advisory.reason}</p>
-      <EvidenceList evidenceSummary={advisory.evidenceSummary} />
+
+      {advisory.evidenceSummary.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+            参考来源
+          </p>
+          <ul className="space-y-1.5">
+            {advisory.evidenceSummary.map((ev) => (
+              <li key={ev.fingerprint}>
+                <a
+                  href={ev.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent underline underline-offset-2 transition-colors hover:text-accent-active"
+                >
+                  {ev.sourceLabel}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <p className="mt-4 text-xs text-muted">
-        此回答的前提已发生变化。上下文摘要作为辅助参考，请核对原始引用。
+        前提说明已经发生变化，建议结合最新信息综合判断。&nbsp;
+        AI 生成的上下文摘要作为辅助参考，内容由外部来源提供，请核对原始引用。
       </p>
     </div>
   );
@@ -182,7 +122,7 @@ function NoPatchView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecisi
   if (advisory.verdict !== "NO_PATCH") return null;
 
   return (
-    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+    <div className="border-2 border-rule bg-paper-3 px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
         可学习 · 暂无更新
       </p>
@@ -198,8 +138,8 @@ function UnknownView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecisi
   if (advisory.verdict !== "UNKNOWN") return null;
 
   return (
-    <div className="rounded-[2px] border border-accent/32 bg-accent-soft px-5 py-5 sm:px-6">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
+    <div className="border-2 border-accent bg-accent-soft px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
         UNKNOWN
       </p>
       <p className="mt-1 text-xs text-muted">状态待确定</p>
@@ -210,7 +150,7 @@ function UnknownView({ advisory }: { readonly advisory: ReadAnswerAdvisoryDecisi
 
 function DisputedPatchView() {
   return (
-    <div className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5 sm:px-6">
+    <div className="border-2 border-update bg-update-soft px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-2">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
           DISPUTED
@@ -234,9 +174,9 @@ function ClosedPatchView({ lifecycle }: { readonly lifecycle: ReadAnswerLifecycl
         : "这条提示已被撤回，当前不再显示。";
 
   return (
-    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+    <div className="border-2 border-rule bg-paper-3 px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
       <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-        {LIFECYCLE_LABELS[lifecycle.status]}
+        {lifecycle.status}
       </p>
       <p className="mt-4 text-base leading-7 text-ink-subtle">{copy}</p>
       <p className="mt-3 max-w-[68ch] break-words text-sm leading-6 text-muted">
@@ -244,6 +184,16 @@ function ClosedPatchView({ lifecycle }: { readonly lifecycle: ReadAnswerLifecycl
       </p>
     </div>
   );
+}
+
+interface LifecycleViewProps {
+  readonly lifecycle: ReadAnswerLifecycleSummary;
+  readonly history?: readonly ReadAnswerHistoryEntry[];
+  readonly onDispute: () => void;
+  readonly onResolve: () => void;
+  readonly onWithdraw: () => void;
+  readonly isPending: boolean;
+  readonly actionError: string | null;
 }
 
 function LifecycleView({
@@ -254,29 +204,21 @@ function LifecycleView({
   onWithdraw,
   isPending,
   actionError,
-}: {
-  readonly lifecycle: ReadAnswerLifecycleSummary;
-  readonly history?: readonly ReadAnswerHistoryEntry[];
-  readonly onDispute: () => void;
-  readonly onResolve: () => void;
-  readonly onWithdraw: () => void;
-  readonly isPending: boolean;
-  readonly actionError: string | null;
-}) {
+}: LifecycleViewProps) {
   const canAct = lifecycle.status === "VISIBLE" && !isPending;
 
   return (
     <div
       aria-busy={isPending}
-      className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4 sm:px-6"
+      className="border-2 border-rule bg-paper-3 px-5 py-4 sm:px-6 shadow-[var(--shadow-card)]"
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
             变更状态
           </p>
-          <span className="inline-flex min-h-8 items-center rounded-[2px] border border-rule bg-paper px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-subtle">
-            {LIFECYCLE_LABELS[lifecycle.status]}
+          <span className="inline-flex min-h-8 items-center justify-center border-2 border-rule bg-paper-3 px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-ink">
+            {lifecycle.status}
           </span>
         </div>
 
@@ -285,21 +227,21 @@ function LifecycleView({
             <button
               type="button"
               onClick={onDispute}
-              className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3.5 text-xs font-semibold text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
             >
               标记有争议
             </button>
             <button
               type="button"
               onClick={onResolve}
-              className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3.5 text-xs font-semibold text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
             >
               标记已解决
             </button>
             <button
               type="button"
               onClick={onWithdraw}
-              className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-3.5 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3.5 text-xs font-semibold text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
             >
               撤回补丁
             </button>
@@ -314,14 +256,14 @@ function LifecycleView({
       )}
 
       {history !== undefined && history.length > 1 && (
-        <div className="mt-4 border-t border-rule pt-3">
+        <div className="mt-4 border-t-2 border-rule pt-3">
           <p className="text-xs font-medium text-muted">变更历史</p>
           <ul className="mt-2 space-y-2" role="list">
             {history.slice(0, 5).map((record) => (
               <li key={record.recordFingerprint} className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-xs font-medium text-ink-subtle">
-                    {LIFECYCLE_LABELS[record.status]}
+                    {record.status}
                   </span>
                   <span className="text-xs text-faint">{formatTimestamp(record.eventAt)}</span>
                 </div>
@@ -334,6 +276,43 @@ function LifecycleView({
     </div>
   );
 }
+
+function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
+  const paragraphs = excerpt.excerpt
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+
+  return (
+    <div className="border-2 border-rule bg-paper-3 px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
+      <div className="space-y-4">
+        {paragraphs.map((paragraph, index) => (
+          <p
+            key={index}
+            className="text-base leading-7 text-ink sm:text-lg sm:leading-8"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
+        <span>
+          问题 <span className="font-medium text-ink-subtle">#{excerpt.questionId}</span>
+        </span>
+        <span>
+          回答 <span className="font-medium text-ink-subtle">#{excerpt.answerId}</span>
+        </span>
+        <span>摘录时间 {formatTimestamp(excerpt.capturedAt)}</span>
+      </div>
+      <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
+        来源编辑时间 {formatDateFromUnixSeconds(excerpt.sourceEditTime)}
+      </p>
+    </div>
+  );
+}
+
+// Main
 
 export function GeneralizedRealResultRead({
   excerpt,
@@ -352,7 +331,7 @@ export function GeneralizedRealResultRead({
 
   return (
     <div className="space-y-4">
-      {showActiveAnalysis && <UpdateAdvisoryView advisory={advisory} />}
+      {showActiveAnalysis && <AdvisoryView advisory={advisory} />}
       {showActiveAnalysis && <NoPatchView advisory={advisory} />}
       {showActiveAnalysis && <UnknownView advisory={advisory} />}
       {lifecycle.status === "DISPUTED" && <DisputedPatchView />}

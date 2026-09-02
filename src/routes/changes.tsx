@@ -7,10 +7,10 @@ import { APP_NAME } from "../lib/app-info";
 import { formatTimestamp } from "../lib/failure-messages";
 
 const STATUS_STYLES: Record<string, string> = {
-  VISIBLE: "border-rule bg-paper text-ink-subtle",
-  DISPUTED: "border-update/32 bg-update-soft text-update",
+  VISIBLE: "border-rule bg-paper-3 text-ink",
+  DISPUTED: "border-update bg-update-soft text-update",
   SUPERSEDED: "border-rule bg-paper text-muted",
-  RESOLVED: "border-success/32 bg-success-soft text-success",
+  RESOLVED: "border-success bg-success-soft text-success",
   WITHDRAWN: "border-rule bg-paper text-muted",
 };
 
@@ -61,16 +61,19 @@ function ChangesPage() {
         <section>
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
+            className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
           >
             <span aria-hidden="true">&larr;</span> 返回首页
           </Link>
-          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
-            CHANGE LEDGER
-          </p>
-          <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
-            变更时间线
-          </h1>
+          <div className="mt-5">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+              CHANGE LEDGER
+            </p>
+            <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
+              变更时间线
+            </h1>
+            <p className="mt-3 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
+          </div>
           <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">
             所有回答前提的生命周期事件，按最新事件时间倒序排列。
           </p>
@@ -80,7 +83,7 @@ function ChangesPage() {
           <div
             role="status"
             aria-live="polite"
-            className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-6"
+            className="flex min-h-14 items-center gap-3 border border-rule bg-paper-3 px-5 py-6"
           >
             <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
             <div className="space-y-2">
@@ -90,7 +93,7 @@ function ChangesPage() {
                   <div
                     key={i}
                     aria-hidden="true"
-                    className="h-3 w-24 animate-pulse rounded bg-rule"
+                    className="h-3 w-24 animate-pulse bg-paper-2"
                     style={{ animationDelay: `${i * 100}ms` }}
                   />
                 ))}
@@ -102,13 +105,13 @@ function ChangesPage() {
         {!loading && result?.status === "error" && (
           <div
             role="alert"
-            className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5"
+            className="border border-update bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载变更记录</p>
             <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
             <Link
               to="/"
-              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors duration-150 hover:text-accent-active"
+              className="mt-3 inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
             >
               返回首页
             </Link>
@@ -116,21 +119,21 @@ function ChangesPage() {
         )}
 
         {!loading && result?.status === "ok" && groups.length === 0 && (
-          <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-8">
-            <p className="text-sm font-medium text-ink-subtle">变更时间线为空</p>
+          <div className="border border-rule bg-paper-3 px-5 py-8">
+            <p className="text-sm font-medium text-ink">变更时间线为空</p>
             <p className="mt-1 text-sm text-muted">
               目前还没有记录任何变更。当回答的前提或判断发生变化时，事件会出现在这里。
             </p>
             <Link
               to="/"
-              className="mt-4 inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper-3 px-5 text-sm font-medium text-ink transition-colors duration-150 hover:border-accent/42"
+              className="mt-4 inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-paper-2 shadow-[var(--shadow-card)]"
             >
               返回首页继续浏览
             </Link>
           </div>
         )}
 
-        {!loading && groups.length > 0 && (
+        {!loading && result?.status === "ok" && groups.length > 0 && (
           <ol className="space-y-10" role="list">
             {groups.map((group) => {
               const zhihuUrl = `https://www.zhihu.com/question/${group.questionId}/answer/${group.answerId}`;
@@ -159,7 +162,7 @@ function ChangesPage() {
                       href={zhihuUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-accent-text transition-colors duration-150 hover:text-accent-active"
+                      className="text-accent transition-colors duration-150 hover:text-accent-active"
                     >
                       查看知乎来源 &rarr;
                     </a>
@@ -169,7 +172,7 @@ function ChangesPage() {
                         questionId: group.questionId,
                         answerId: group.answerId,
                       }}
-                      className="text-accent-text transition-colors duration-150 hover:text-accent-active"
+                      className="text-accent transition-colors duration-150 hover:text-accent-active"
                     >
                       查看阅读页 &rarr;
                     </Link>
@@ -179,18 +182,18 @@ function ChangesPage() {
                   <ul className="mt-4 space-y-0" role="list">
                     {group.runs.map((run) => {
                       const badgeClass =
-                        STATUS_STYLES[run.status] ?? "bg-paper text-ink-subtle border-rule";
+                        STATUS_STYLES[run.status] ?? "bg-paper-3 text-ink border-rule";
 
                       return (
                         <li
                           key={run.recordFingerprint}
                           className="border-t border-rule pt-4 pb-4 first:pt-0"
                         >
-                          <div className="rounded-[2px] border border-rule bg-paper-2 p-5 sm:p-6">
+                          <div className="border border-rule bg-paper-3 p-5 sm:p-6">
                             <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
                               <span
                                 className={[
-                                  "inline-flex min-h-8 items-center rounded-[2px] border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]",
+                                  "inline-flex min-h-8 items-center justify-center border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]",
                                   badgeClass,
                                 ].join(" ")}
                               >

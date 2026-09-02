@@ -20,16 +20,19 @@ export function SiteNav() {
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-paper">
+    <header className="sticky top-0 z-40 border-b-2 border-rule-strong bg-paper-3">
       <nav
         aria-label="主导航"
         className="mx-auto flex h-16 w-full max-w-[1120px] items-center justify-between px-5 sm:px-8"
       >
+        {/* Brand block: black square + blue overlap */}
         <Link
           to="/"
-          className="inline-flex min-h-11 items-center font-mono text-xs font-semibold tracking-[0.18em] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="relative inline-flex min-h-11 items-center font-mono text-xs font-bold tracking-[0.18em] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
-          LIVING ANSWER
+          <span className="relative mr-2 h-3.5 w-3.5 border-2 border-ink" aria-hidden="true" />
+          <span className="absolute -bottom-0.5 left-2 h-3 w-3 bg-accent" aria-hidden="true" />
+          <span className="relative ml-3">LIVING ANSWER</span>
         </Link>
 
         <div className="hidden items-center gap-7 sm:flex">
@@ -41,14 +44,14 @@ export function SiteNav() {
               className={[
                 "relative inline-flex min-h-11 items-center text-sm font-medium transition-colors duration-150",
                 "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent",
-                isActive(link.to) ? "text-ink" : "text-ink-subtle hover:text-ink",
+                isActive(link.to) ? "text-ink" : "text-muted hover:text-ink",
               ].join(" ")}
             >
               {link.label}
               {isActive(link.to) && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-x-0 bottom-2.5 h-0.5 bg-accent"
+                  className="absolute inset-x-0 bottom-1.5 h-[3px] bg-accent"
                 />
               )}
             </Link>
@@ -60,7 +63,7 @@ export function SiteNav() {
           aria-expanded={mobileOpen}
           aria-controls="site-nav-mobile"
           onClick={() => setMobileOpen((open) => !open)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-[6px] text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center border-2 border-rule-strong bg-paper-3 text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:hidden"
         >
           <span className="sr-only">{mobileOpen ? "关闭导航" : "打开导航"}</span>
           <svg
@@ -89,11 +92,11 @@ export function SiteNav() {
                   to={link.to}
                   aria-current={isActive(link.to) ? "page" : undefined}
                   className={[
-                    "flex min-h-11 items-center px-4 text-sm font-medium transition-colors duration-150",
+                    "flex min-h-11 items-center px-4 text-sm font-medium transition-colors duration-150 border-l-2",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                     isActive(link.to)
-                      ? "border-l-2 border-accent bg-paper text-ink"
-                      : "border-l-2 border-transparent text-ink-subtle hover:bg-paper hover:text-ink",
+                      ? "border-accent bg-paper text-ink"
+                      : "border-transparent text-muted hover:bg-paper hover:text-ink",
                   ].join(" ")}
                 >
                   {link.label}

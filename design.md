@@ -34,11 +34,105 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 ## 设计语言
 
-- 排版：中文正文使用系统无衬线字体，数字/标签使用等宽字体
-- 颜色：暖色调纸面背景，强调色用于状态指示，所有颜色通过 CSS 变量定义
-- 布局：最大宽度 1120px，响应式内边距
-- 间距：使用 Tailwind 的 spacing scale，保持统一节奏
-- 交互：所有按钮有清晰的视觉反馈层次（默认 / hover / active / focus）
+### 贴纸张贴纸 (Collage Paper) 设计系统
+
+从深色主题迁移至名为"贴纸张贴纸"的光线设计系统，以海报/拼贴画美学为核心视觉方向。
+
+#### 调色板
+
+| 角色 | CSS 变量 | 色值 | 用途 |
+| ----------- | -------------------------- | -------- | -------- |
+| 纸张 1 | `--color-paper` | `#e6e7e8` | 页面主背景，浅灰 |
+| 纸张 2 | `--color-paper-2` | `#f4f4f2` | 提升区域，浅暖 |
+| 纸张 3 | `--color-paper-3` | `#ffffff` | 卡片/面板，纯白 |
+| 墨色 | `--color-ink` | `#0b0b0d` | 主文字 |
+| 墨色副 | `--color-ink-subtle` | `#4a4a5f` | 次要文字 |
+| 淡化 | `--color-muted` | `#6c6f75` | 辅助文字/标签 |
+|  faint | `--color-faint` | `#9a9da3` | 时间戳/元信息 |
+| 边界线 | `--color-rule` | `#c9c9c4` | 柔线/分隔 |
+| 边界线强 | `--color-rule-strong` | `#0b0b0d` | 边界线（加粗） |
+| 强调蓝 | `--color-accent` | `#1e3fd8` | 唯一品牌色 |
+| 强调蓝悬停 | `--color-accent-hover` | `#1626b8` | hover |
+| 强调蓝激活 | `--color-accent-active` | `#0f1d8f` | active / pressed |
+| 强调蓝焦点 | `--color-accent-focus` | `#5886ff` | focus-visible |
+| 更新琥珀 | `--color-update` | `#b45309` | 更新状态 |
+| 更新琥珀软 | `--color-update-soft` | `rgba(180, 83, 9, 0.06)` | 更新背景 |
+| 成功绿 | `--color-success` | `#15803d` | 成功状态 |
+| 成功绿软 | `--color-success-soft` | `rgba(21, 128, 61, 0.08)` | 成功背景 |
+| 危险红 | `--color-danger` | `#b42318` | 错误/危险 |
+| 信息蓝 | `--color-info` | `#1746ff` | 信息状态 |
+| 深色 (on-accent) | `--color-on-accent` | `#ffffff` | 蓝色背景上的文字 |
+
+#### 排版
+
+| 用途 | Tailwind 类 | 说明 |
+|-----------|-----------|------|
+| 显示字体 | `font-display` | 粗 grotesque 系统无衬线：Space Grotesk / DM Sans / Noto Sans SC / ui-sans-serif |
+| 等宽标签 | `font-mono text-[11px] uppercase tracking-[0.12em]` | 仅用于 ID/日期/状态/编号 |
+| 标题 1 | `font-display text-\\[32px\\] leading-\\[38px\\]` + `sm:text-\\[52px\\]` | 页面标题 |
+| 正文 | `text-base leading-7 sm:text-lg sm:leading-8` | 舒适中文行高 |
+| 辅助 | `text-sm leading-6 text-ink-subtle` | 说明/描述 |
+
+#### 间距
+
+| 用途 | Tailwind 类 |
+|-------|------------|
+| 页面容器 | `max-w-[1120px] mx-auto` |
+| 内容区域 | `max-w-5xl` |
+| 面板宽度 | `w-[380px]`（桌面端侧栏） |
+| 单元间距 | `space-y-6` 移动端 / `space-y-12` 桌面端 |
+| 卡片内部 | `px-5 py-5 sm:px-6` |
+
+#### 组件规则
+
+1. **圆角**: 全部 0px。`rounded-none` 或不设置圆角类。不使用 `rounded-lg` / `rounded-xl` / `rounded-2xl` / `rounded-full`。
+2. **阴影**: 仅硬偏移（hard offset），不含模糊：
+   - 卡片阴影 `shadow-[var(--shadow-card)]` → `3px 3px 0 #000`
+   - 面板阴影 `shadow-[var(--shadow-panel)]` → `4px 4px 0 #000`
+   - hover 提升 → `shadow-[5px_5px_0]` 或 `shadow-[6px_6px_0]`
+   - 交互式按钮 hover → `shadow-[3px_3px_0_var(--color-accent)]`
+3. **边框**: 主卡片 `border-2 border-rule-strong`；次级面板 `border border-rule`。
+4. **按钮**: `inline-flex min-h-11 items-center justify-center`（44px 最小触摸目标）。
+   - 主要行为: `border-2 border-accent bg-accent text-white`
+   - 次要/危险行为: `border-2 border-rule-strong bg-paper-3 text-ink`
+   - 焦点环: `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`
+5. **链接**: `text-accent underline underline-offset-2`
+6. **等宽标签**: `font-mono text-[11px] uppercase tracking-[0.12em] text-muted`
+7. **强调文本**: 一律使用 `text-accent`（旧 `text-accent-text` 已弃用）
+
+#### 拼贴贴纸 (Collage) 处理
+
+- **半色调网点**: `.bg-collage-halftone` — CSS `radial-gradient` 产生青色半圆点
+- **黑色贴纸**: `.bg-black-strip` — 顶部黑色条装饰，模拟黑色胶带
+- **蓝色贴纸**: `.bg-blue-strip` — 顶部蓝色条装饰
+- **线条**: `.bg-contour` — 底部细蓝线
+- **海报框架**: `.bg-collage-frame` — 内外双层黑框效果
+- **应用场景**: 金色演示页面使用蓝色贴纸；海报区域使用黑色贴纸
+
+#### 交互状态
+
+| 状态 | 效果 |
+| ----------- | -------- |
+| Hover（按钮） | 硬阴影放大 + 颜色微变 |
+| Active（按钮） | `translate-y-px` + 背景色加深 |
+| Focus-visible | `outline-2 outline-offset-2 outline-accent` |
+| 悬停（卡片） | `shadow-[var(--shadow-card)]` → `shadow-[3px_3px_0_#000]` |
+
+#### 辅助功能
+
+- 所有交互元素满足 44px 触摸目标（`min-h-11` = 44px）
+- `focus-visible`（非 focus）时显示焦点环
+- `aria-live="polite"` 用于加载/更新状态
+- `aria-label` 用于图标按钮
+- 感知颜色不用于传递唯一信息
+
+#### 响应式断点
+
+| 断点 | Tailwind 前缀 | 典型变化 |
+| --------- |---------------| -------- |
+| 移动端（默认） | 无前缀 | 单列、紧凑间距 |
+| 平板/桌面 | `sm:` | 更大字号、展开延伸间距 |
+| 桌面 | `lg:` | 侧栏布局切换（flex-row） |
 
 ## 域模型
 

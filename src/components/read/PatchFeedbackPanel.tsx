@@ -289,7 +289,7 @@ export function PatchFeedbackPanel({
   return (
     <section
       aria-labelledby="patch-feedback-heading"
-      className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6"
+      className="border border-rule bg-paper-3 px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]"
     >
       {/* Header with mode toggle */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
@@ -307,7 +307,7 @@ export function PatchFeedbackPanel({
             <button
               type="button"
               onClick={switchToManual}
-              className="inline-flex h-8 items-center rounded-[4px] border border-rule bg-paper px-3 text-[11px] font-medium text-ink-subtle transition-colors hover:bg-paper-2"
+              className="inline-flex h-8 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3 text-[11px] font-medium text-ink transition-all duration-120 hover:shadow-[2px_2px_0_var(--color-ink)]"
             >
               手动填写
             </button>
@@ -315,7 +315,7 @@ export function PatchFeedbackPanel({
             <button
               type="button"
               onClick={switchToClarify}
-              className="inline-flex h-8 items-center rounded-[4px] border border-accent/32 bg-accent-soft px-3 text-[11px] font-medium text-accent-text transition-colors hover:bg-accent/12"
+              className="inline-flex h-8 items-center justify-center border border-accent bg-accent-soft px-3 text-[11px] font-medium text-accent transition-colors hover:bg-accent/15"
             >
               AI 澄清
             </button>
@@ -331,7 +331,7 @@ export function PatchFeedbackPanel({
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center gap-3 rounded-[2px] border border-rule bg-paper px-4 py-4"
+              className="flex items-center gap-3 border border-rule bg-paper-3 px-4 py-4"
             >
               <span
                 aria-hidden="true"
@@ -343,7 +343,7 @@ export function PatchFeedbackPanel({
 
           {/* Error state */}
           {status === "error" && (
-            <div className="rounded-[2px] border border-danger/30 bg-danger-soft px-4 py-4">
+            <div className="border border-danger bg-danger-soft px-4 py-4">
               <p className="text-sm font-medium text-danger">
                 {errorCode === "CLARIFICATION_UNAVAILABLE"
                   ? "澄清服务暂时不可用，请稍后再试或切换到手动填写。"
@@ -360,14 +360,14 @@ export function PatchFeedbackPanel({
                     setStatus("thinking");
                     setClarifyToken((token) => token + 1);
                   }}
-                  className="inline-flex h-8 items-center rounded-[4px] border border-accent/32 bg-accent-soft px-3 text-[11px] font-medium text-accent-text transition-colors hover:bg-accent/12"
+                  className="inline-flex h-8 items-center justify-center border border-accent bg-accent-soft px-3 text-[11px] font-medium text-accent transition-colors hover:bg-accent/15"
                 >
                   重试
                 </button>
                 <button
                   type="button"
                   onClick={switchToManual}
-                  className="inline-flex h-8 items-center rounded-[4px] border border-rule bg-paper px-3 text-[11px] font-medium text-ink-subtle transition-colors hover:bg-paper-2"
+                  className="inline-flex h-8 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3 text-[11px] font-medium text-ink transition-all duration-120 hover:shadow-[2px_2px_0_var(--color-ink)]"
                 >
                   切换手动填写
                 </button>
@@ -377,17 +377,17 @@ export function PatchFeedbackPanel({
 
           {/* Conversation */}
           {status !== "idle" && (
-            <div className="mt-3 max-h-[280px] space-y-3 overflow-y-auto rounded-[2px] border border-rule bg-paper px-4 py-3">
+            <div className="mt-3 max-h-[280px] space-y-3 overflow-y-auto border border-rule bg-paper-3 px-4 py-3">
               {conversation.map((turn, i) => (
                 <div
                   key={i}
                   className={`flex ${turn.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-[6px] px-4 py-2.5 text-sm leading-6 ${
+                    className={`max-w-[80%] border px-4 py-2.5 text-sm leading-6 ${
                       turn.role === "user"
-                        ? "bg-accent text-on-accent"
-                        : "bg-paper-3 text-ink border border-rule"
+                        ? "bg-accent border-accent text-white"
+                        : "bg-paper-3 border-rule text-ink"
                     }`}
                   >
                     {turn.content}
@@ -400,7 +400,7 @@ export function PatchFeedbackPanel({
 
           {/* Draft review */}
           {status === "draft_ready" && draft && (
-            <div className="mt-3 rounded-[2px] border border-success/32 bg-success-soft px-4 py-4">
+            <div className="mt-3 border border-success bg-success-soft px-4 py-4">
               <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-success">
                 拟提交草稿
               </p>
@@ -424,7 +424,7 @@ export function PatchFeedbackPanel({
                     <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted">
                       证据链接：
                     </span>
-                    <p className="mt-1 text-sm text-accent-text underline underline-offset-2">
+                    <p className="mt-1 text-sm text-accent underline underline-offset-2">
                       {draft.evidenceUrl}
                     </p>
                   </div>
@@ -448,7 +448,7 @@ export function PatchFeedbackPanel({
                   type="button"
                   onClick={handleSubmitDraft}
                   disabled={isPending}
-                  className="inline-flex h-11 items-center rounded-[6px] border border-accent bg-accent px-5 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover active:bg-accent-active disabled:cursor-not-allowed disabled:text-faint"
+                  className="inline-flex h-11 items-center justify-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active disabled:cursor-not-allowed disabled:text-faint"
                 >
                   {isPending ? "提交中" : "确认提交反馈"}
                 </button>
@@ -460,7 +460,7 @@ export function PatchFeedbackPanel({
                     setStatus("thinking");
                   }}
                   disabled={isPending}
-                  className="ml-2 inline-flex h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-sm font-medium text-ink-subtle transition-colors hover:bg-paper-2 disabled:cursor-not-allowed disabled:text-faint"
+                  className="ml-2 inline-flex h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-sm font-medium text-ink transition-all duration-120 hover:shadow-[2px_2px_0_var(--color-ink)] disabled:cursor-not-allowed disabled:text-faint shadow-[var(--shadow-card)]"
                 >
                   继续沟通
                 </button>
@@ -472,10 +472,10 @@ export function PatchFeedbackPanel({
           {status === "submitted" && result && (
             <div
               aria-live="polite"
-              className={`mt-3 rounded-[2px] border px-4 py-3 ${
+              className={`mt-3 border px-4 py-3 ${
                 result.status === "ok"
-                  ? "border-success/32 bg-success-soft"
-                  : "border-danger/30 bg-danger-soft"
+                  ? "border-success bg-success-soft"
+                  : "border-danger bg-danger-soft"
               }`}
             >
               <p
@@ -508,13 +508,13 @@ export function PatchFeedbackPanel({
                   onKeyDown={handleKeyDown}
                   disabled={status === "thinking"}
                   placeholder="描述您认为需要复核的问题…"
-                  className="flex-1 resize-y rounded-[4px] border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"
+                  className="flex-1 resize-y border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper"
                 />
                 <button
                   type="button"
                   onClick={handleSendUserMessage}
                   disabled={!userInput.trim() || status === "thinking"}
-                  className="inline-flex h-12 self-end items-center rounded-[6px] border border-accent bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover active:bg-accent-active disabled:cursor-not-allowed disabled:text-faint"
+                  className="inline-flex h-12 self-end items-center justify-center border-2 border-accent bg-accent px-4 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active disabled:cursor-not-allowed disabled:text-faint"
                 >
                   发送
                 </button>
@@ -525,7 +525,7 @@ export function PatchFeedbackPanel({
           <button
             type="button"
             onClick={switchToManual}
-            className="mt-3 inline-flex h-8 items-center rounded-[4px] border border-rule bg-paper px-3 text-[11px] font-medium text-ink-subtle transition-colors hover:bg-paper-2"
+            className="mt-3 inline-flex h-8 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3 text-[11px] font-medium text-ink transition-all duration-120 hover:shadow-[2px_2px_0_var(--color-ink)]"
           >
             或切换到手动填写
           </button>
@@ -548,7 +548,7 @@ export function PatchFeedbackPanel({
                 value={reason}
                 onChange={(e) => setReason(e.target.value as PatchFeedbackReason)}
                 disabled={isPending}
-                className="mt-2 h-12 w-full rounded-[4px] border border-rule bg-paper-3 px-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"
+                className="mt-2 h-12 w-full border border-rule-strong bg-paper-3 px-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper"
               >
                 {Object.entries(FEEDBACK_REASON_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -572,7 +572,7 @@ export function PatchFeedbackPanel({
                 onChange={(e) => setQuestion(e.target.value.slice(0, 800))}
                 disabled={isPending}
                 placeholder="这条提示为什么需要复核？"
-                className="mt-2 block w-full resize-y rounded-[4px] border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"
+                className="mt-2 block w-full resize-y border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper"
               />
             </div>
           </div>
@@ -592,7 +592,7 @@ export function PatchFeedbackPanel({
                 onChange={(e) => setEvidenceUrl(e.target.value.slice(0, 2048))}
                 disabled={isPending}
                 placeholder="https://..."
-                className="mt-2 block h-12 w-full rounded-[4px] border border-rule bg-paper-3 px-4 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"
+                className="mt-2 block h-12 w-full border border-rule bg-paper-3 px-4 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper"
               />
             </div>
 
@@ -610,7 +610,7 @@ export function PatchFeedbackPanel({
                 onChange={(e) => setEvidenceQuote(e.target.value.slice(0, 1000))}
                 disabled={isPending}
                 placeholder="从来源中复制能说明问题的关键句"
-                className="mt-2 block w-full resize-y rounded-[4px] border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper"
+                className="mt-2 block w-full resize-y border border-rule bg-paper-3 px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-paper"
               />
             </div>
           </div>
@@ -619,7 +619,7 @@ export function PatchFeedbackPanel({
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint"
+              className="inline-flex h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-sm font-semibold text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:text-faint shadow-[var(--shadow-card)]"
             >
               {isPending ? "提交中" : "提交反馈"}
             </button>
@@ -627,7 +627,7 @@ export function PatchFeedbackPanel({
               type="button"
               onClick={switchToClarify}
               disabled={isPending}
-              className="inline-flex h-11 items-center rounded-[6px] border border-accent/32 bg-accent-soft px-4 text-sm font-medium text-accent-text transition-colors hover:bg-accent/12 disabled:cursor-not-allowed disabled:text-faint"
+              className="inline-flex h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-sm font-medium text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] disabled:cursor-not-allowed disabled:text-faint shadow-[var(--shadow-card)]"
             >
               切换到 AI 澄清
             </button>
@@ -640,8 +640,8 @@ export function PatchFeedbackPanel({
           aria-live="polite"
           className={
             result.status === "ok"
-              ? "mt-4 rounded-[2px] border border-success/32 bg-success-soft px-4 py-3"
-              : "mt-4 rounded-[2px] border border-danger/30 bg-danger-soft px-4 py-3"
+              ? "mt-4 border border-success bg-success-soft px-4 py-3"
+              : "mt-4 border border-danger bg-danger-soft px-4 py-3"
           }
         >
           <p

@@ -14,36 +14,26 @@
 
 import type { AnalyzePatchUpdateResponse } from "../../server/analyze-patch-response";
 
-// ── Types ───────────────────────────────────────────────────────────────────────
-
 export interface UpdateAdvisoryCardProps {
-  /** Parsed UPDATE decision (status: "ok" — caller confirmed). */
   readonly decision: AnalyzePatchUpdateResponse;
-  /** Excerpt text the affected wording is anchored to, or undefined. */
   readonly excerptText?: string;
 }
-
-// ── Helpers ─────────────────────────────────────────────────────────────────────
 
 const truncate = (text: string, max: number): string =>
   text.length > max ? text.slice(0, max) + "…" : text;
 
-// ── Component ───────────────────────────────────────────────────────────────────
-
 export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCardProps) {
   return (
-    <div className="rounded-[2px] border border-update/30 bg-update-soft px-5 py-5 sm:px-6">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-update/24 pb-4">
+    <div className="border-2 border-update bg-update-soft px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-2 border-update/30 pb-4">
         <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
           UPDATE
         </p>
         <p className="text-sm font-medium text-ink-subtle">前提变化提示</p>
       </div>
 
-      {/* 原文受影响前提 */}
-
       {decision.affectedWording !== undefined && (
-        <div className="mt-5 rounded-[2px] border border-update/24 bg-paper-2 px-4 py-3">
+        <div className="mt-5 border border-update/30 bg-paper-3 px-4 py-3 shadow-[var(--shadow-card)]">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-update">
             原文受影响前提
           </p>
@@ -60,8 +50,6 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
         </div>
       )}
 
-      {/* 当前状况 */}
-
       {decision.currentState !== undefined && (
         <div className="mt-3">
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
@@ -70,8 +58,6 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
           <p className="mt-1 text-sm leading-6 text-ink">{decision.currentState}</p>
         </div>
       )}
-
-      {/* 对回答的影响 */}
 
       {decision.impactOnAnswer !== undefined && (
         <div className="mt-3">
@@ -82,11 +68,7 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
         </div>
       )}
 
-      {/* Generic reason (always shown) */}
-
       <p className="mt-5 max-w-[68ch] text-base leading-7 text-ink">{decision.reason}</p>
-
-      {/* 匹配证据 */}
 
       {decision.matchedEvidence !== undefined && decision.matchedEvidence.length > 0 && (
         <div className="mt-4 space-y-2">
@@ -97,14 +79,14 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
             {decision.matchedEvidence.map((ev) => (
               <li
                 key={ev.fingerprint}
-                className="rounded-[2px] border border-rule bg-paper-2 px-4 py-3"
+                className="border-2 border-rule bg-paper-3 px-4 py-3 shadow-[var(--shadow-card)]"
               >
                 <p className="text-xs leading-5 text-ink-subtle">{ev.quote}</p>
                 <a
                   href={ev.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1.5 inline-block text-xs text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
+                  className="mt-1.5 inline-block text-xs text-accent underline underline-offset-2 transition-colors hover:text-accent-active"
                 >
                   {ev.sourceLabel}
                 </a>
@@ -113,8 +95,6 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
           </ul>
         </div>
       )}
-
-      {/* 参考来源 */}
 
       {decision.evidenceSummary.length > 0 && (
         <div className="mt-4 space-y-2">
@@ -128,7 +108,7 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
                   href={ev.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
+                  className="text-sm text-accent underline underline-offset-2 transition-colors hover:text-accent-active"
                 >
                   {ev.sourceLabel}
                 </a>
@@ -153,11 +133,9 @@ export function UpdateAdvisoryCard({ decision, excerptText }: UpdateAdvisoryCard
         </div>
       )}
 
-      {/* Advisory disclaimer (always shown) */}
-
       <p className="mt-4 text-xs text-muted">
-        前提说明已经发生变化，建议结合最新信息综合判断。&nbsp; AI
-        生成的上下文摘要作为辅助参考，内容由外部来源提供，请核对原始引用。
+        前提说明已经发生变化，建议结合最新信息综合判断。&nbsp;
+        AI 生成的上下文摘要作为辅助参考，内容由外部来源提供，请核对原始引用。
       </p>
     </div>
   );

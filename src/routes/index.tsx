@@ -3,7 +3,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useState } from "react";
 
 import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
-import type { GoldenDemoFixture } from "../lib/golden-demo-fixture";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
 import {
   searchAnswerCandidates,
@@ -82,7 +81,7 @@ function QuestionThreadEntry() {
   // Generation state
   const [generation, setGeneration] = useState<GenerationState>({ status: "idle" });
 
-  // ══ Handlers ═════════════════════════════════════════════════════════════════
+  // Handlers
 
   const performSearch = useCallback(
     async (query: string) => {
@@ -116,7 +115,6 @@ function QuestionThreadEntry() {
         setClarification(raw);
         await performSearch(raw.refinedQuery);
       } else {
-        // Clarification failed — fall back to raw search with original question
         await performSearch(question);
         if (raw) {
           setClarification(raw);
@@ -212,9 +210,9 @@ function QuestionThreadEntry() {
     }
   }, [boundGenerate, clarification, questionText, searchResult, selectedIds, navigate]);
 
-  // ── Derived state ────────────────────────────────────────────────────────
+  // Derived state
 
-  const goldenDemos: GoldenDemoFixture[] = [
+  const goldenDemos: (typeof GOLDEN_DEMOS)[string][] = [
     GOLDEN_DEMOS["chatgpt-free-plus"],
     GOLDEN_DEMOS["create-react-app"],
     GOLDEN_DEMOS["delayed-retirement"],
@@ -223,93 +221,119 @@ function QuestionThreadEntry() {
   const canGenerate =
     selectedCount > 0 && clarification?.success && generation.status !== "loading";
 
-  // ══ Render ══════════════════════════════════════════════════════════════════
+  // Render
 
   return (
     <main className="min-h-screen bg-paper pb-20 text-ink">
-      {/* ═══ Header ───────────────────────────────────────────────────────── */}
-      <header className="bg-ink text-paper">
-        <div className="mx-auto w-full max-w-[1120px] px-5 pb-5 pt-6 sm:px-8 sm:pb-6 sm:pt-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/70">
-            LIVING ANSWER · 问题学习线程
-          </p>
-          <p className="mt-3 max-w-[68ch] text-sm leading-6 text-paper/74 sm:text-base sm:leading-7">
-            {PRODUCT_TAGLINE}
-          </p>
-          <p className="mt-3 max-w-[60ch] text-base leading-7 text-ink-subtle">
-            真实的回答会随着时间变化。AI 帮你追踪哪些回答已经过时，为什么。
-          </p>
+      {/* Hero */}
+      <header className="relative overflow-hidden bg-paper bg-halftone pb-14 pt-10 sm:pb-20 sm:pt-14">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-6 top-10 hidden h-40 w-40 rounded-full halftone-patch sm:block" />
+        <div aria-hidden="true" className="pointer-events-none absolute -left-3 bottom-10 block-black h-14 w-14 sm:block" />
+        <div aria-hidden="true" className="pointer-events-none absolute right-[8%] top-[18%] hidden h-2 w-28 bar-black sm:block" />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-2 bottom-0 hidden h-16 w-16 contour-lines sm:block" />
+
+        <div className="relative z-10 mx-auto w-full max-w-[1120px] px-5 sm:px-8">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
+            {/* Left column */}
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+                LIVING ANSWER · 问题学习线程
+              </p>
+              <h1 className="mt-6 font-display text-[36px] font-bold leading-[1.08] tracking-tight sm:text-[52px] lg:text-[56px]">
+                让旧回答
+                <br />
+                <span className="relative inline-block">
+                  <span className="relative z-10">与今天核对</span>
+                  <span className="absolute bottom-1 left-0 right-0 h-3 bg-accent/15 -z-0" aria-hidden="true" />
+                </span>
+              </h1>
+              <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程
+              </p>
+              <p className="mt-2 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
+              <p className="mt-5 max-w-[56ch] text-lg leading-8 text-ink-subtle">{PRODUCT_TAGLINE}</p>
+            </div>
+
+            {/* Right column — framed input card */}
+            <div className="lg:max-w-md">
+              <div className="border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-panel)] sm:p-7">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+                  THREAD ENTRY
+                </p>
+                <h2 className="mt-2 font-display text-lg font-semibold leading-7 text-ink">
+                  输入你的问题
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-ink-subtle">
+                  不需要措辞完美。AI 会帮你澄清意图并搜索匹配的知乎回答。
+                </p>
+                <form onSubmit={handleQuestionSubmit} noValidate className="mt-5">
+                  <label htmlFor="thread-question-input" className="sr-only">
+                    输入你的问题
+                  </label>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <input
+                      id="thread-question-input"
+                      type="text"
+                      value={questionText}
+                      onChange={(e) => setQuestionText(e.target.value)}
+                      placeholder="例如：React 19 还值得学吗"
+                      disabled={clarificationLoading || searchLoading || generation.status === "loading"}
+                      autoComplete="off"
+                      className="h-14 flex-1 border-2 border-rule-strong bg-white px-4 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
+                    />
+                    <button
+                      type="submit"
+                      disabled={clarificationLoading || searchLoading || generation.status === "loading"}
+                      className="inline-flex h-14 shrink-0 items-center justify-center border-2 border-accent bg-accent px-7 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      {clarificationLoading ? "正在澄清…" : "开始 →"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {!searchRan && (
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {STARTER_QUESTIONS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => handleStarterClick(q)}
+                      title="AI 会自动帮你澄清意图"
+                      disabled={
+                        clarificationLoading || searchLoading || generation.status === "loading"
+                      }
+                      className="inline-flex min-h-[36px] items-center border-2 border-rule-strong bg-paper-2 px-2.5 text-xs font-medium text-ink-subtle transition-all duration-120 hover:border-accent hover:-translate-y-px hover:shadow-[3px_3px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <span aria-hidden="true" className="mr-1.5 h-1.5 w-1.5 bg-ink-subtle" />
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2.5 text-[11px] text-muted font-mono tracking-[0.04em]">
+                输入仅用于本轮 AI 澄清，不会持久化你的原始问题
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-[1120px] space-y-12 px-5 sm:px-8">
-        {/* ═══ Question entry ══════════════════════════════════════════════ */}
-        <section className="pt-10">
-          <form onSubmit={handleQuestionSubmit} noValidate className="max-w-3xl">
-            <p className="text-xs text-muted">试试输入一个模糊的问题，不需要措辞完美</p>
-            <label htmlFor="thread-question-input" className="sr-only">
-              输入你的问题
-            </label>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                id="thread-question-input"
-                type="text"
-                value={questionText}
-                onChange={(e) => setQuestionText(e.target.value)}
-                placeholder="输入模糊的问题，例如：React 19 还值得学吗"
-                disabled={clarificationLoading || searchLoading || generation.status === "loading"}
-                autoComplete="off"
-                className="h-14 flex-1 rounded-[4px] border border-rule bg-paper-3 px-4 text-base text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/18 disabled:cursor-not-allowed disabled:bg-paper disabled:text-faint"
-              />
-              <button
-                type="submit"
-                disabled={clarificationLoading || searchLoading || generation.status === "loading"}
-                className="inline-flex h-14 shrink-0 items-center justify-center rounded-[6px] bg-accent px-7 text-sm font-semibold text-on-accent transition-all duration-120 hover:shadow-[0_2px_8px_rgb(23_70_255/0.3)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
-              >
-                {clarificationLoading ? "正在澄清…" : "开始 →"}
-              </button>
-            </div>
-          </form>
-
-          {/* Starter chips ────────────────────────────────────────────────── */}
-          {!searchRan && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted">试试：</span>
-              {STARTER_QUESTIONS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => handleStarterClick(q)}
-                  title="AI 会自动帮你澄清意图"
-                  disabled={
-                    clarificationLoading || searchLoading || generation.status === "loading"
-                  }
-                  className="inline-flex min-h-[36px] items-center rounded-[4px] border border-rule bg-paper-2 px-3 text-xs font-medium text-ink-subtle transition-colors duration-150 hover:border-accent/42 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
-          <p className="text-[11px] text-faint font-mono tracking-[0.04em]">
-            输入仅用于本轮 AI 澄清，不会持久化你的原始问题
-          </p>
-        </section>
-
-        {/* ═══ Clarification panel ───────────────────────────────────────── */}
+        {/* Clarification panel */}
         {clarification != null && (
           <section className="border-t border-rule pt-10">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
                 CLARIFICATION
               </p>
-              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
                 澄清学习意图
               </h2>
             </div>
 
             {clarification.success ? (
-              <div className="mt-6 max-w-3xl space-y-4 rounded-[2px] border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)]">
+              <div className="mt-6 max-w-3xl space-y-4 border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)]">
                 <div>
                   <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
                     精炼查询
@@ -330,7 +354,7 @@ function QuestionThreadEntry() {
                           key={alt}
                           type="button"
                           onClick={() => void handleAlternativeClick(alt)}
-                          className="inline-flex min-h-11 items-center rounded-[4px] border border-rule bg-paper px-3 text-sm text-ink-subtle transition-colors duration-150 hover:border-accent/42 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          className="inline-flex min-h-11 items-center border border-rule-strong bg-paper px-3 text-sm text-ink-subtle transition-colors duration-150 hover:border-accent hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           {alt}
                         </button>
@@ -350,9 +374,9 @@ function QuestionThreadEntry() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-paper">
+                  <div className="h-2 flex-1 overflow-hidden bg-paper">
                     <div
-                      className="h-full rounded-full bg-accent"
+                      className="h-full bg-accent"
                       style={{ width: `${Math.round(clarification.confidence * 100)}%` }}
                     />
                   </div>
@@ -362,7 +386,7 @@ function QuestionThreadEntry() {
                 </div>
               </div>
             ) : (
-              <div className="mt-6 max-w-3xl rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+              <div className="mt-6 max-w-3xl border border-rule bg-paper-2 px-5 py-4">
                 <p className="text-sm font-medium text-ink-subtle">
                   {clarification.message ?? "澄清服务暂时不可用，已使用原始查询搜索。"}
                 </p>
@@ -371,14 +395,14 @@ function QuestionThreadEntry() {
           </section>
         )}
 
-        {/* ═══ Search results ────────────────────────────────────────────── */}
+        {/* Search results */}
         {(searchResult?.status === "error" || searchResult?.status === "ok") && (
           <section className="border-t border-rule pt-10">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
                 SEARCH RESULTS
               </p>
-              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
                 选择回答摘录
               </h2>
             </div>
@@ -388,20 +412,20 @@ function QuestionThreadEntry() {
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="bg-paper-2 rounded-[2px] border border-rule animate-pulse"
+                    className="border border-rule bg-paper-3 shadow-[var(--shadow-card)]"
                     style={{ height: 120 }}
                   >
                     <div className="space-y-3 p-5">
                       <div
-                        className="rounded-[2px] bg-rule"
+                        className="bg-rule"
                         style={{ width: i % 2 === 0 ? "75%" : "60%", height: 14 }}
                       />
                       <div
-                        className="rounded-[2px] bg-rule/60"
+                        className="bg-rule/60"
                         style={{ width: "90%", height: 12 }}
                       />
                       <div
-                        className="rounded-[2px] bg-rule/40"
+                        className="bg-rule/40"
                         style={{ width: "55%", height: 12 }}
                       />
                     </div>
@@ -411,14 +435,14 @@ function QuestionThreadEntry() {
             )}
 
             {searchResult?.status === "error" && (
-              <div className="mt-6 max-w-3xl rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+              <div className="mt-6 max-w-3xl border border-rule bg-paper-2 px-5 py-4">
                 <p className="text-sm font-medium text-ink-subtle">{searchResult.message}</p>
                 <p className="mt-2 text-sm text-muted">尝试换个表述或使用更具体的关键词。</p>
               </div>
             )}
 
             {searchResult?.status === "ok" && searchResult.candidates.length === 0 && (
-              <div className="mt-6 max-w-3xl rounded-[2px] border border-rule bg-paper-2 px-5 py-5">
+              <div className="mt-6 max-w-3xl border border-rule bg-paper-2 px-5 py-5">
                 <p className="text-sm font-semibold text-ink">没有找到匹配的回答候选</p>
                 <p className="mt-2 max-w-[68ch] text-sm leading-6 text-ink-subtle">
                   换一个更具体的问题关键词，通常比完整链接更容易命中。
@@ -436,23 +460,23 @@ function QuestionThreadEntry() {
                       type="button"
                       onClick={() => toggleCandidate(c)}
                       className={
-                        "block w-full rounded-[2px] border bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
+                        "block w-full border bg-paper-3 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
                         (isSelected
-                          ? "border-accent shadow-[0_1px_0_var(--color-accent),var(--shadow-card)]"
-                          : "border-rule hover:border-accent/42")
+                          ? "border-accent border-2"
+                          : "border-rule-strong hover:border-accent hover:shadow-[3px_3px_0_var(--color-accent)]")
                       }
                     >
                       <div className="flex min-w-0 items-start gap-3">
                         <div
                           className={
-                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[3px] border " +
+                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border-2 " +
                             (isSelected ? "border-accent bg-accent" : "border-rule")
                           }
                         >
                           {isSelected && (
                             <svg
                               viewBox="0 0 12 10"
-                              className="h-3 w-3 fill-none stroke-on-accent"
+                              className="h-3 w-3 fill-none stroke-white"
                               strokeWidth="1.8"
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -498,7 +522,7 @@ function QuestionThreadEntry() {
           </section>
         )}
 
-        {/* ═══ Generate action ────────────────────────────────────────────── */}
+        {/* Generate action */}
         {selectedCount > 0 && (
           <section className="border-t border-rule pt-10">
             <div className="max-w-3xl">
@@ -507,10 +531,10 @@ function QuestionThreadEntry() {
                 onClick={handleGenerate}
                 disabled={!canGenerate}
                 className={
-                  "inline-flex h-12 items-center rounded-[6px] px-8 text-sm font-semibold transition-colors duration-150 " +
+                  "inline-flex h-12 items-center justify-center border-2 border-accent bg-accent px-8 text-sm font-semibold text-white transition-all duration-120 " +
                   (canGenerate
-                    ? "bg-accent text-on-accent hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    : "cursor-not-allowed bg-rule text-faint")
+                    ? "hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    : "opacity-45")
                 }
               >
                 {generation.status === "loading"
@@ -529,7 +553,7 @@ function QuestionThreadEntry() {
           </section>
         )}
 
-        {/* ═══ Advanced URL entry ─────────────────────────────────────────── */}
+        {/* Advanced URL entry */}
         <section aria-labelledby="advanced-url-heading" className="border-t border-rule pt-10">
           <button
             type="button"
@@ -555,7 +579,7 @@ function QuestionThreadEntry() {
               <Link
                 to="/read/golden-demo/$id"
                 params={{ id: "chatgpt-free-plus" }}
-                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center border border-rule bg-paper px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 查看已有准备记录
               </Link>
@@ -563,15 +587,15 @@ function QuestionThreadEntry() {
           )}
         </section>
 
-        {/* ═══ Golden Demo records ───────────────────────────────────────── */}
+        {/* Golden Demo records */}
         <section aria-labelledby="demo-heading">
           <div className="max-w-3xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
               PREPARED RECORDS
             </p>
             <h2
               id="demo-heading"
-              className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]"
+              className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink"
             >
               精选维护记录
             </h2>
@@ -587,7 +611,7 @@ function QuestionThreadEntry() {
           </div>
         </section>
 
-        {/* ═══ Footer ────────────────────────────────────────────────────── */}
+        {/* Footer */}
         <footer className="border-t border-rule pt-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>

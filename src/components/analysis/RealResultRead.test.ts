@@ -186,9 +186,9 @@ describe("RealResultRead", () => {
       expect(html).toContain("先进入复核队列，不会直接改写结论");
     });
 
-    it("uses paper-2/rule neutral styling", () => {
+    it("uses paper-3/rule neutral styling", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
-      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("bg-paper-3");
     });
 
     it("does not render update styling for NO_PATCH", () => {
@@ -209,7 +209,7 @@ describe("RealResultRead", () => {
     it("uses accent informational styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
       expect(html).toContain("bg-accent-soft");
-      expect(html).toContain("border-accent/32");
+      expect(html).toContain("border-accent");
     });
 
     it("does not render update styling for UNKNOWN", () => {
@@ -441,16 +441,16 @@ describe("RealResultRead", () => {
       expect(html).toContain("border-update/30");
     });
 
-    it("NO_PATCH uses paper-2/rule (neutral) styling", () => {
+    it("NO_PATCH uses paper-3/rule (neutral) styling", () => {
       const html = renderRead({ result: NO_PATCH_RESULT });
-      expect(html).toContain("bg-paper-2");
+      expect(html).toContain("bg-paper-3");
       expect(html).toContain("border-rule");
     });
 
     it("UNKNOWN uses accent informational styling", () => {
       const html = renderRead({ result: UNKNOWN_RESULT });
       expect(html).toContain("bg-accent-soft");
-      expect(html).toContain("border-accent/32");
+      expect(html).toContain("border-accent");
     });
   });
 });

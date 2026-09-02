@@ -93,7 +93,7 @@ describe("GeneralizedRealResultRead", () => {
     expect(updatePos).toBeGreaterThanOrEqual(0);
     expect(excerptPos).toBeGreaterThanOrEqual(0);
     expect(updatePos).toBeLessThan(excerptPos);
-    expect(html).toContain("已有更新");
+    expect(html).toContain("前提变化提示");
     expect(html).toContain("官方说明");
     expect(html).toContain("https://example.com/official");
     expect(html).not.toContain("未匹配候选");
@@ -130,7 +130,7 @@ describe("GeneralizedRealResultRead", () => {
         evidenceSummary: [],
       });
       const advisoryPos = html.indexOf(advisoryMarker);
-      const excerptLabelPos = html.indexOf("搜索接口摘要摘录");
+      const excerptLabelPos = html.indexOf("旧回答摘录");
       expect(advisoryPos).toBeGreaterThanOrEqual(0);
       expect(excerptLabelPos).toBeGreaterThanOrEqual(0);
       expect(advisoryPos).toBeLessThan(excerptLabelPos);

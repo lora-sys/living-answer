@@ -13,7 +13,7 @@ interface EvidenceCardProps {
  */
 export function EvidenceCard({ evidence }: EvidenceCardProps) {
   return (
-    <div className="border border-rule bg-paper-2 px-4 py-4">
+    <div className="border-2 border-rule bg-paper-2 px-4 py-4 shadow-[var(--shadow-card)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h4 className="text-sm font-semibold leading-6 text-ink">{evidence.title}</h4>
@@ -48,7 +48,7 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
       </div>
       <p className="mt-3 text-xs leading-5 text-ink-subtle">{evidence.supportedFact}</p>
       {evidence.quote && (
-        <blockquote className="mt-3 border-l-2 border-rule-strong pl-3 text-xs leading-5 text-muted">
+        <blockquote className="mt-3 border-l-[3px] border-l-rule-strong pl-3 text-xs leading-5 text-muted">
           "{evidence.quote}"
         </blockquote>
       )}

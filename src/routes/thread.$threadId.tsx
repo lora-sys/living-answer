@@ -115,10 +115,10 @@ function ThreadView() {
       <main className="min-h-screen bg-paper pb-20 text-ink">
         <div className="mx-auto w-full max-w-[1120px] px-5 pt-10 sm:px-8">
           <div className="space-y-4">
-            <div className="h-7 w-2/3 bg-paper-2 rounded animate-pulse" />
-            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
-            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
-            <div className="h-28 w-full bg-paper-2 rounded-[2px] border border-rule animate-pulse" />
+            <div className="h-7 w-2/3 bg-paper-3 animate-pulse" />
+            <div className="h-28 w-full border border-rule bg-paper-3 animate-pulse shadow-[var(--shadow-card)]" />
+            <div className="h-28 w-full border border-rule bg-paper-3 animate-pulse shadow-[var(--shadow-card)]" />
+            <div className="h-28 w-full border border-rule bg-paper-3 animate-pulse shadow-[var(--shadow-card)]" />
           </div>
         </div>
       </main>
@@ -135,7 +135,7 @@ function ThreadView() {
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
             THREAD VIEWER
           </p>
-          <h1 className="mt-5 font-display text-[32px] leading-[38px] font-normal tracking-[-0.01em] sm:text-[44px] sm:leading-[48px]">
+          <h1 className="mt-5 font-display text-[32px] leading-[38px] font-normal tracking-[-0.01em] text-ink sm:text-[44px] sm:leading-[48px]">
             {isNotFound ? "该线程不存在" : "线程数据损坏"}
           </h1>
           <p className="mt-4 max-w-[68ch] leading-7 text-ink-subtle">
@@ -146,7 +146,7 @@ function ThreadView() {
           <button
             type="button"
             onClick={() => void navigate({ to: "/" })}
-            className="mt-8 inline-flex h-12 items-center rounded-[6px] bg-accent px-8 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-8 inline-flex h-12 items-center justify-center border-2 border-accent bg-accent px-8 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             返回首页
           </button>
@@ -223,21 +223,21 @@ function ThreadView() {
   return (
     <main className="min-h-screen bg-paper pb-24 sm:pb-20 text-ink">
       {/* ═══ Sticky header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-paper/92 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 bg-paper-3/92 backdrop-blur-sm border-b border-rule">
         <div className="mx-auto w-full max-w-[1120px] px-5 py-4 sm:px-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
                 QUESTION THREAD
               </p>
-              <h1 className="mt-1 line-clamp-2 text-[17px] font-semibold leading-7 sm:text-[19px]">
+              <h1 className="mt-1 line-clamp-2 text-[17px] font-semibold leading-7 sm:text-[19px] text-ink">
                 {artifact.question}
               </h1>
               <p className="mt-1 text-xs text-muted">精炼查询: {artifact.refinedQuery}</p>
             </div>
             <div className="flex shrink-0 flex-col items-center gap-1">
               <span
-                className={`inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold ${uncertaintyColorClass}`}
+                className={`inline-flex items-center border px-2 py-1 font-mono text-[10px] font-semibold ${uncertaintyColorClass}`}
               >
                 {uncertaintyLabel}
               </span>
@@ -247,7 +247,7 @@ function ThreadView() {
               <button
                 type="button"
                 onClick={shareLink}
-                className="inline-flex min-h-11 items-center rounded-[4px] border border-rule bg-paper px-3 text-xs font-medium text-ink-subtle transition-colors duration-150 hover:bg-paper-3 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-3 text-xs font-medium text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
               >
                 复制分享链接
               </button>
@@ -265,10 +265,10 @@ function ThreadView() {
         {/* ═══ Timeline ──────────────────────────────────────────────────── */}
         <section className="pt-6 sm:pt-10">
           <div className="max-w-3xl">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
               TIMELINE
             </p>
-            <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+            <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
               来源时间线
             </h2>
             <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
@@ -292,11 +292,7 @@ function ThreadView() {
                       author: stage.authorDisplayName,
                     })
                   }
-                  className={
-                    "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
-                    "hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] " +
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  }
+                  className="block w-full border-2 border-rule-strong bg-paper-3 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-all duration-150 hover:border-accent hover:shadow-[3px_3px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <p className="font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
                     {new Date(stage.editTime * 1000).getFullYear()} 年{" "}
@@ -346,10 +342,10 @@ function ThreadView() {
         {sortedNodes.length > 0 && (
           <section className="border-t border-rule pt-6 sm:pt-12">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
                 LEARNING NODES
               </p>
-              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+              <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
                 学习总结
               </h2>
               <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
@@ -367,12 +363,12 @@ function ThreadView() {
                   <div
                     key={`${node.kind}-${node.sourceAnswerId}`}
                     className={
-                      "rounded-[2px] border border-rule bg-paper-2 px-5 py-5 shadow-[var(--shadow-card)] " +
+                      "border-2 border-rule-strong bg-paper-3 px-5 py-5 shadow-[var(--shadow-card)] " +
                       `border-l-[3px] ${NODE_BORDER_COLORS[node.kind] ?? "border-l-node-unknown"}`
                     }
                   >
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                      <span className="inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.06em] bg-info-soft text-info">
+                      <span className="inline-flex items-center border border-info bg-info-soft px-2 py-1 font-mono text-[10px] font-semibold tracking-[0.06em] text-info">
                         {LEARNING_NODE_LABELS[node.kind] ?? node.kind}
                       </span>
                       <span className="font-mono text-[10px] text-muted">
@@ -405,7 +401,7 @@ function ThreadView() {
                                     author: nodeSourceStage.authorDisplayName,
                                   })
                                 }
-                                className="inline-flex ml-2 items-center rounded-[2px] bg-accent-soft px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent-text cursor-pointer hover:bg-accent/hover:text-accent"
+                                className="inline-flex ml-2 items-center border border-accent bg-accent-soft px-1.5 py-0.5 font-mono text-[9px] font-medium text-accent cursor-pointer hover:bg-accent/15 transition-colors"
                               >
                                 [来源 #{node.sourceAnswerId.slice(-6)}]
                               </button>
@@ -426,14 +422,14 @@ function ThreadView() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/"
-              className="inline-flex h-12 items-center rounded-[6px] bg-accent px-8 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex h-12 items-center justify-center border-2 border-accent bg-accent px-8 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               创建新线程
             </Link>
             <button
               type="button"
               onClick={shareLink}
-              className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
             >
               复制分享链接
             </button>
@@ -444,7 +440,7 @@ function ThreadView() {
       {/* ═══ Source modal ─────────────────────────────────────────────────── */}
       {selectedSource && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-start justify-center overflow-y-auto bg-ink/40 px-0 sm:px-5 py-10 sm:py-16"
+          className="fixed inset-0 z-50 flex items-end sm:items-start justify-center overflow-y-auto bg-black/60 px-0 sm:px-5 py-0 sm:py-16"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedSource(null);
           }}
@@ -453,7 +449,7 @@ function ThreadView() {
             ref={modalRef}
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-full rounded-t-[8px] rounded-b-none max-h-[85vh] overflow-y-auto bg-paper-3 shadow-[var(--shadow-panel)] sm:max-w-2xl sm:rounded-[4px]"
+            className="w-full max-w-full border-t-[3px] border-t-accent border-2 border-rule-strong bg-paper shadow-[var(--shadow-panel)] max-h-[85vh] overflow-y-auto sm:max-w-2xl sm:border-t-0 sm:rounded-none"
           >
             <div className="flex items-start justify-between px-6 pt-5">
               <div>
@@ -467,7 +463,7 @@ function ThreadView() {
               <button
                 type="button"
                 onClick={() => setSelectedSource(null)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] text-muted transition-colors duration-150 hover:bg-paper-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-2 border-rule text-muted transition-colors duration-150 hover:bg-paper-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 aria-label="关闭"
               >
                 <svg
@@ -499,7 +495,7 @@ function ThreadView() {
                 href={selectedSource.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-xs font-semibold text-accent-text transition-colors duration-150 hover:border-accent/42 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-xs font-semibold text-accent transition-colors duration-150 hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
               >
                 在知乎查看原文 &rarr;
               </a>
@@ -509,7 +505,7 @@ function ThreadView() {
               <button
                 type="button"
                 onClick={() => setSelectedSource(null)}
-                className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
               >
                 关闭
               </button>

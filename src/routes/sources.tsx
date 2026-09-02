@@ -43,16 +43,19 @@ function SourcesPage() {
         <section>
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
+            className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
           >
             <span aria-hidden="true">&larr;</span> 返回首页
           </Link>
-          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
-            SOURCE LEDGER
-          </p>
-          <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
-            证据来源
-          </h1>
+          <div className="mt-5">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+              SOURCE LEDGER
+            </p>
+            <h1 className="mt-3 font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
+              证据来源
+            </h1>
+            <p className="mt-3 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
+          </div>
           <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-subtle">
             所有已检索的外部来源。每条变更都必须回到一手来源，没有来源的判断不会出现在答案旁边。
           </p>
@@ -62,7 +65,7 @@ function SourcesPage() {
           <div
             role="status"
             aria-live="polite"
-            className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-6"
+            className="flex min-h-14 items-center gap-3 border border-rule bg-paper-3 px-5 py-6"
           >
             <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
             <div className="space-y-2">
@@ -72,7 +75,7 @@ function SourcesPage() {
                   <div
                     key={i}
                     aria-hidden="true"
-                    className="h-3 w-24 animate-pulse rounded bg-rule"
+                    className="h-3 w-24 animate-pulse bg-paper-2"
                     style={{ animationDelay: `${i * 100}ms` }}
                   />
                 ))}
@@ -84,13 +87,13 @@ function SourcesPage() {
         {!loading && !result && (
           <div
             role="alert"
-            className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5"
+            className="border border-update bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载来源</p>
             <p className="mt-1 text-sm text-ink-subtle">数据加载失败，请稍后重试。</p>
             <Link
               to="/"
-              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors duration-150 hover:text-accent-active"
+              className="mt-3 inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
             >
               返回首页
             </Link>
@@ -100,13 +103,13 @@ function SourcesPage() {
         {!loading && result?.status === "error" && (
           <div
             role="alert"
-            className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5"
+            className="border border-update bg-update-soft px-5 py-5"
           >
             <p className="text-sm font-semibold text-ink">无法加载来源</p>
             <p className="mt-1 text-sm text-ink-subtle">{result.message}</p>
             <Link
               to="/"
-              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-accent-text transition-colors duration-150 hover:text-accent-active"
+              className="mt-3 inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
             >
               返回首页
             </Link>
@@ -114,21 +117,21 @@ function SourcesPage() {
         )}
 
         {!loading && result?.status === "ok" && sources.length === 0 && (
-          <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-8">
-            <p className="text-sm font-medium text-ink-subtle">来源库为空</p>
+          <div className="border border-rule bg-paper-3 px-5 py-8">
+            <p className="text-sm font-medium text-ink">来源库为空</p>
             <p className="mt-1 text-sm text-muted">
               检索到的来源将展示在这里。当回答需要引用外部证据时，来源会出现在下方。
             </p>
             <Link
               to="/"
-              className="mt-4 inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper-3 px-5 text-sm font-medium text-ink transition-colors duration-150 hover:border-accent/42"
+              className="mt-4 inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-paper-2 shadow-[var(--shadow-card)]"
             >
               返回首页继续浏览
             </Link>
           </div>
         )}
 
-        {!loading && sources.length > 0 && (
+        {!loading && result?.status === "ok" && sources.length > 0 && (
           <ul className="space-y-3" role="list">
             {sources.map((s) => (
               <li key={s.candidateFingerprint}>
@@ -136,7 +139,7 @@ function SourcesPage() {
                   href={s.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-[2px] border border-rule bg-paper-2 p-5 transition-colors duration-150 hover:border-accent/42 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="block border border-rule bg-paper-3 p-5 transition-colors duration-150 hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent shadow-[var(--shadow-card)]"
                 >
                   <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
                     <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
@@ -159,7 +162,7 @@ function SourcesPage() {
                       <span>发布于 {formatTimestamp(s.publishedAt)}</span>
                     )}
                     <span>检索于 {formatTimestamp(s.capturedAt)}</span>
-                    <span className="text-accent-text">查看来源 &rarr;</span>
+                    <span className="text-accent">查看来源 &rarr;</span>
                   </div>
                 </a>
               </li>

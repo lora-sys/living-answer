@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk", "DM Sans", "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 
   --font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
 
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Background and surfaces */
-  --color-paper: #0a0a0a;
-  --color-paper-2: #141414;
-  --color-paper-3: #1a1a1a;
+  --color-paper: #e6e7e8;
+  --color-paper-2: #f4f4f2;
+  --color-paper-3: #ffffff;
 
   /* Text */
-  --color-ink: #f5f3ee;
-  --color-ink-subtle: #c4c0b6;
-  --color-muted: #8a8a8a;
-  --color-faint: #5c5c5c;
+  --color-ink: #0b0b0d;
+  --color-ink-subtle: #4a4a4f;
+  --color-muted: #6c6f75;
+  --color-faint: #9a9da3;
 
   /* Rules and chrome */
-  --color-rule: #2a2a2a;
-  --color-rule-strong: #3a3a3a;
+  --color-rule: #c9c9c4;
+  --color-rule-strong: #0b0b0d;
 
   /* Source blue is the only action color. */
   --color-accent: #1e3fd8;
   --color-accent-hover: #1832b5;
   --color-accent-active: #112790;
-  --color-accent-text: #4a6cf7;
-  --color-accent-soft: rgba(30, 63, 216, 0.15);
-  --color-on-accent: #f5f3ee;
+  --color-accent-text: #1e3fd8;
+  --color-accent-soft: rgba(30, 63, 216, 0.12);
+  --color-on-accent: #ffffff;
 
   /* Semantic status */
   --color-update: #c6271a;
-  --color-update-soft: rgba(198, 39, 26, 0.18);
+  --color-update-soft: rgba(198, 39, 26, 0.12);
   --color-success: #0d6b52;
-  --color-success-soft: rgba(13, 107, 82, 0.18);
+  --color-success-soft: rgba(13, 107, 82, 0.12);
   --color-danger: #b42318;
-  --color-danger-soft: rgba(180, 35, 24, 0.18);
+  --color-danger-soft: rgba(180, 35, 24, 0.12);
   --color-info: #274b8f;
-  --color-info-soft: rgba(39, 75, 143, 0.18);
+  --color-info-soft: rgba(39, 75, 143, 0.12);
 
   /* Learning node border colors */
   --color-node-relationship: #1746ff;
@@ -51,27 +51,141 @@
 
   --color-focus: #1e3fd8;
 
-  --radius-control: 2px;
-  --radius-input: 2px;
-  --radius-card: 1px;
-  --radius-panel: 2px;
+  --radius-control: 0px;
+  --radius-input: 0px;
+  --radius-card: 0px;
+  --radius-panel: 0px;
 
-  --shadow-card: 1px 1px 0 var(--color-rule-strong);
-  --shadow-panel: 2px 2px 0 var(--color-rule-strong);
+  /* Hard shadows: no blur */
+  --shadow-card: 3px 3px 0 #000;
+  --shadow-panel: 4px 4px 0 #000;
+  --shadow-card-hover: 5px 5px 0 #000;
+  --shadow-panel-hover: 5px 6px 0 #000;
 }
 
+/* ── Halftone patterns (poster print) ────────────────────────────────── */
+
 .bg-halftone {
-  background-image: radial-gradient(circle, rgba(245, 243, 238, 0.07) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(6, 7, 8, 0.07) 1px, transparent 1px);
   background-size: 4px 4px;
 }
 .bg-halftone-accent {
-  background-image: radial-gradient(circle, rgba(30, 63, 216, 0.18) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(30, 63, 216, 0.12) 1px, transparent 1px);
   background-size: 5px 5px;
 }
 .bg-halftone-dense {
-  background-image: radial-gradient(circle, rgba(245, 243, 238, 0.12) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(6, 7, 8, 0.13) 1px, transparent 1px);
   background-size: 3px 3px;
 }
+
+/* ── Collage geometry utilities ──────────────────────────────────────── */
+/* Pointer-events-none by default. Positioning context must be relative on the parent. */
+
+.halftone-patch {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background-image: radial-gradient(circle, rgba(6, 7, 8, 0.16) 1px, transparent 1px);
+  background-size: 3px 3px;
+  z-index: 0;
+  user-select: none;
+}
+
+.block-black {
+  position: absolute;
+  pointer-events: none;
+  background: var(--color-ink);
+  z-index: 0;
+  user-select: none;
+}
+
+.block-blue {
+  position: absolute;
+  pointer-events: none;
+  background: var(--color-accent);
+  z-index: 0;
+  user-select: none;
+}
+
+.bar-black {
+  position: absolute;
+  pointer-events: none;
+  background: var(--color-ink);
+  z-index: 0;
+  user-select: none;
+}
+
+.contour-lines {
+  position: absolute;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(30, 63, 216, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 63, 216, 0.10) 1px, transparent 1px);
+  background-size: 24px 24px;
+  z-index: 0;
+  user-select: none;
+}
+
+.circle-clip {
+  border-radius: 50%;
+}
+
+/* ── Card / panel / frame ────────────────────────────────────────────── */
+
+.bg-collage-frame {
+  background: var(--color-paper-3);
+  border: 2px solid var(--color-rule-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.bg-black-strip {
+  position: relative;
+}
+.bg-black-strip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-ink);
+  z-index: -1;
+}
+.bg-blue-strip {
+  position: relative;
+}
+.bg-blue-strip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  z-index: -1;
+}
+.bg-contour {
+  background-image:
+    linear-gradient(var(--color-rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ── Disabled text contrast fix ──────────────────────────────────────── */
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  color: var(--color-ink-subtle);
+  background-color: var(--color-paper-2);
+  cursor: not-allowed;
+}
+input:disabled::placeholder,
+textarea:disabled::placeholder {
+  color: var(--color-muted);
+  opacity: 0.7;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────── */
 
 html {
   background: var(--color-paper);

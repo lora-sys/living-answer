@@ -38,7 +38,7 @@ function NotFound() {
       <title>页面不存在 · Living Answer</title>
       <meta name="description" content="当前地址不存在，请返回 Living Answer 开发环境首页。" />
       <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-12 text-ink">
-        <section className="w-full max-w-xl rounded-[2px] border border-rule bg-paper-2 p-8 shadow-[var(--shadow-card)] sm:p-12">
+        <section className="w-full max-w-xl border-2 border-rule-strong bg-paper-3 p-8 shadow-[var(--shadow-card)] sm:p-12">
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
             404
           </p>
@@ -47,7 +47,7 @@ function NotFound() {
           </h1>
           <p className="mt-4 leading-7 text-ink-subtle">当前地址不存在，返回开发环境首页继续。</p>
           <Link
-            className="mt-8 inline-flex h-12 items-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-8 inline-flex h-12 items-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             to="/"
           >
             返回首页
@@ -77,26 +77,31 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
         <nav
           aria-label="移动端导航"
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-rule bg-paper pb-[env(safe-area-inset-bottom)] pt-2 sm:hidden"
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t-2 border-rule-strong bg-paper/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] pt-2 sm:hidden"
         >
-          <Link
-            to="/"
-            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/") ? "text-accent-text" : "text-muted"}`}
-          >
-            首页
-          </Link>
-          <Link
-            to="/landing"
-            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/landing") ? "text-accent-text" : "text-muted"}`}
-          >
-            了解
-          </Link>
-          <Link
-            to="/changes"
-            className={`flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium ${isActive("/changes") ? "text-accent-text" : "text-muted"}`}
-          >
-            时间线
-          </Link>
+          {([
+            { to: "/", label: "首页" },
+            { to: "/landing", label: "了解" },
+            { to: "/changes", label: "时间线" },
+          ] as const).map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={[
+                "flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium transition-colors duration-150",
+                isActive(item.to) ? "text-ink" : "text-muted",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "block h-0.5 w-4 transition-colors duration-150",
+                  isActive(item.to) ? "bg-accent" : "bg-transparent",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <Scripts />

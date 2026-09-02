@@ -139,7 +139,7 @@ function ReadAnswerPage() {
           <div
             role="status"
             aria-live="polite"
-            className="flex min-h-14 items-center gap-3 rounded-[2px] border border-rule bg-paper-2 px-5 py-6"
+            className="flex min-h-14 items-center gap-3 border border-rule bg-paper-3 px-5 py-6"
           >
             <span aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" />
             <p className="text-sm text-ink-subtle">正在加载阅读页面…</p>
@@ -302,14 +302,14 @@ function ErrorPage({
         <PageHeader questionId={questionId} answerId={answerId} />
         <div
           role="alert"
-          className="rounded-[2px] border border-update/32 bg-update-soft px-5 py-5"
+          className="border border-update bg-update-soft px-5 py-5"
         >
           <p className="text-sm font-semibold text-ink">无法加载阅读页面</p>
           <p className="mt-1 text-sm text-ink-subtle">{message}</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               to="/"
-              className="inline-flex min-h-11 items-center rounded-[6px] border border-rule bg-paper px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-paper-3"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-rule-strong bg-paper-3 px-5 text-sm font-medium text-ink transition-all duration-120 hover:shadow-[2px_2px_0_var(--color-ink)] shadow-[var(--shadow-card)]"
             >
               返回首页
             </Link>
@@ -336,15 +336,15 @@ function NoExcerptPage({
     <main className="min-h-screen bg-paper px-5 py-10 text-ink sm:px-8">
       <div className="mx-auto w-full max-w-[1120px] space-y-6">
         <PageHeader questionId={questionId} answerId={answerId} />
-        <div className="rounded-[2px] border border-info/32 bg-info-soft px-5 py-5">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
+        <div className="border border-accent bg-accent-soft px-5 py-5">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
             暂无摘录
           </p>
           <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle">{message}</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               to="/"
-              className="inline-flex min-h-11 items-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:bg-accent-active"
+              className="inline-flex min-h-11 items-center justify-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active"
             >
               获取摘录
             </Link>
@@ -375,8 +375,8 @@ function ExcerptOnlyPage({
         <PageHeader questionId={questionId} answerId={answerId} />
         <SourceNotice sourceUrl={sourceUrl} />
 
-        <div className="rounded-[2px] border border-info/32 bg-info-soft px-5 py-5">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-text">
+        <div className="border border-accent bg-accent-soft px-5 py-5">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
             待分析
           </p>
           <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle">{message}</p>
@@ -386,7 +386,7 @@ function ExcerptOnlyPage({
 
         <Link
           to="/"
-          className="inline-flex min-h-11 items-center rounded-[6px] bg-accent px-5 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:bg-accent-active"
+          className="inline-flex min-h-11 items-center justify-center border-2 border-accent bg-accent px-5 text-sm font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active"
         >
           启动分析流程
         </Link>
@@ -410,17 +410,23 @@ function PageHeader({
     <section>
       <Link
         to="/"
-        className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent-text transition-colors duration-150 hover:text-accent-active"
+        className="inline-flex min-h-11 items-center font-mono text-[11px] uppercase tracking-[0.12em] text-accent transition-colors duration-150 hover:text-accent-active"
       >
         <span aria-hidden="true">&larr;</span> 返回首页
       </Link>
-      <div className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-2">
-        <h1 className="font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
-          回答阅读
-        </h1>
-        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          问题 #{questionId} · 回答 #{answerId}
-        </span>
+      <div className="mt-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+          ANSWER READ
+        </p>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+          <h1 className="font-display text-[32px] leading-[38px] font-normal text-ink sm:text-[52px] sm:leading-[56px]">
+            回答阅读
+          </h1>
+          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
+            问题 #{questionId} · 回答 #{answerId}
+          </span>
+        </div>
+        <p className="mt-3 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
       </div>
     </section>
   );
@@ -434,7 +440,7 @@ function SourceNotice({
   readonly excerpt?: AnswerExcerpt;
 }) {
   return (
-    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-4">
+    <div className="border border-rule bg-paper-3 px-5 py-4 shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <p className="text-sm font-medium text-ink-subtle">内容来源</p>
         <p className="text-xs text-muted">
@@ -462,7 +468,7 @@ function ExcerptView({ excerpt }: { readonly excerpt: AnswerExcerpt }) {
     .filter((p) => p.length > 0);
 
   return (
-    <div className="rounded-[2px] border border-rule bg-paper-2 px-5 py-5 sm:px-6">
+    <div className="border border-rule bg-paper-3 px-5 py-5 sm:px-6 shadow-[var(--shadow-card)]">
       <div className="space-y-4">
         {paragraphs.map((para, i) => (
           <p key={i} className="text-base leading-7 text-ink sm:text-lg sm:leading-8">
@@ -499,7 +505,7 @@ function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-accent-text underline underline-offset-2 transition-colors hover:text-accent-active"
+      className="text-accent underline underline-offset-2 transition-colors duration-150 hover:text-accent-active"
     >
       {children}
     </a>

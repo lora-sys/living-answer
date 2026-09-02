@@ -319,8 +319,8 @@ describe("AnalysisResultPanel", () => {
 
     it("NO_PATCH uses paper-2/rule (neutral) styling", () => {
       const html = renderPanel({ result: NO_PATCH_RESULT });
-      // NO_PATCH card: neutral paper-2 background and rule border
-      expect(html).toContain("bg-paper-2");
+      // NO_PATCH card: neutral paper-3 background and rule border
+      expect(html).toContain("bg-paper-3");
       expect(html).toContain("border-rule");
       // No amber styling
       expect(html).not.toContain("bg-update-soft");
@@ -330,7 +330,7 @@ describe("AnalysisResultPanel", () => {
     it("UNKNOWN uses blue information styling", () => {
       const html = renderPanel({ result: UNKNOWN_RESULT });
       expect(html).toContain("bg-accent-soft");
-      expect(html).toContain("border-accent/32");
+      expect(html).toContain("border-accent");
       // No amber styling
       expect(html).not.toContain("bg-update-soft");
       expect(html).not.toContain("bg-update-soft");

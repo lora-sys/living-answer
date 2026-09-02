@@ -24,27 +24,27 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
     <Link
       to={href as unknown as Parameters<typeof Link>[0]["to"]}
       className={[
-        "group block min-w-0 overflow-hidden rounded-[4px] border border-rule bg-paper-3",
-        "shadow-[var(--shadow-card)] transition-all duration-150",
-        "hover:-translate-y-px hover:border-accent/35 hover:shadow-[0_2px_0_var(--color-accent),var(--shadow-card)]",
+        "group block min-w-0 overflow-hidden border-2 border-rule-strong bg-paper-3",
+        "shadow-[var(--shadow-card)] transition-all duration-120",
+        "hover:-translate-y-px hover:shadow-[5px_5px_0_var(--color-accent)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
       ].join(" ")}
     >
-      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-5 gap-y-2 border-b border-rule bg-paper px-4 py-3 sm:px-6">
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-5 gap-y-2 border-b-2 border-rule bg-paper-3 px-4 py-3 sm:px-6">
         <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
           {variant === "hero" ? "FEATURED" : "PATCH RECORD"} · {formatDateYYYYMMDD(patch.asOf)}
         </span>
-        <span className="inline-flex items-center gap-2 rounded-full bg-update-soft px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-update">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-update" />
+        <span className="inline-flex items-center gap-2 border border-update bg-update-soft px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-update">
+          <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
           {PATCH_TYPE_LABELS[patch.type]}
         </span>
       </div>
 
-      <div className="border-b border-rule px-4 py-5 sm:px-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+      <div className="border-b-2 border-rule px-4 py-5 sm:px-6">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
           {demo.topic}
         </p>
-        <h3 className="mt-2.5 max-w-[68ch] text-[19px] font-semibold leading-7 tracking-[-0.02em] text-ink transition-colors duration-150 group-hover:text-accent-text sm:text-[21px] sm:leading-8">
+        <h3 className="mt-2.5 max-w-[68ch] text-[19px] font-semibold leading-7 tracking-[-0.02em] text-ink transition-colors duration-150 group-hover:text-accent sm:text-[21px] sm:leading-8">
           {demo.displayTitle}
         </h3>
         <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle sm:text-[15px] sm:leading-7">
@@ -61,7 +61,7 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
         </div>
 
         <div className="border-b border-rule px-4 py-5 sm:px-6 lg:border-b-0 lg:border-r">
-          <div className="flex items-center gap-2 border-t-2 border-update pt-3 lg:border-t-0 lg:pt-0">
+          <div className="flex items-center gap-2 border-t-[3px] border-update pt-3 lg:border-t-0 lg:pt-0">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-update">
               现在变化
             </p>
@@ -88,11 +88,11 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
         </div>
       </div>
 
-      <div className="flex min-h-11 items-center justify-between gap-4 border-t border-rule bg-paper px-4 py-3 sm:px-6">
+      <div className="flex min-h-11 items-center justify-between gap-4 border-t border-rule bg-paper-3 px-4 py-3 sm:px-6">
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">
           {demo.source.authorDisplayName}
         </span>
-        <span className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-accent-text transition-colors duration-150 group-hover:text-accent-active">
+        <span className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-accent transition-colors duration-150 group-hover:text-accent-active">
           打开记录
           <span
             aria-hidden="true"
