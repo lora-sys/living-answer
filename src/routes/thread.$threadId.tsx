@@ -235,12 +235,15 @@ function ThreadView() {
               </h1>
               <p className="mt-1 text-xs text-muted">精炼查询: {artifact.refinedQuery}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-col items-center gap-1">
               <span
                 className={`inline-flex items-center rounded-[4px] px-2 py-1 font-mono text-[10px] font-semibold ${uncertaintyColorClass}`}
               >
                 {uncertaintyLabel}
               </span>
+              <p className="text-[10px] text-muted">AI 综合评估的置信度，越低表示时效性争议越大</p>
+            </div>
+            <div className="flex shrink-0 items-center">
               <button
                 type="button"
                 onClick={shareLink}
@@ -292,9 +295,13 @@ function ThreadView() {
                   className={
                     "block w-full rounded-[2px] border border-rule bg-paper-2 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
                     "hover:border-accent/42 hover:shadow-[0_1px_0_var(--color-accent),var(--shadow-card)] " +
-                    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   }
                 >
+                  <p className="font-mono text-[11px] tracking-[0.08em] text-muted uppercase">
+                    {new Date(stage.editTime * 1000).getFullYear()} 年{" "}
+                    {new Date(stage.editTime * 1000).getMonth() + 1} 月
+                  </p>
                   <div className="flex min-w-0 items-start justify-between gap-x-4 gap-y-2">
                     <p className="min-w-0 text-[17px] font-semibold leading-7 text-ink">
                       {stage.title}
@@ -313,9 +320,7 @@ function ThreadView() {
                       作者{" "}
                       <span className="font-medium text-ink-subtle">{stage.authorDisplayName}</span>
                     </span>
-                    <span>
-                      编辑于 {new Date(stage.editTime * 1000).toLocaleDateString("zh-CN")}
-                    </span>
+                    <span>{new Date(stage.editTime * 1000).toLocaleDateString("zh-CN")}</span>
                   </div>
 
                   <p className="mt-2 text-xs text-muted">{stage.excerptBoundaryNote}</p>

@@ -264,7 +264,7 @@ function QuestionThreadEntry() {
               <button
                 type="submit"
                 disabled={clarificationLoading || searchLoading || generation.status === "loading"}
-                className="inline-flex h-14 shrink-0 items-center justify-center rounded-[6px] bg-accent px-7 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
+                className="inline-flex h-14 shrink-0 items-center justify-center rounded-[6px] bg-accent px-7 text-sm font-semibold text-on-accent transition-all duration-120 hover:shadow-[0_2px_8px_rgb(23_70_255/0.3)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-rule disabled:text-faint"
               >
                 {clarificationLoading ? "正在澄清…" : "开始 →"}
               </button>
@@ -601,19 +601,19 @@ function QuestionThreadEntry() {
             <div className="flex gap-6">
               <Link
                 to="/landing"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 了解产品
               </Link>
               <Link
                 to="/changes"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 时间线
               </Link>
               <Link
                 to="/sources"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 来源
               </Link>
