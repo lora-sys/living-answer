@@ -2,9 +2,8 @@
  * Immutable {@link AnswerExcerpt} factory.
  *
  * Captures a summary-class excerpt of a Zhihu answer (the `ContentText` value
- * from the open API). The excerpt is a *separate observation* from
- * {@link AnswerSnapshot} — it lives at the ingestion boundary and never stores
- * summary data in a full snapshot's `body`.
+ * from the open API). It lives at the ingestion boundary and is never treated
+ * as a complete answer body.
  *
  * Business failures are returned as a discriminated union; this function never
  * throws.

@@ -2,9 +2,6 @@ import { Effect } from "effect";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import type { ZhihuDirectAnswerCompletions } from "./zhihu-direct-answer-adapter";
-import { DirectAnswerError, ZhihuDirectAnswerTransportError } from "./zhihu-direct-answer-adapter";
-
 import {
   ClarificationWorkflowError,
   clarifyQuestion,
@@ -25,16 +22,11 @@ const makeDeps = (response: string): ThreadClarificationDeps => ({
 const makeFailDeps = (error: ClarificationWorkflowError): ThreadClarificationDeps => ({
   model: "zhida-thinking-1p5",
   chat: {
-    complete: () =>
-      Effect.fail(error) as unknown as Effect.Effect<
-        string,
-        DirectAnswerError | ZhihuDirectAnswerTransportError,
-        never
-      >,
+    complete: () => Effect.fail(error),
   },
 });
 
-const makeRawChat = (response: string): ZhihuDirectAnswerCompletions => ({
+const makeRawChat = (response: string): ThreadClarificationDeps["chat"] => ({
   complete: () => Effect.succeed(response),
 });
 

@@ -15,11 +15,6 @@ import type { AnswerExcerpt } from "../lib/answer-excerpt";
 import { makeSqliteExcerptStore, type ExcerptStore } from "../lib/excerpt-store";
 import { StoreError } from "../lib/excerpt-store";
 
-import {
-  makeSqlitePatchLifecycleStore,
-  type PatchLifecycleStore,
-} from "../lib/patch-lifecycle-store";
-
 import { makeSqliteDailyQuotaStore } from "../lib/sqlite-daily-quota-store";
 
 import { makeDailyQuotaGuard, QuotaExceededError, type DailyQuotaGuard } from "../lib/daily-quota";
@@ -37,17 +32,6 @@ export interface AnswerCandidate {
   readonly excerptFingerprint: string;
   readonly authorDisplayName?: string;
   readonly editAt?: number;
-  readonly maintenance: {
-    readonly status:
-      | "VISIBLE"
-      | "DISPUTED"
-      | "SUPERSEDED"
-      | "RESOLVED"
-      | "WITHDRAWN"
-      | "not_tracked"
-      | "unknown";
-    readonly evidenceCount?: number;
-  };
 }
 
 export type SearchAnswerCandidatesResponse =
@@ -89,13 +73,13 @@ const safeErrorResponse = (code: SearchCandidatesFailureCode): SearchAnswerCandi
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface SearchProcessingResult {
-  readonly candidates: readonly Omit<AnswerCandidate, "maintenance">[];
+  readonly candidates: readonly AnswerCandidate[];
   readonly excerpts: AnswerExcerpt[];
 }
 
 function processSearchItems(items: readonly unknown[], now: number): SearchProcessingResult {
   const seen = new Set<string>();
-  const candidates: Omit<AnswerCandidate, "maintenance">[] = [];
+  const candidates: AnswerCandidate[] = [];
   const excerpts: AnswerExcerpt[] = [];
 
   for (const item of items) {
@@ -113,8 +97,7 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
     if (seen.has(parsed.answerId)) continue;
     seen.add(parsed.answerId);
 
-    // Validate excerpt fields (mirrors AnswerExcerptProvider.selectMatch checks).
-    // Malformed items are silently skipped — not converted into invalid excerpts.
+    // Malformed items are silently skipped, not converted into invalid excerpts.
     const contentId = record.ContentID;
     const editTime = record.EditTime;
     const contentText =
@@ -187,8 +170,6 @@ export interface SearchAnswerCandidatesDeps {
   readonly createStore: () => Promise<ExcerptStore>;
   /** Create a daily quota guard. */
   readonly createQuotaGuard: () => Promise<DailyQuotaGuard>;
-  /** Create a fresh lifecycle store. */
-  readonly createLifecycleStore: () => Promise<PatchLifecycleStore>;
 }
 
 export const createSearchAnswerCandidatesHandler =
@@ -206,7 +187,6 @@ export const createSearchAnswerCandidatesHandler =
     const query = input.query.trim();
     const store = await deps.createStore();
     const quotaGuard = await deps.createQuotaGuard();
-    const lifecycleStore = await deps.createLifecycleStore();
 
     const transport = makeFetchSearchTransport({ timeoutMs: 10_000 });
 
@@ -270,45 +250,7 @@ export const createSearchAnswerCandidatesHandler =
       return safeErrorResponse("SEARCH_EXCERPT_STORE_FAILURE");
     }
 
-    // Look up local lifecycle status for each persisted excerpt.  Lookup
-    // failures are tolerated — a search candidate is never hidden because the
-    // lifecycle store failed.
-    const lifecycleErrorIndices = new Set<number>();
-
-    const lifecycleResults = await Effect.runPromise(
-      Effect.all(
-        candidates.map((candidate, index) =>
-          lifecycleStore.findHistoryByAnswer(candidate.questionId, candidate.answerId).pipe(
-            Effect.catchAll(() => {
-              lifecycleErrorIndices.add(index);
-              return Effect.succeed([]);
-            }),
-          ),
-        ),
-      ),
-    );
-
-    const enrichedCandidates: AnswerCandidate[] = candidates.map((candidate, index) => {
-      const lifecycle = lifecycleResults[index]?.[0];
-
-      if (lifecycle && lifecycle.status) {
-        return {
-          ...candidate,
-          maintenance: {
-            status: lifecycle.status,
-            evidenceCount: lifecycle.selectedEvidenceFingerprints.length,
-          },
-        };
-      }
-
-      if (lifecycleErrorIndices.has(index)) {
-        return { ...candidate, maintenance: { status: "unknown" } };
-      }
-
-      return { ...candidate, maintenance: { status: "not_tracked" } };
-    });
-
-    return { status: "ok", candidates: enrichedCandidates };
+    return { status: "ok", candidates };
   };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -319,7 +261,6 @@ const DAILY_QUOTA_LIMIT_PER_DAY = 1000;
 
 let storeInstance: Promise<ExcerptStore> | null = null;
 let quotaGuardInstance: Promise<DailyQuotaGuard> | null = null;
-let lifecycleStoreInstance: Promise<PatchLifecycleStore> | null = null;
 
 const getOrCreateStore = async (): Promise<ExcerptStore> => {
   if (!storeInstance) {
@@ -339,13 +280,6 @@ const getOrCreateQuotaGuard = async (): Promise<DailyQuotaGuard> => {
   return quotaGuardInstance;
 };
 
-const getOrCreateLifecycleStore = async (): Promise<PatchLifecycleStore> => {
-  if (!lifecycleStoreInstance) {
-    lifecycleStoreInstance = Effect.runPromise(makeSqlitePatchLifecycleStore());
-  }
-  return lifecycleStoreInstance;
-};
-
 const parseInput = (input: unknown): SearchAnswerCandidatesInput => {
   if (typeof input !== "object" || input === null || !("query" in input)) {
     return { query: "" };
@@ -363,6 +297,5 @@ export const searchAnswerCandidates = createServerFn({
       getSecret: () => process.env["ZHIHU_ACCESS_SECRET"],
       createStore: getOrCreateStore,
       createQuotaGuard: getOrCreateQuotaGuard,
-      createLifecycleStore: getOrCreateLifecycleStore,
     })(data);
   });

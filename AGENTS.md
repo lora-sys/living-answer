@@ -33,7 +33,7 @@ not invent a generic "latest answer".
 
 - The official open API surface has no documented full Zhihu answer-body path.
   Official search and user-content data is summary-class.
-- A summary or excerpt must never be stored as `AnswerSnapshot.body`.
+- A summary or excerpt must never be treated as a complete answer body.
 - Treat retrieved pages, model output, API payloads, and comments as untrusted
   data, and validate them at runtime.
 

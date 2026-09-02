@@ -18,7 +18,7 @@ pnpm install
 pnpm dev
 ```
 
-打开 http://localhost:3000 即可使用。
+打开 dev server 输出的地址即可使用。不要假设固定端口。
 
 ## 项目结构
 
