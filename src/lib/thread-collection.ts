@@ -81,6 +81,23 @@ export const buildThreadMarkdown = (artifact: QuestionLearningThread): string =>
     artifact.learningGuide.overview.summary,
   ];
 
+  lines.push("", "## 核心学习点", "");
+  const nodeOrder = [
+    "relationship",
+    "cause",
+    "consensus",
+    "evolution",
+    "divergence",
+    "changed_premise",
+    "unknown",
+  ];
+  const coreNodes = [...artifact.learningNodes]
+    .sort((left, right) => nodeOrder.indexOf(left.kind) - nodeOrder.indexOf(right.kind))
+    .slice(0, 3);
+  for (const node of coreNodes) {
+    lines.push(`- **${node.title}**：${node.summary}`);
+  }
+
   for (const ref of artifact.learningGuide.overview.evidenceRefs) {
     const stage = stageMap.get(
       artifact.timelineStages.find((stage) => stage.excerpt.fingerprint === ref.excerptFingerprint)

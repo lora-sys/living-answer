@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PRODUCT_TAGLINE } from "../lib/app-info";
 import { FEATURED_THREADS } from "../lib/featured-threads";
@@ -32,6 +32,12 @@ const STARTER_QUESTIONS = [
 // ── Route ─────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute("/")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { readonly q?: string; readonly clarify?: boolean } => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+    clarify: typeof search.clarify === "boolean" ? search.clarify : undefined,
+  }),
   head: () => ({
     meta: [
       {
@@ -80,6 +86,7 @@ const CANDIDATE_ROLE_COLORS: Record<CandidateRole, string> = {
 
 function QuestionThreadEntry() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const boundSearch = useServerFn(searchAnswerCandidates);
   const boundClarify = useServerFn(clarifyQuestionFn);
   const boundGenerate = useServerFn(generateThreadArtifactFn);
@@ -104,6 +111,7 @@ function QuestionThreadEntry() {
 
   // Generation state
   const [generation, setGeneration] = useState<GenerationState>({ status: "idle" });
+  const initialAgentQueryRef = useRef<string | null>(null);
 
   // Handlers
 
@@ -247,6 +255,15 @@ function QuestionThreadEntry() {
     },
     [boundRank, clarification, performSearch, questionText],
   );
+
+  useEffect(() => {
+    const initialQuery = search.q?.trim();
+    if (!initialQuery || initialAgentQueryRef.current === initialQuery) return;
+    initialAgentQueryRef.current = initialQuery;
+    setQuestionText(initialQuery);
+    void handleClarify(initialQuery);
+    void navigate({ to: "/", search: {} });
+  }, [handleClarify, navigate, search.q]);
 
   const toggleCandidate = (candidate: AnswerCandidate) => {
     setSelectedIds((prev) => {
@@ -696,12 +713,12 @@ function QuestionThreadEntry() {
             </p>
             <h2
               id="demo-heading"
-              className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink"
+              className="mt-3 font-display text-[30px] font-bold leading-9 tracking-tight text-ink sm:text-[34px]"
             >
-              先看三条真实学习线程
+              30 秒看懂一次学习成果
             </h2>
             <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-              每条线程都由真实知乎回答、跨年份摘录和 AI 学习节点组成。看完再去生成属于你的问题线。
+              每张卡是一次真实学习线压缩后的 Study Badge：核心学习点、关键分歧和继续追问都在里面。
             </p>
           </div>
 
@@ -723,6 +740,17 @@ function QuestionThreadEntry() {
                 <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">
                   {thread.description}
                 </p>
+                <ul className="mt-4 list-none space-y-2">
+                  {thread.takeaways.map((takeaway) => (
+                    <li key={takeaway} className="flex gap-2 text-sm leading-6 text-ink-subtle">
+                      <span
+                        aria-hidden="true"
+                        className="mt-2 block h-1.5 w-1.5 shrink-0 bg-accent"
+                      />
+                      {takeaway}
+                    </li>
+                  ))}
+                </ul>
                 <div className="mt-5 flex items-center justify-between border-t border-rule pt-4 font-mono text-[11px] text-muted">
                   <span>
                     {thread.stageCount} 段 · {thread.nodeCount} 个学习点

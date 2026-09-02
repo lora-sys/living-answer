@@ -30,7 +30,8 @@ export type ThreadAgentActionType =
   | "focus_source"
   | "copy_search"
   | "next_question"
-  | "boundary_check";
+  | "boundary_check"
+  | "search_supplement";
 
 export interface ThreadAgentAction {
   readonly type: ThreadAgentActionType;
@@ -118,8 +119,8 @@ const validateInput = (
 
 const SYSTEM_PROMPT =
   "You are a study agent for one saved learning thread. Answer only from that thread's selected excerpts, nodes, and guide. " +
-  'Return raw JSON: {"status":"grounded|evidence_gap","answer":"...","evidenceRefs":[{"answerId":"...","excerptFingerprint":"...","quote":"..."}],"nextActions":[{"type":"focus_source|copy_search|next_question|boundary_check","label":"...","detail":"...","answerId":"...","query":"..."}],"uncertainty":0.0-1.0}. ' +
-  "If the thread does not contain enough evidence, use evidence_gap, leave evidenceRefs empty, and propose a next action. " +
+  'Return raw JSON: {"status":"grounded|evidence_gap","answer":"...","evidenceRefs":[{"answerId":"...","excerptFingerprint":"...","quote":"..."}],"nextActions":[{"type":"focus_source|search_supplement|next_question|boundary_check","label":"...","detail":"...","answerId":"...","query":"..."}],"uncertainty":0.0-1.0}. ' +
+  "If the thread does not contain enough evidence, use evidence_gap, leave evidenceRefs empty, and propose a search_supplement action with a better Chinese search query. The user must confirm it before new sources are added. " +
   "Every grounded answer must cite at least one exact quote from the provided excerpts. Never invent Zhihu content. " +
   "Never say the author was wrong; say the premise or context has changed. Next action labels must be short Chinese UI text.";
 
@@ -181,8 +182,8 @@ const makeFallbackResult = (question: string): ThreadAgentResult => ({
       detail: "当前线程只能回答摘录覆盖到的问题。",
     },
     {
-      type: "copy_search",
-      label: "复制新搜索词",
+      type: "search_supplement",
+      label: "搜索补充来源",
       detail: question,
       query: question,
     },
@@ -215,7 +216,7 @@ const validateAction = (
     return { type, label, detail, answerId };
   }
 
-  if (type === "copy_search" || type === "next_question") {
+  if (type === "copy_search" || type === "next_question" || type === "search_supplement") {
     const query = typeof value.query === "string" ? value.query.trim() : "";
     if (query === "" || query.length > 200) return null;
     return {

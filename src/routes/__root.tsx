@@ -1,10 +1,4 @@
-import {
-  HeadContent,
-  Link,
-  Scripts,
-  createRootRoute,
-  useRouterState,
-} from "@tanstack/react-router";
+import { HeadContent, Link, Scripts, createRootRoute } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 
@@ -59,13 +53,6 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { location } = useRouterState();
-
-  const isActive = (path: string) => {
-    if (path === "/") return location.pathname === "/";
-    return location.pathname.startsWith(path);
-  };
-
   return (
     <html lang="zh-CN">
       <head>
@@ -73,37 +60,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <SiteNav />
-        <div className="pb-16 sm:pb-0">{children}</div>
-
-        <nav
-          aria-label="移动端导航"
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t-2 border-rule-strong bg-paper/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] pt-2 sm:hidden"
-        >
-          {(
-            [
-              { to: "/", label: "首页" },
-              { to: "/landing", label: "了解" },
-            ] as const
-          ).map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={[
-                "flex flex-col items-center gap-0.5 px-4 py-2 text-[11px] font-medium transition-colors duration-150",
-                isActive(item.to) ? "text-ink" : "text-muted",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "block h-0.5 w-4 transition-colors duration-150",
-                  isActive(item.to) ? "bg-accent" : "bg-transparent",
-                ].join(" ")}
-                aria-hidden="true"
-              />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <div>{children}</div>
 
         <Scripts />
       </body>

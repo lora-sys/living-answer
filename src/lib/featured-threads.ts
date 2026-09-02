@@ -6,6 +6,7 @@ export interface FeaturedThreadSummary {
   readonly yearRange: string;
   readonly stageCount: number;
   readonly nodeCount: number;
+  readonly takeaways: readonly string[];
 }
 
 export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
@@ -18,6 +19,11 @@ export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
     yearRange: "2018—2026",
     stageCount: 4,
     nodeCount: 4,
+    takeaways: [
+      "核心：大 O 关注增长趋势，不是精确耗时。",
+      "分歧：相同复杂度的实际速度可能差距很大。",
+      "追问：为什么算法选择不能只看大 O？",
+    ],
   },
   {
     threadId: "b6dc2142b5a4420d",
@@ -28,6 +34,11 @@ export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
     yearRange: "2022—2024",
     stageCount: 3,
     nodeCount: 7,
+    takeaways: [
+      "基础：Flex 适合一维，Grid 适合二维。",
+      "深化：真实页面常把两者组合使用。",
+      "追问：哪些场景 Grid 反而更麻烦？",
+    ],
   },
   {
     threadId: "a8959e9f4fe2409c",
@@ -37,5 +48,10 @@ export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
     yearRange: "2023—2024",
     stageCount: 2,
     nodeCount: 2,
+    takeaways: [
+      "动机：减少客户端资源消耗。",
+      "边界：序列化模型决定组件边界。",
+      "追问：什么场景还适合客户端组件？",
+    ],
   },
 ];

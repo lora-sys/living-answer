@@ -11,6 +11,7 @@ import {
 } from "../lib/thread-collection";
 import { askThreadAgentFn } from "../server/ask-thread-agent";
 import { readThreadArtifactFn } from "../server/read-thread-artifact";
+import { StudyBadgeCard } from "../components/thread/StudyBadgeCard";
 
 type ThreadResponse = Awaited<ReturnType<typeof readThreadArtifactFn>>;
 type AskThreadAgent = Awaited<ReturnType<typeof askThreadAgentFn>>;
@@ -327,11 +328,19 @@ function ThreadView() {
         copyText(action.query);
         return;
       }
+      if (action.type === "search_supplement" && action.query) {
+        copyText(action.query);
+        void navigate({
+          to: "/",
+          search: { q: action.query, clarify: false },
+        });
+        return;
+      }
       if (action.type === "next_question" && action.query) {
         void askAgent(action.query);
       }
     },
-    [askAgent, copyText, openSourceByFingerprint, response],
+    [askAgent, copyText, navigate, openSourceByFingerprint, response],
   );
 
   if (loading) {
@@ -462,6 +471,12 @@ function ThreadView() {
 
       <div className="mx-auto grid w-full max-w-[1280px] gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_368px] lg:gap-10 lg:py-12">
         <div className="min-w-0 space-y-12 lg:space-y-16">
+          <StudyBadgeCard
+            artifact={artifact}
+            onExportMarkdown={() => exportThread("markdown")}
+            onExportJson={() => exportThread("json")}
+          />
+
           <section aria-labelledby="learning-bridge-heading">
             <div className="max-w-3xl">
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
