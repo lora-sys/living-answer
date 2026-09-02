@@ -4,7 +4,7 @@
 
 Living Answer 是一个问题学习线程生成器。用户在唯一主入口输入模糊问题 →
 系统澄清学习意图 → 搜索知乎回答 → AI 解释候选、用户选取摘录 → AI 合成记忆廊桥 →
-持久化到 SQLite → 在 `/thread/$threadId` 阅读、追问和收藏导出。
+持久化到 SQLite → 在 `/thread/$threadId` 阅读学习桥、Study Badge、追问和收藏导出。
 
 核心价值：同一知识点在知乎上有不同年份、不同视角的真实回答。Living Answer
 把它们整理成可追溯的学习线程，让用户理解定义、因果、演变和分歧，而不是只看到
@@ -22,6 +22,8 @@ Living Answer 是一个问题学习线程生成器。用户在唯一主入口输
 - [x] Thread Study Agent（有依据 / 证据不足，提供下一步动作）
 - [x] 首页和 landing 展示三条真实学习线程
 - [x] 本地收藏与 Markdown / JSON 导出
+- [x] Study Badge 压缩学习成果：核心点、分歧、追问和导出
+- [x] Agent 支持补充来源建议，用户确认后回到搜索
 
 ## 环境变量
 

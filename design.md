@@ -8,11 +8,10 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 ## 产品表面
 
-| 路径                | 角色                                                        |
-| ------------------- | ----------------------------------------------------------- |
-| `/`                 | 问题学习线程：输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程 |
-| `/thread/$threadId` | 线程阅读器：查看完整学习线程，含时间线、学习节点和来源      |
-| `/landing`          | 产品故事：展示理念与三条真实学习线程                        |
+| 路径                | 角色                                                   |
+| ------------------- | ------------------------------------------------------ |
+| `/`                 | 合并入口：搜索提问、产品解释和 30 秒 Study Badge 演示  |
+| `/thread/$threadId` | 线程阅读器：查看学习桥、学习节点、Agent 和 Study Badge |
 
 ## 技术架构
 
@@ -75,6 +74,7 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 | 用途     | Tailwind 类                              |
 | -------- | ---------------------------------------- |
 | 页面容器 | `max-w-[1120px] mx-auto`                 |
+| 线程容器 | `max-w-[1280px] mx-auto`                 |
 | 内容区域 | `max-w-5xl`                              |
 | 面板宽度 | `w-[380px]`（桌面端侧栏）                |
 | 单元间距 | `space-y-6` 移动端 / `space-y-12` 桌面端 |
@@ -135,9 +135,10 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 
 ```
 问题学习线程（QuestionLearningThread）
-  ├── question / refinedQuery / learningIntent
+  ├── question / refinedQuery
   ├── timelineStages[] → 时间线阶段（来源记录）
   ├── learningNodes[]   → 学习节点（关系/因果/演变/共识/分歧/前提变化/未知）
+  ├── learningGuide     → AI 学习桥：概览 / 阶段角色 / 开放追问
   └── uncertainty       → 整体不确定性评级
 ```
 
@@ -157,6 +158,17 @@ SQLite `thread_artifacts` 表：
 - Markdown 包含学习意图、AI 学习桥、学习节点、开放追问、精确摘录、知乎原文和“这是摘录，不是完整回答”边界
 - JSON 导出当前线程完整 artifact，适合后续导入个人学习空间
 - 当前是轻量本地收藏；不做登录系统和跨端同步
+
+## Study Badge
+
+Study Badge 是学习线结束后的可收藏成果，不是虚拟奖杯。
+
+- 第一屏回答：这次学到什么、关键结论是什么、还有哪些分歧和追问。
+- 展示学习概览、年份跨度、来源数量、学习节点角色统计。
+- 展示最多 3 个核心学习点和 2 个继续追问。
+- 提供“带走 Markdown 笔记”和“导出 JSON”。
+- Markdown 前置核心学习点，便于粘贴到笔记工具。
+- Badge 是当前首页 demo 的叙事模型，也是未来个人学习空间的最小单位。
 
 ## 关键安全规则
 
@@ -199,9 +211,16 @@ SQLite `thread_artifacts` 表：
 - 每个候选卡显示角色 badge 与一段入选理由
 - AI 只解释候选，不代替用户勾选；选择操作仍由用户显式完成
 
+### Study Badge 卡
+
+- 容器：`border-2 border-accent bg-accent-soft`
+- 标题：`font-display text-[24px] font-bold`，移动端起 24px，桌面 28px
+- 核心点：每条使用 accent 方点 + 标题加粗 + 一句话说明
+- 操作主次：`带走 Markdown 笔记` 是主按钮，`导出 JSON` 是次按钮
+
 - 学习节点卡片：`border-l-[3px]` 左侧颜色指示条，按 node.kind 映射
 - 引用回指：`[来源 #XXXXXX]` 可点击标签，`bg-accent-soft rounded-[2px] px-1.5 py-0.5 font-mono text-[9px]`
 - 时间线日期：卡片顶部 `font-mono text-[11px] tracking-[0.08em] uppercase` 独立年月标识
 - 来源弹窗：移动端全宽底部抽屉（`items-end max-h-[85vh]`），桌面端居中面板
-- 移动端底部导航：`fixed bottom-0 sm:hidden` 两 tab（首页/了解），当前页 `text-ink`
+- 导航只保留品牌入口，不再做首页/了解重复分栏
 - 响应式间距：`space-y-6 sm:space-y-12`（移动紧凑，桌面宽松）
