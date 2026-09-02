@@ -1,7 +1,7 @@
 export const APP_NAME = "Living Answer";
 
 export const PRODUCT_TAGLINE =
-  "当专家的知乎回答因为前提、数据与共识随时间变化而落后时，Living Answer 追踪原回答的波动，为你生成持久、可验证的学习线程。";
+  "AI 先澄清你的问题，再串联真实知乎回答，把跨年份的知识整理成可追溯、可提问、可收藏的学习线程。";
 
 export const READY_MESSAGE = "开发环境已准备完成";
 

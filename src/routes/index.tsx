@@ -2,8 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useState } from "react";
 
-import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
+import { FEATURED_THREADS } from "../lib/featured-threads";
 import {
   searchAnswerCandidates,
   type AnswerCandidate,
@@ -12,17 +12,16 @@ import {
 import { clarifyQuestionFn } from "../server/clarify-question";
 import type { ClarifyQuestionResponse } from "../server/clarify-question";
 import { generateThreadArtifactFn } from "../server/generate-thread-artifact";
-import { GoldenDemoPreviewCard } from "../components/demo/GoldenDemoPreviewCard";
 
 // ── Starter questions ──────────────────────────────────────────────────────────
 
 const STARTER_QUESTIONS = [
-  "ChatGPT Free 与 Plus 有什么关键差异",
-  "Create React App 还值得学吗",
-  "渐进式延迟法定退休年龄落地了吗",
-  "为什么 QWERTY 键盘布局保留至今",
-  "人民币汇率近期有什么变化",
-  "电动汽车续航虚标问题现状",
+  "如何理解算法时间复杂度",
+  "Flexbox 和 Grid 怎么选",
+  "React Server Components 有什么用",
+  "React 19 还值得学吗",
+  "前端工程师 2026 要学什么",
+  "Vue3 和 React18 如何选型",
 ] as const;
 
 // ── Route ─────────────────────────────────────────────────────────────────────
@@ -64,7 +63,6 @@ function QuestionThreadEntry() {
 
   // Input state
   const [questionText, setQuestionText] = useState("");
-  const [showAdvancedUrl, setShowAdvancedUrl] = useState(false);
 
   // Clarification state
   const [clarification, setClarification] = useState<ClarifyQuestionResponse | null>(null);
@@ -212,11 +210,6 @@ function QuestionThreadEntry() {
 
   // Derived state
 
-  const goldenDemos: (typeof GOLDEN_DEMOS)[string][] = [
-    GOLDEN_DEMOS["chatgpt-free-plus"],
-    GOLDEN_DEMOS["create-react-app"],
-    GOLDEN_DEMOS["delayed-retirement"],
-  ];
   const selectedCount = selectedIds.size;
   const canGenerate =
     selectedCount > 0 && clarification?.success && generation.status !== "loading";
@@ -240,10 +233,10 @@ function QuestionThreadEntry() {
                 LIVING ANSWER · 问题学习线程
               </p>
               <h1 className="mt-6 font-display text-[36px] font-bold leading-[1.08] tracking-tight sm:text-[52px] lg:text-[56px]">
-                让旧回答
+                把回答
                 <br />
                 <span className="relative inline-block">
-                  <span className="relative z-10">与今天核对</span>
+                  <span className="relative z-10">串成学习线</span>
                   <span className="absolute bottom-1 left-0 right-0 h-3 bg-accent/15 -z-0" aria-hidden="true" />
                 </span>
               </h1>
@@ -553,60 +546,46 @@ function QuestionThreadEntry() {
           </section>
         )}
 
-        {/* Advanced URL entry */}
-        <section aria-labelledby="advanced-url-heading" className="border-t border-rule pt-10">
-          <button
-            type="button"
-            onClick={() => setShowAdvancedUrl((v) => !v)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <span
-              className={[
-                "inline-block h-2 w-2 border border-current transition-transform duration-150",
-                showAdvancedUrl ? "rotate-90" : "",
-              ].join(" ")}
-            >
-              <span className="block h-full w-full bg-current" />
-            </span>
-            {showAdvancedUrl ? "收起" : "展开"}已有知乎回答的维护记录
-          </button>
-
-          {showAdvancedUrl && (
-            <div className="mt-6 max-w-3xl space-y-4">
-              <p className="text-sm text-muted">
-                此路径使用已有的知乎回答链接分析流程，仅在需要时使用。
-              </p>
-              <Link
-                to="/read/golden-demo/$id"
-                params={{ id: "chatgpt-free-plus" }}
-                className="inline-flex min-h-11 items-center border border-rule bg-paper px-4 text-xs font-semibold text-ink transition-colors duration-150 hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                查看已有准备记录
-              </Link>
-            </div>
-          )}
-        </section>
-
-        {/* Golden Demo records */}
+        {/* Featured learning threads */}
         <section aria-labelledby="demo-heading">
           <div className="max-w-3xl">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              PREPARED RECORDS
+              FEATURED LEARNING THREADS
             </p>
             <h2
               id="demo-heading"
               className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink"
             >
-              精选维护记录
+              先看三条真实学习线程
             </h2>
             <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-              每条记录都追踪了原始知乎回答的时效性变化，点击可直接进入完整阅读页。
+              每条线程都由真实知乎回答、跨年份摘录和 AI 学习节点组成。看完再去生成属于你的问题线。
             </p>
           </div>
 
-          <div className="mt-8 space-y-5">
-            {goldenDemos.map((demo) => (
-              <GoldenDemoPreviewCard key={demo.id} demo={demo} />
+          <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {FEATURED_THREADS.map((thread) => (
+              <Link
+                key={thread.threadId}
+                to="/thread/$threadId"
+                params={{ threadId: thread.threadId }}
+                className="group relative flex h-full flex-col border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-card)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[5px_5px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
+                    {thread.label}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted">{thread.yearRange}</span>
+                </div>
+                <h3 className="mt-4 text-lg font-semibold leading-7 text-ink">{thread.title}</h3>
+                <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">{thread.description}</p>
+                <div className="mt-5 flex items-center justify-between border-t border-rule pt-4 font-mono text-[11px] text-muted">
+                  <span>{thread.stageCount} 段 · {thread.nodeCount} 个学习点</span>
+                  <span className="text-ink transition-transform duration-150 group-hover:translate-x-1">
+                    进入 →
+                  </span>
+                </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -628,18 +607,6 @@ function QuestionThreadEntry() {
                 className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 了解产品
-              </Link>
-              <Link
-                to="/changes"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                时间线
-              </Link>
-              <Link
-                to="/sources"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-ink-subtle transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                来源
               </Link>
             </div>
           </div>

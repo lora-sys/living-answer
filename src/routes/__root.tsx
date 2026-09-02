@@ -82,7 +82,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           {([
             { to: "/", label: "首页" },
             { to: "/landing", label: "了解" },
-            { to: "/changes", label: "时间线" },
           ] as const).map((item) => (
             <Link
               key={item.to}

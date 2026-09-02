@@ -10,22 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ChangesRouteImport } from './routes/changes'
 import { Route as LandingRouteImport } from './routes/landing'
-import { Route as SourcesRouteImport } from './routes/sources'
-import { Route as ReadGoldenDemoRouteImport } from './routes/read.golden-demo'
 import { Route as ThreadThreadIdRouteImport } from './routes/thread.$threadId'
-import { Route as ReadGoldenDemoIdRouteImport } from './routes/read.golden-demo.$id'
-import { Route as ReadAnswerQuestionIdAnswerIdRouteImport } from './routes/read.answer.$questionId.$answerId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChangesRoute = ChangesRouteImport.update({
-  id: '/changes',
-  path: '/changes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LandingRoute = LandingRouteImport.update({
@@ -33,105 +23,40 @@ const LandingRoute = LandingRouteImport.update({
   path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SourcesRoute = SourcesRouteImport.update({
-  id: '/sources',
-  path: '/sources',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReadGoldenDemoRoute = ReadGoldenDemoRouteImport.update({
-  id: '/read/golden-demo',
-  path: '/read/golden-demo',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ThreadThreadIdRoute = ThreadThreadIdRouteImport.update({
   id: '/thread/$threadId',
   path: '/thread/$threadId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReadGoldenDemoIdRoute = ReadGoldenDemoIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ReadGoldenDemoRoute,
-} as any)
-const ReadAnswerQuestionIdAnswerIdRoute =
-  ReadAnswerQuestionIdAnswerIdRouteImport.update({
-    id: '/read/answer/$questionId/$answerId',
-    path: '/read/answer/$questionId/$answerId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/changes': typeof ChangesRoute
   '/landing': typeof LandingRoute
-  '/sources': typeof SourcesRoute
-  '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/thread/$threadId': typeof ThreadThreadIdRoute
-  '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
-  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/changes': typeof ChangesRoute
   '/landing': typeof LandingRoute
-  '/sources': typeof SourcesRoute
-  '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/thread/$threadId': typeof ThreadThreadIdRoute
-  '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
-  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/changes': typeof ChangesRoute
   '/landing': typeof LandingRoute
-  '/sources': typeof SourcesRoute
-  '/read/golden-demo': typeof ReadGoldenDemoRouteWithChildren
   '/thread/$threadId': typeof ThreadThreadIdRoute
-  '/read/golden-demo/$id': typeof ReadGoldenDemoIdRoute
-  '/read/answer/$questionId/$answerId': typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/changes'
-    | '/landing'
-    | '/sources'
-    | '/read/golden-demo'
-    | '/thread/$threadId'
-    | '/read/golden-demo/$id'
-    | '/read/answer/$questionId/$answerId'
+  fullPaths: '/' | '/landing' | '/thread/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/changes'
-    | '/landing'
-    | '/sources'
-    | '/read/golden-demo'
-    | '/thread/$threadId'
-    | '/read/golden-demo/$id'
-    | '/read/answer/$questionId/$answerId'
-  id:
-    | '__root__'
-    | '/'
-    | '/changes'
-    | '/landing'
-    | '/sources'
-    | '/read/golden-demo'
-    | '/thread/$threadId'
-    | '/read/golden-demo/$id'
-    | '/read/answer/$questionId/$answerId'
+  to: '/' | '/landing' | '/thread/$threadId'
+  id: '__root__' | '/' | '/landing' | '/thread/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChangesRoute: typeof ChangesRoute
   LandingRoute: typeof LandingRoute
-  SourcesRoute: typeof SourcesRoute
-  ReadGoldenDemoRoute: typeof ReadGoldenDemoRouteWithChildren
   ThreadThreadIdRoute: typeof ThreadThreadIdRoute
-  ReadAnswerQuestionIdAnswerIdRoute: typeof ReadAnswerQuestionIdAnswerIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -143,32 +68,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/changes': {
-      id: '/changes'
-      path: '/changes'
-      fullPath: '/changes'
-      preLoaderRoute: typeof ChangesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/landing': {
       id: '/landing'
       path: '/landing'
       fullPath: '/landing'
       preLoaderRoute: typeof LandingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sources': {
-      id: '/sources'
-      path: '/sources'
-      fullPath: '/sources'
-      preLoaderRoute: typeof SourcesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/read/golden-demo': {
-      id: '/read/golden-demo'
-      path: '/read/golden-demo'
-      fullPath: '/read/golden-demo'
-      preLoaderRoute: typeof ReadGoldenDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/thread/$threadId': {
@@ -178,43 +82,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ThreadThreadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/read/golden-demo/$id': {
-      id: '/read/golden-demo/$id'
-      path: '/$id'
-      fullPath: '/read/golden-demo/$id'
-      preLoaderRoute: typeof ReadGoldenDemoIdRouteImport
-      parentRoute: typeof ReadGoldenDemoRoute
-    }
-    '/read/answer/$questionId/$answerId': {
-      id: '/read/answer/$questionId/$answerId'
-      path: '/read/answer/$questionId/$answerId'
-      fullPath: '/read/answer/$questionId/$answerId'
-      preLoaderRoute: typeof ReadAnswerQuestionIdAnswerIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
-interface ReadGoldenDemoRouteChildren {
-  ReadGoldenDemoIdRoute: typeof ReadGoldenDemoIdRoute
-}
-
-const ReadGoldenDemoRouteChildren: ReadGoldenDemoRouteChildren = {
-  ReadGoldenDemoIdRoute: ReadGoldenDemoIdRoute,
-}
-
-const ReadGoldenDemoRouteWithChildren = ReadGoldenDemoRoute._addFileChildren(
-  ReadGoldenDemoRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChangesRoute: ChangesRoute,
   LandingRoute: LandingRoute,
-  SourcesRoute: SourcesRoute,
-  ReadGoldenDemoRoute: ReadGoldenDemoRouteWithChildren,
   ThreadThreadIdRoute: ThreadThreadIdRoute,
-  ReadAnswerQuestionIdAnswerIdRoute: ReadAnswerQuestionIdAnswerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

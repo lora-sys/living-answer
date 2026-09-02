@@ -29,8 +29,6 @@ src/
     thread/
       $threadId.tsx — 线程阅读器
     landing.tsx  — 产品故事
-    changes.tsx  — 维护时间线
-    sources.tsx  — 来源说明
   server/        — 服务端函数
     clarify-question.ts    — 澄清模糊问题
     synthesize-thread.ts   — 合成学习节点
@@ -43,7 +41,7 @@ src/
     thread-clarification.ts — 澄清工作流
     thread-synthesis.ts   — 合成工作流
     zhihu-direct-answer-adapter.ts — zhihu 回答适配器
-    golden-demo-fixture.ts — 演示数据
+    featured-threads.ts — 首页精选真实学习线程
     app-info.ts      — 产品信息
     failure-messages.ts — 错误地图
   components/    — 可复用 UI

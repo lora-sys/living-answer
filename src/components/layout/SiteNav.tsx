@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 const NAV_LINKS = [
   { to: "/", label: "问题学习线程" },
   { to: "/landing", label: "了解产品" },
-  { to: "/changes", label: "时间线" },
-  { to: "/sources", label: "来源" },
 ] as const;
 
 export function SiteNav() {

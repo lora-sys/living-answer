@@ -12,10 +12,7 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 | ----------------------- | ----------------------------------------------------------- |
 | `/`                     | 问题学习线程：输入模糊问题 → 澄清意图 → 选取摘录 → 生成线程 |
 | `/thread/$threadId`     | 线程阅读器：查看完整学习线程，含时间线、学习节点和来源      |
-| `/landing`              | 产品故事：展示理念与示例记录                                |
-| `/changes`              | 维护时间线                                                  |
-| `/sources`              | 来源说明                                                    |
-| `/read/golden-demo/:id` | 旧式阅读页（兼容保留）                                      |
+| `/landing`              | 产品故事：展示理念与三条真实学习线程                        |
 
 ## 技术架构
 
@@ -107,7 +104,7 @@ Living Answer 让一个模糊的问题变成一份可生长的学习线程。用
 - **蓝色贴纸**: `.bg-blue-strip` — 顶部蓝色条装饰
 - **线条**: `.bg-contour` — 底部细蓝线
 - **海报框架**: `.bg-collage-frame` — 内外双层黑框效果
-- **应用场景**: 金色演示页面使用蓝色贴纸；海报区域使用黑色贴纸
+- **应用场景**: 精选线程卡片使用蓝色贴纸；海报区域使用黑色贴纸
 
 #### 交互状态
 
@@ -180,5 +177,5 @@ SQLite `thread_artifacts` 表：
 - 引用回指：`[来源 #XXXXXX]` 可点击标签，`bg-accent-soft rounded-[2px] px-1.5 py-0.5 font-mono text-[9px]`
 - 时间线日期：卡片顶部 `font-mono text-[11px] tracking-[0.08em] uppercase` 独立年月标识
 - 来源弹窗：移动端全宽底部抽屉（`items-end max-h-[85vh]`），桌面端居中面板
-- 移动端底部导航：`fixed bottom-0 sm:hidden` 三 tab（首页/了解/时间线），当前页 `text-accent-text`
+- 移动端底部导航：`fixed bottom-0 sm:hidden` 两 tab（首页/了解），当前页 `text-ink`
 - 响应式间距：`space-y-6 sm:space-y-12`（移动紧凑，桌面宽松）

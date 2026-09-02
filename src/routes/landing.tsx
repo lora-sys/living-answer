@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
 
-import { GOLDEN_DEMOS } from "../lib/golden-demo-fixture";
 import { PRODUCT_TAGLINE } from "../lib/app-info";
+import { FEATURED_THREADS } from "../lib/featured-threads";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
@@ -21,18 +20,8 @@ export const Route = createFileRoute("/landing")({
   component: Landing,
 });
 
-const DEMO_ORDER = ["chatgpt-free-plus", "create-react-app", "delayed-retirement"] as const;
-
 function Landing() {
-  const [activeDemo, setActiveDemo] = useState<string>(DEMO_ORDER[0]);
-  const current = GOLDEN_DEMOS[activeDemo];
-
-  const handleWatchDemo = useCallback(() => {
-    const el = document.getElementById("demo-output");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
+  const featuredThread = FEATURED_THREADS[0];
 
   return (
     <main className="min-h-screen bg-paper pb-20 text-ink">
@@ -56,17 +45,17 @@ function Landing() {
                 className="mt-6 font-display font-bold leading-[1.05] tracking-tight"
                 style={{ fontSize: "clamp(2.5rem, 7vw, 5.5rem)" }}
               >
-                让旧回答
+                把回答
                 <br />
                 <span className="relative inline-block">
-                  <span className="relative z-10">持续生长</span>
+                  <span className="relative z-10">串成学习线</span>
                   <span className="absolute bottom-1 left-0 right-0 h-[0.15em] bg-accent/15 -z-0" aria-hidden="true" />
                 </span>
               </h1>
               <p className="mt-6 h-[3px] w-24 bg-rule-strong" aria-hidden="true" />
               <p className="mt-6 max-w-[56ch] text-lg leading-8 text-ink-subtle">{PRODUCT_TAGLINE}</p>
               <p className="mt-3 max-w-[48ch] text-sm leading-6 text-muted">
-                真实的回答会随着时间变化。AI 帮你追踪哪些回答已经过时，为什么。
+                真实回答分散在知乎的不同年份。AI 帮你澄清意图，并把它们串成能理解的知识路径。
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-3">
                 <Link
@@ -75,51 +64,51 @@ function Landing() {
                 >
                   开始学习线程
                 </Link>
-                <button
-                  type="button"
-                  onClick={handleWatchDemo}
+                <Link
+                  to="/"
                   className="inline-flex min-h-13 items-center border-2 border-rule-strong bg-paper-3 px-6 text-sm font-medium text-ink transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-ink)] hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  查看示例记录
-                </button>
+                  直接提问
+                </Link>
               </div>
             </div>
 
-            {/* Right — rotated featured demo card */}
+            {/* Right — rotated featured thread card */}
             <div className="hidden lg:block">
               <div className="relative">
-                <div
-                  className="border-2 border-rule-strong bg-paper-3 p-6 shadow-[var(--shadow-panel)]"
+                <Link
+                  to="/thread/$threadId"
+                  params={{ threadId: featuredThread.threadId }}
+                  className="group block border-2 border-rule-strong bg-paper-3 p-6 shadow-[var(--shadow-panel)] transition-all duration-150 hover:shadow-[7px_7px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   style={{ transform: "rotate(-1.5deg)" }}
                 >
                   <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-                    FEATURED DEMO
+                    FEATURED THREAD
                   </p>
                   <h3 className="mt-2 text-[21px] font-semibold leading-8 text-ink">
-                    {current.displayTitle}
+                    {featuredThread.title}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-ink-subtle">
-                    {current.description}
+                    {featuredThread.description}
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">主题</p>
-                      <p className="mt-1 text-sm text-ink">{current.topic}</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">时间线</p>
+                      <p className="mt-1 text-sm text-ink">{featuredThread.yearRange}</p>
                     </div>
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">更新数</p>
-                      <p className="mt-1 text-sm text-ink">{current.patches.length} 条</p>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">节点</p>
+                      <p className="mt-1 text-sm text-ink">
+                        {featuredThread.nodeCount} 个
+                      </p>
                     </div>
                   </div>
                   <div className="mt-5">
-                    <button
-                      onClick={handleWatchDemo}
-                      className="inline-flex items-center gap-2 border-2 border-accent bg-accent px-5 text-xs font-semibold text-white transition-all duration-120 hover:shadow-[3px_3px_0_var(--color-accent)] hover:bg-accent-hover active:translate-y-px active:bg-accent-active"
-                    >
-                      查看完整记录 →
-                    </button>
+                    <span className="inline-flex items-center gap-2 border-2 border-accent bg-accent px-5 text-xs font-semibold text-white transition-all duration-120 group-hover:shadow-[3px_3px_0_var(--color-accent)] group-hover:bg-accent-hover">
+                      查看完整线程 →
+                    </span>
                   </div>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -148,9 +137,9 @@ function Landing() {
                 kana: "INTENT",
               },
               {
-                title: "持续生长",
-                body: "用一个线程串联波动中的世界——前提变了、分歧出现了，都记录在同一个结构里。",
-                kana: "LIVING",
+                title: "学习节点",
+                body: "把跨年份回答整理成共识、分歧、演变和因果，让知识变成能继续追问的路径。",
+                kana: "THREAD",
               },
             ].map((pillar, idx) => (
               <div
@@ -241,43 +230,45 @@ function Landing() {
         className="mx-auto max-w-[1120px] border-b border-rule px-5 py-16 sm:px-8"
       >
         <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-          PREPARED RECORDS
+          FEATURED THREADS
         </p>
         <h2
           id="demo-section-heading"
           className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink"
         >
-          示例记录
+          三条真实学习线程
         </h2>
         <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-          这些记录已有完整维护历史，展示系统如何处理随时间变化的前提和证据。
+          不是包装过的静态文档。每条线程都从真实知乎回答开始，再由 AI 拆成可检查的学习节点。
         </p>
 
-        {/* Tab bar — square tabs with strong selected state */}
-        <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="示例记录">
-          {DEMO_ORDER.map((id) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={activeDemo === id}
-              onClick={() => setActiveDemo(id)}
-              className={
-                "inline-flex min-h-[36px] items-center border-2 px-3 text-sm font-medium transition-colors duration-120 " +
-                (activeDemo === id
-                  ? "border-accent bg-accent text-white shadow-[2px_2px_0_rgba(0,0,0,0.15)]"
-                  : "border-rule-strong bg-paper-3 text-ink-subtle hover:border-accent hover:text-ink hover:shadow-[3px_3px_0_var(--color-accent)]")
-              }
+        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+          {FEATURED_THREADS.map((thread) => (
+            <Link
+              key={thread.threadId}
+              to="/thread/$threadId"
+              params={{ threadId: thread.threadId }}
+              className="group flex h-full flex-col border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-card)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[5px_5px_0_var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              {GOLDEN_DEMOS[id].displayTitle}
-            </button>
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
+                  {thread.label}
+                </span>
+                <span className="font-mono text-[10px] text-muted">{thread.yearRange}</span>
+              </div>
+              <h3 className="mt-4 text-lg font-semibold leading-7 text-ink">{thread.title}</h3>
+              <p className="mt-3 flex-1 text-sm leading-6 text-ink-subtle">{thread.description}</p>
+              <div className="mt-5 flex items-center justify-between border-t border-rule pt-4 font-mono text-[11px] text-muted">
+                <span>
+                  {thread.stageCount} 段 · {thread.nodeCount} 个学习点
+                </span>
+                <span className="text-ink transition-transform duration-150 group-hover:translate-x-1">
+                  进入 →
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
-
-        {current ? (
-          <div className="mt-8">
-            <GoldenDemoPanel demo={current} />
-          </div>
-        ) : null}
       </section>
 
       {/* ═══ CTA — poster card ──────────────────────────────────────────── */}
@@ -293,8 +284,7 @@ function Landing() {
             输入你的第一个问题
           </h2>
           <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-            过去专家的回答会过时——前提、数据和共识都会改变。Living Answer
-            帮助你追踪这些变化，而不是一遍一遍重读原文。
+            你的问题值得一条学习路径，而不是一个孤立答案。先看真实线程，再生成属于你的那条。
           </p>
           <Link
             to="/"
@@ -305,127 +295,5 @@ function Landing() {
         </div>
       </section>
     </main>
-  );
-}
-
-// ── Golden demo panel ─────────────────────────────────────────────────────────
-
-function GoldenDemoPanel({ demo }: { readonly demo: (typeof GOLDEN_DEMOS)[string] }) {
-  const patchTypeLabel: Record<string, string> = {
-    UPDATE: "更新",
-    CORRECTION: "修正",
-    CONDITION: "条件变化",
-    BETTER_WAY: "更好的方式",
-  };
-
-  return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-      <div className="border-2 border-rule-strong bg-paper-3 p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <h3 className="text-[17px] font-semibold leading-7 text-ink">{demo.displayTitle}</h3>
-        <p className="mt-2 text-sm leading-6 text-ink-subtle">{demo.description}</p>
-
-        <dl className="mt-5 space-y-3">
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">主题</dt>
-            <dd className="mt-1 text-sm leading-6 text-ink">{demo.topic}</dd>
-          </div>
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
-              问题 ID
-            </dt>
-            <dd className="mt-1 font-mono text-[11px] leading-5 text-ink">{demo.snapshot.questionId}</dd>
-          </div>
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">指纹</dt>
-            <dd className="mt-1 font-mono text-[11px] leading-5 text-muted">
-              {demo.snapshot.fingerprint}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
-              模型来源
-            </dt>
-            <dd className="mt-1 font-mono text-[11px] leading-5 text-muted">
-              {demo.provenance.kind} · {demo.provenance.model}
-            </dd>
-          </div>
-          {demo.provenance.openaiPrimarySources &&
-            demo.provenance.openaiPrimarySources.length > 0 && (
-              <div>
-                <dt className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
-                  来源链接
-                </dt>
-                <dd className="mt-1 space-y-1">
-                  {demo.provenance.openaiPrimarySources.map((src) => (
-                    <a
-                      key={src}
-                      href={src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block truncate text-xs text-accent underline-offset-2 hover:underline"
-                    >
-                      {src}
-                    </a>
-                  ))}
-                </dd>
-              </div>
-            )}
-        </dl>
-      </div>
-
-      <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
-          PATCHES ({String(demo.patches.length)})
-        </p>
-        <div className="mt-4 space-y-4">
-          {demo.patches.length === 0 ? (
-            <p className="border border-rule bg-paper-3 px-4 py-3 text-sm text-ink-subtle">
-              此回答暂无更新记录。
-            </p>
-          ) : (
-            demo.patches.map((patch) => (
-              <div
-                key={patch.id}
-                className="border-2 border-rule-strong bg-paper-3 p-4 shadow-[var(--shadow-card)]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center border border-update bg-update-soft px-2 py-1 font-mono text-[10px] font-semibold text-update">
-                    {patchTypeLabel[patch.type] ?? patch.type}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted">
-                    {new Date(patch.asOf * 1000).toLocaleDateString("zh-CN")}
-                  </span>
-                </div>
-                <h4 className="mt-2 text-[15px] font-semibold leading-7 text-ink">
-                  {patch.paragraphId}
-                </h4>
-                <p className="mt-1 text-xs leading-5 text-ink-subtle">
-                  {patch.currentChange.slice(0, 180)}
-                  {patch.currentChange.length > 180 ? "…" : ""}
-                </p>
-                {patch.evidence.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {patch.evidence.map((ev, idx) => (
-                      <div key={idx} className="border border-rule bg-paper-2 px-3 py-2">
-                        <p className="text-[11px] leading-5 text-ink">{ev.supportedFact}</p>
-                        <p className="mt-1 truncate font-mono text-[10px] text-muted">
-                          {ev.sourceUrl || ev.title}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          {demo.patches.length > 0 && (
-            <p className="text-xs text-muted">
-              共 {String(demo.patches.length)} 个更新记录
-              {demo.topic ? ` · ${demo.topic}` : ""}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
