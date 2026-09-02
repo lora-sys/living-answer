@@ -24,8 +24,9 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
     <Link
       to={href as unknown as Parameters<typeof Link>[0]["to"]}
       className={[
-        "group block min-w-0 overflow-hidden rounded-[2px] border border-rule bg-paper-2",
-        "shadow-[var(--shadow-card)] transition-colors duration-150",
+        "group block min-w-0 overflow-hidden rounded-[4px] border border-rule bg-paper-3",
+        "shadow-[var(--shadow-card)] transition-all duration-150",
+        "hover:-translate-y-px hover:border-accent/35 hover:shadow-[0_2px_0_var(--color-accent),var(--shadow-card)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
       ].join(" ")}
     >
@@ -33,15 +34,17 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
         <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
           {variant === "hero" ? "FEATURED" : "PATCH RECORD"} · {formatDateYYYYMMDD(patch.asOf)}
         </span>
-        <span className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-update">
-          <span aria-hidden="true" className="h-1.5 w-1.5 bg-update" />
+        <span className="inline-flex items-center gap-2 rounded-full bg-update-soft px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-update">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-update" />
           {PATCH_TYPE_LABELS[patch.type]}
         </span>
       </div>
 
       <div className="border-b border-rule px-4 py-5 sm:px-6">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{demo.topic}</p>
-        <h3 className="mt-3 max-w-[68ch] text-[19px] font-semibold leading-7 tracking-[-0.02em] text-ink sm:text-[21px] sm:leading-8">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+          {demo.topic}
+        </p>
+        <h3 className="mt-2.5 max-w-[68ch] text-[19px] font-semibold leading-7 tracking-[-0.02em] text-ink transition-colors duration-150 group-hover:text-accent-text sm:text-[21px] sm:leading-8">
           {demo.displayTitle}
         </h3>
         <p className="mt-3 max-w-[68ch] text-sm leading-6 text-ink-subtle sm:text-[15px] sm:leading-7">
@@ -91,7 +94,12 @@ export function GoldenDemoPreviewCard({ demo, variant = "compact" }: GoldenDemoP
         </span>
         <span className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-accent-text transition-colors duration-150 group-hover:text-accent-active">
           打开记录
-          <span aria-hidden="true">&rarr;</span>
+          <span
+            aria-hidden="true"
+            className="transition-transform duration-150 group-hover:translate-x-0.5"
+          >
+            &rarr;
+          </span>
         </span>
       </div>
     </Link>

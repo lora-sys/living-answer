@@ -544,7 +544,7 @@ function QuestionThreadEntry() {
             >
               <span className="block h-full w-full bg-current" />
             </span>
-            {showAdvancedUrl ? "收起" : "展开"}高级入口：阅读已有知乎回答分析
+            {showAdvancedUrl ? "收起" : "展开"}已有知乎回答的维护记录
           </button>
 
           {showAdvancedUrl && (
@@ -573,10 +573,10 @@ function QuestionThreadEntry() {
               id="demo-heading"
               className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]"
             >
-              准备记录
+              精选维护记录
             </h2>
             <p className="mt-3 max-w-[68ch] text-base leading-7 text-ink-subtle">
-              这些回答已有完整的维护记录，可直接进入阅读页。
+              每条记录都追踪了原始知乎回答的时效性变化，点击可直接进入完整阅读页。
             </p>
           </div>
 

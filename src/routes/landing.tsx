@@ -38,35 +38,41 @@ function Landing() {
     <main className="min-h-screen bg-paper pb-20 text-ink">
       {/* ═══ Hero ───────────────────────────────────────────────────────── */}
       <header className="bg-ink text-paper">
-        <div className="mx-auto w-full max-w-[1120px] px-5 pb-10 pt-8 sm:px-8 sm:pb-14 sm:pt-12">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/70">
+        <div className="mx-auto w-full max-w-[1120px] px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper/60">
             LIVING ANSWER
           </p>
-          <h1 className="mt-5 font-display text-[32px] leading-[38px] font-normal tracking-[-0.01em] sm:text-[44px] sm:leading-[48px]">
-            让旧回答持续生长
+          <h1 className="mt-6 font-display text-[40px] leading-[46px] font-normal tracking-[-0.02em] sm:text-[56px] sm:leading-[62px]">
+            让旧回答
+            <br />
+            <span className="text-accent-soft">持续生长</span>
           </h1>
-          <p className="mt-5 max-w-[68ch] text-base leading-7 text-paper/80">{PRODUCT_TAGLINE}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-4 h-[2px] w-16 bg-accent" aria-hidden="true" />
+          <p className="mt-6 max-w-[56ch] text-lg leading-8 text-paper/85">{PRODUCT_TAGLINE}</p>
+          <p className="mt-3 max-w-[48ch] text-sm leading-6 text-paper/60">
+            真实的回答会随着时间变化。AI 帮你追踪哪些回答已经过时，为什么。
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-3">
             <Link
               to="/"
-              className="inline-flex h-12 items-center rounded-[6px] bg-accent px-8 text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-accent-hover active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex h-13 items-center rounded-[6px] bg-accent px-9 text-sm font-semibold text-on-accent transition-all duration-150 hover:bg-accent-hover hover:shadow-[0_4px_16px_rgb(23_70_255/0.35)] active:translate-y-px active:bg-accent-active focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               开始学习线程
             </Link>
             <button
               type="button"
               onClick={handleWatchDemo}
-              className="inline-flex min-h-11 items-center rounded-[4px] border border-paper/30 px-5 text-sm font-medium text-paper transition-colors duration-150 hover:border-paper/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="inline-flex min-h-13 items-center rounded-[6px] border border-paper/25 px-6 text-sm font-medium text-paper/85 transition-colors duration-150 hover:border-paper/50 hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
-              查看记录
+              查看示例记录
             </button>
           </div>
         </div>
       </header>
 
       {/* ═══ Three pillars ──────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-[1120px] border-b border-rule px-5 py-16 sm:px-8">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-3">
+      <section className="mx-auto max-w-[1120px] border-b border-rule px-5 py-16 sm:px-8 sm:py-20">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8">
           {[
             {
               title: "精确摘录",
@@ -83,8 +89,8 @@ function Landing() {
               body: "用一个线程串联波动中的世界——前提变了、分歧出现了，都记录在同一个结构里。",
               kana: "LIVING",
             },
-          ].map((pillar) => (
-            <div key={pillar.kana}>
+          ].map((pillar, idx) => (
+            <div key={pillar.kana} className="border-l-2 border-accent/25 pl-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
                 {pillar.kana}
               </p>
@@ -92,49 +98,65 @@ function Landing() {
                 {pillar.title}
               </h2>
               <p className="mt-3 text-sm leading-6 text-ink-subtle">{pillar.body}</p>
+              <span
+                aria-hidden="true"
+                className="mt-4 block font-mono text-[28px] font-bold leading-none text-rule"
+              >
+                {String(idx + 1).padStart(2, "0")}
+              </span>
             </div>
           ))}
         </div>
       </section>
 
       {/* ═══ How it works ───────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-[1120px] border-b border-rule px-5 py-16 sm:px-8">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
-          HOW IT WORKS
-        </p>
-        <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
-          四步生成学习线程
-        </h2>
-        <ol className="mt-10 grid list-none grid-cols-1 gap-8 sm:grid-cols-4" role="list">
-          {[
-            {
-              step: "01",
-              title: "输入模糊问题",
-              body: "不必措辞完美。系统会理解意图并将问题精炼为高质量查询。",
-            },
-            {
-              step: "02",
-              title: "澄清学习意图",
-              body: "确认自己要找什么：定义、因果、演变、分歧，或者只是开阔视野。",
-            },
-            {
-              step: "03",
-              title: "选取回答摘录",
-              body: "从真实知乎回答中手动选择引用范围，每条引用均有来源标注。",
-            },
-            {
-              step: "04",
-              title: "生长学习线程",
-              body: "系统生成结构化学习节点：关系、因果、演变、共识、分歧，加上可追溯的引用。",
-            },
-          ].map((item) => (
-            <li key={item.step}>
-              <span className="font-mono text-lg text-accent">{item.step}</span>
-              <h3 className="mt-2 text-[17px] font-semibold leading-7 text-ink">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-ink-subtle">{item.body}</p>
-            </li>
-          ))}
-        </ol>
+      <section className="border-b border-rule bg-paper-2">
+        <div className="mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-20">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
+            HOW IT WORKS
+          </p>
+          <h2 className="mt-3 text-[26px] font-semibold leading-8 tracking-[-0.02em]">
+            四步生成学习线程
+          </h2>
+          <ol
+            className="relative mt-10 grid list-none grid-cols-1 gap-8 sm:grid-cols-4"
+            role="list"
+          >
+            {[
+              {
+                step: "01",
+                title: "输入模糊问题",
+                body: "不必措辞完美。系统会理解意图并将问题精炼为高质量查询。",
+              },
+              {
+                step: "02",
+                title: "澄清学习意图",
+                body: "确认自己要找什么：定义、因果、演变、分歧，或者只是开阔视野。",
+              },
+              {
+                step: "03",
+                title: "选取回答摘录",
+                body: "从真实知乎回答中手动选择引用范围，每条引用均有来源标注。",
+              },
+              {
+                step: "04",
+                title: "生长学习线程",
+                body: "系统生成结构化学习节点：关系、因果、演变、共识、分歧，加上可追溯的引用。",
+              },
+            ].map((item) => (
+              <li key={item.step} className="relative">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent font-mono text-xs font-bold text-on-accent">
+                    {item.step}
+                  </span>
+                  <span aria-hidden="true" className="hidden h-px flex-1 bg-rule sm:block" />
+                </div>
+                <h3 className="mt-4 text-[17px] font-semibold leading-7 text-ink">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-ink-subtle">{item.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
       </section>
 
       {/* ═══ Demo records ────────────────────────────────────────────────── */}
@@ -184,8 +206,8 @@ function Landing() {
       </section>
 
       {/* ═══ CTA ─────────────────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-[1120px] px-5 py-16 sm:px-8">
-        <div className="max-w-2xl">
+      <section className="mx-auto max-w-[1120px] px-5 py-16 sm:px-8 sm:py-24">
+        <div className="rounded-[4px] border border-rule bg-paper-2 px-8 py-10 sm:px-12 sm:py-14">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent-text">
             GET STARTED
           </p>

@@ -70,15 +70,15 @@ SQLite `thread_artifacts` 表：
 
 ### 学习节点颜色编码
 
-| 节点类型 | CSS 变量 | 色值 |
-|---------|---------|------|
-| 关系 | `--color-node-relationship` | `#1746ff` |
-| 因果 | `--color-node-cause` | `#c6271a` |
-| 演变 | `--color-node-evolution` | `#0d6b52` |
-| 共识 | `--color-node-consensus` | `#274b8f` |
-| 分歧 | `--color-node-divergence` | `#b42318` |
-| 前提变化 | `--color-node-premise` | `#92400e` |
-| 待确认 | `--color-node-unknown` | `#646a66` |
+| 节点类型 | CSS 变量                    | 色值      |
+| -------- | --------------------------- | --------- |
+| 关系     | `--color-node-relationship` | `#1746ff` |
+| 因果     | `--color-node-cause`        | `#c6271a` |
+| 演变     | `--color-node-evolution`    | `#0d6b52` |
+| 共识     | `--color-node-consensus`    | `#274b8f` |
+| 分歧     | `--color-node-divergence`   | `#b42318` |
+| 前提变化 | `--color-node-premise`      | `#92400e` |
+| 待确认   | `--color-node-unknown`      | `#646a66` |
 
 ### 组件模式
 
