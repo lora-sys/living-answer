@@ -65,3 +65,26 @@ SQLite `thread_artifacts` 表：
 3. 知乎数据摘要级别，始终标注"摘录"
 4. 不将以摘录的 AnswerSnapshot.body 存储为 thread 的一部分
 5. 无结果/配额/AI/无效状态均诚实处理并提供有用操作
+
+## Sprint 迭代新增设计令牌（2026-09-02）
+
+### 学习节点颜色编码
+
+| 节点类型 | CSS 变量 | 色值 |
+|---------|---------|------|
+| 关系 | `--color-node-relationship` | `#1746ff` |
+| 因果 | `--color-node-cause` | `#c6271a` |
+| 演变 | `--color-node-evolution` | `#0d6b52` |
+| 共识 | `--color-node-consensus` | `#274b8f` |
+| 分歧 | `--color-node-divergence` | `#b42318` |
+| 前提变化 | `--color-node-premise` | `#92400e` |
+| 待确认 | `--color-node-unknown` | `#646a66` |
+
+### 组件模式
+
+- 学习节点卡片：`border-l-[3px]` 左侧颜色指示条，按 node.kind 映射
+- 引用回指：`[来源 #XXXXXX]` 可点击标签，`bg-accent-soft rounded-[2px] px-1.5 py-0.5 font-mono text-[9px]`
+- 时间线日期：卡片顶部 `font-mono text-[11px] tracking-[0.08em] uppercase` 独立年月标识
+- 来源弹窗：移动端全宽底部抽屉（`items-end max-h-[85vh]`），桌面端居中面板
+- 移动端底部导航：`fixed bottom-0 sm:hidden` 三 tab（首页/了解/时间线），当前页 `text-accent-text`
+- 响应式间距：`space-y-6 sm:space-y-12`（移动紧凑，桌面宽松）
