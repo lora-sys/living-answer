@@ -712,6 +712,111 @@ export const runGoldenEval = async (args = parseArgs([])) => {
     limitPerDay: Number(process.env.EVAL_QUOTA_LIMIT ?? 100),
   });
 
+  // Computed from `results` alone, so it can run after every batch instead of
+  // only at the end.  A 48-case batch overran the harness timeout and threw
+  // away hours of provider calls because the report was written once, last.
+  const writeReports = (final: boolean): void => {
+    writeFileSync(
+      join(".local/evals/reports", `${runId}-cases.json`),
+      JSON.stringify(results, null, 2),
+    );
+
+    const metrics = metric(results.map((result) => ({ ...result.metrics })));
+    const group = <T extends string>(key: (item: { category: string; difficulty: string }) => T) => {
+      const output: Record<
+        string,
+        { total: number; executed: number; passed: number; successRate: number }
+      > = {};
+      for (const item of dataset) {
+        const bucket = key(item);
+        output[bucket] ??= { total: 0, executed: 0, passed: 0, successRate: 0 };
+        output[bucket].total++;
+      }
+      for (const item of results) {
+        const bucket = key(item);
+        output[bucket].executed++;
+        if (item.passed) output[bucket].passed++;
+      }
+      for (const bucket of Object.values(output)) {
+        bucket.successRate = bucket.executed === 0 ? 0 : bucket.passed / bucket.executed;
+      }
+      return output;
+    };
+  
+    const summary: EvalRunSummary = {
+      runId,
+      startedAt: startedAtIso,
+      finishedAt: new Date().toISOString(),
+      commit: process.env.GIT_COMMIT ?? "local-run",
+      model,
+      datasetVersion: 1,
+      datasetHash,
+      total: dataset.length,
+      executed: results.length,
+      passed: results.filter((item) => item.passed).length,
+      weak: results.filter((item) => item.status === "weak").length,
+      failed: results.filter((item) => item.status === "fail").length,
+      successRate:
+        results.length === 0 ? 0 : results.filter((item) => item.passed).length / results.length,
+      metrics,
+      byCategory: group((item) => item.category),
+      byDifficulty: group((item) => item.difficulty),
+      errors: results
+        .flatMap((item) => item.failures)
+        .reduce<Record<string, number>>((counts, failure) => {
+          counts[failure] = (counts[failure] ?? 0) + 1;
+          return counts;
+        }, {}),
+    };
+    const reportPath = join(".local/evals/reports", `${runId}-summary.json`);
+    writeFileSync(reportPath, JSON.stringify(summary, null, 2));
+    if (final) {
+      console.log(JSON.stringify(summary, null, 2));
+      console.log(`report: ${reportPath}`);
+    }
+  
+    const previousFiles = readdirSync(".local/evals/reports")
+      .filter((file) => file.endsWith("-summary.json") && file !== `${runId}-summary.json`)
+      .sort()
+      .slice(-1);
+    if (previousFiles.length > 0) {
+      const previous = JSON.parse(
+        readFileSync(join(".local/evals/reports", previousFiles[0]), "utf8"),
+      ) as EvalRunSummary;
+      const previousCasesPath = previousFiles[0].replace("-summary.json", "-cases.json");
+      const previousCases = JSON.parse(
+        readFileSync(join(".local/evals/reports", previousCasesPath), "utf8"),
+      ) as EvalCaseResult[];
+      const previousById = new Map(previousCases.map((item) => [item.caseId, item]));
+      const regressions = results
+        .filter((item) => previousById.get(item.caseId)?.passed === true && !item.passed)
+        .map((item) => item.caseId);
+      const improvements = results
+        .filter((item) => {
+          const before = previousById.get(item.caseId);
+          return before && !before.passed && item.passed;
+        })
+        .map((item) => item.caseId);
+      const comparisonPath = join(".local/evals/reports", `${runId}-comparison.json`);
+      writeFileSync(
+        comparisonPath,
+        JSON.stringify(
+          {
+            previousRunId: previous.runId,
+            currentRunId: runId,
+            successRateDelta: summary.successRate - previous.successRate,
+            judgeScoreDelta: (metrics.judgeScore ?? 0) - (previous.metrics.judgeScore ?? 0),
+            regressions,
+            improvements,
+          },
+          null,
+          2,
+        ),
+      );
+      if (final) console.log(`comparison: ${comparisonPath}`);
+    }
+  };
+
   for (let offset = 0; offset < selected.length; offset += args.concurrency) {
     const batch = selected.slice(offset, offset + args.concurrency);
     const batchResults = await Promise.all(
@@ -736,103 +841,8 @@ export const runGoldenEval = async (args = parseArgs([])) => {
       }),
     );
     results.push(...batchResults);
+    // Flush after every batch so an interrupted run still leaves a report.
+    writeReports(false);
   }
-
-  writeFileSync(
-    join(".local/evals/reports", `${runId}-cases.json`),
-    JSON.stringify(results, null, 2),
-  );
-
-  const metrics = metric(results.map((result) => ({ ...result.metrics })));
-  const group = <T extends string>(key: (item: { category: string; difficulty: string }) => T) => {
-    const output: Record<
-      string,
-      { total: number; executed: number; passed: number; successRate: number }
-    > = {};
-    for (const item of dataset) {
-      const bucket = key(item);
-      output[bucket] ??= { total: 0, executed: 0, passed: 0, successRate: 0 };
-      output[bucket].total++;
-    }
-    for (const item of results) {
-      const bucket = key(item);
-      output[bucket].executed++;
-      if (item.passed) output[bucket].passed++;
-    }
-    for (const bucket of Object.values(output)) {
-      bucket.successRate = bucket.executed === 0 ? 0 : bucket.passed / bucket.executed;
-    }
-    return output;
-  };
-
-  const summary: EvalRunSummary = {
-    runId,
-    startedAt: startedAtIso,
-    finishedAt: new Date().toISOString(),
-    commit: process.env.GIT_COMMIT ?? "local-run",
-    model,
-    datasetVersion: 1,
-    datasetHash,
-    total: dataset.length,
-    executed: results.length,
-    passed: results.filter((item) => item.passed).length,
-    weak: results.filter((item) => item.status === "weak").length,
-    failed: results.filter((item) => item.status === "fail").length,
-    successRate:
-      results.length === 0 ? 0 : results.filter((item) => item.passed).length / results.length,
-    metrics,
-    byCategory: group((item) => item.category),
-    byDifficulty: group((item) => item.difficulty),
-    errors: results
-      .flatMap((item) => item.failures)
-      .reduce<Record<string, number>>((counts, failure) => {
-        counts[failure] = (counts[failure] ?? 0) + 1;
-        return counts;
-      }, {}),
-  };
-  const reportPath = join(".local/evals/reports", `${runId}-summary.json`);
-  writeFileSync(reportPath, JSON.stringify(summary, null, 2));
-  console.log(JSON.stringify(summary, null, 2));
-  console.log(`report: ${reportPath}`);
-
-  const previousFiles = readdirSync(".local/evals/reports")
-    .filter((file) => file.endsWith("-summary.json") && file !== `${runId}-summary.json`)
-    .sort()
-    .slice(-1);
-  if (previousFiles.length > 0) {
-    const previous = JSON.parse(
-      readFileSync(join(".local/evals/reports", previousFiles[0]), "utf8"),
-    ) as EvalRunSummary;
-    const previousCasesPath = previousFiles[0].replace("-summary.json", "-cases.json");
-    const previousCases = JSON.parse(
-      readFileSync(join(".local/evals/reports", previousCasesPath), "utf8"),
-    ) as EvalCaseResult[];
-    const previousById = new Map(previousCases.map((item) => [item.caseId, item]));
-    const regressions = results
-      .filter((item) => previousById.get(item.caseId)?.passed === true && !item.passed)
-      .map((item) => item.caseId);
-    const improvements = results
-      .filter((item) => {
-        const before = previousById.get(item.caseId);
-        return before && !before.passed && item.passed;
-      })
-      .map((item) => item.caseId);
-    const comparisonPath = join(".local/evals/reports", `${runId}-comparison.json`);
-    writeFileSync(
-      comparisonPath,
-      JSON.stringify(
-        {
-          previousRunId: previous.runId,
-          currentRunId: runId,
-          successRateDelta: summary.successRate - previous.successRate,
-          judgeScoreDelta: (metrics.judgeScore ?? 0) - (previous.metrics.judgeScore ?? 0),
-          regressions,
-          improvements,
-        },
-        null,
-        2,
-      ),
-    );
-    console.log(`comparison: ${comparisonPath}`);
-  }
+    writeReports(true);
 };

@@ -59,22 +59,30 @@ describe("golden eval dataset", () => {
   });
 });
 
-describe("golden eval command", () => {
-  it("runs the frozen harness only when explicitly requested", async () => {
-    if (process.env.EVAL_COMMAND !== "run") {
-      expect(process.env.EVAL_COMMAND).toBeUndefined();
-      return;
-    }
+const DEFAULT_EVAL_TIMEOUT_MS = 4 * 60 * 60 * 1000;
 
-    const { runGoldenEval } = await import("./run-eval");
-    await runGoldenEval({
-      limit: Number(process.env.EVAL_LIMIT ?? 12),
-      offset: Number(process.env.EVAL_OFFSET ?? 0),
-      category: process.env.EVAL_CATEGORY,
-      judge: process.env.EVAL_JUDGE !== "false",
-      filter: process.env.EVAL_FILTER,
-      concurrency: Number(process.env.EVAL_CONCURRENCY ?? 1),
-    });
-    expect(process.env.EVAL_COMMAND).toBe("run");
-  }, 3_600_000);
+describe("golden eval command", () => {
+  it(
+    "runs the frozen harness only when explicitly requested",
+    async () => {
+      if (process.env.EVAL_COMMAND !== "run") {
+        expect(process.env.EVAL_COMMAND).toBeUndefined();
+        return;
+      }
+  
+      const { runGoldenEval } = await import("./run-eval");
+      await runGoldenEval({
+        limit: Number(process.env.EVAL_LIMIT ?? 12),
+        offset: Number(process.env.EVAL_OFFSET ?? 0),
+        category: process.env.EVAL_CATEGORY,
+        judge: process.env.EVAL_JUDGE !== "false",
+        filter: process.env.EVAL_FILTER,
+        concurrency: Number(process.env.EVAL_CONCURRENCY ?? 1),
+      });
+      expect(process.env.EVAL_COMMAND).toBe("run");
+    },
+    // A full-set sweep is hours of real provider calls.  The previous one-hour
+    // ceiling killed a 48-case batch before it could report anything.
+    Number(process.env.EVAL_TIMEOUT_MS ?? DEFAULT_EVAL_TIMEOUT_MS),
+  );
 });
