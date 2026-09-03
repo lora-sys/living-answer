@@ -426,6 +426,29 @@ describe("openai-adapter", () => {
       expect(badRequest.calls()).toBe(1);
     });
 
+    it("keeps retrying a sustained 429 with backoff instead of giving up once", async () => {
+      // The sweep hit a wall of 429s that a single instant retry could not
+      // clear, which showed up as clarify/rank/generate failing together.
+      let calls = 0;
+      const service = makeOpenAiChatCompletions({
+        apiKey: "sk-test",
+        model: "gpt-4o",
+        baseUrl: "https://api.openai.com",
+        transport: makeFakeTransport(() => {
+          calls += 1;
+          if (calls <= 3) {
+            return Effect.fail(new OpenAiTransportError({ reason: "HTTP_STATUS", status: 429 }));
+          }
+          return VALID_CHAT_RESPONSE;
+        }),
+        timeoutMs: 10_000,
+      });
+
+      const result = await runSuccess(service.complete(request));
+      expect(result).toBe(VALID_CHAT_RESPONSE.choices[0].message.content);
+      expect(calls).toBe(4);
+    }, 30_000);
+
     it("stops after the retry budget instead of looping on a dead provider", async () => {
       const { service, calls } = makeCountingService(
         [Effect.fail(new OpenAiTransportError({ reason: "NETWORK_FAILED" }))],

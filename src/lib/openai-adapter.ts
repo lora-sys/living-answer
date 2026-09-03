@@ -1,4 +1,4 @@
-import { Data, Duration, Effect } from "effect";
+import { Data, Duration, Effect, Schedule } from "effect";
 
 // ── Transport types ─────────────────────────────────────────────────────────────
 
@@ -140,6 +140,18 @@ const isTransient = (error: OpenAiTransportError): boolean => {
   return error.status === 429 || (error.status !== undefined && error.status >= 500);
 };
 
+/**
+ * A 429 means the provider is already saturated, so an immediate retry adds
+ * pressure to the condition it is asking for relief from.  The eval sweep hit
+ * this as a wall of 429s that one instant retry could not clear.  Everything
+ * else keeps the cheap single retry.
+ */
+const isRateLimited = (error: OpenAiTransportError): boolean =>
+  error.reason === "HTTP_STATUS" && error.status === 429;
+
+const RATE_LIMIT_BACKOFF = "2 seconds";
+const RATE_LIMIT_RETRIES = 3;
+
 export const makeOpenAiChatCompletions = (
   options: OpenAiChatCompletionsOptions,
 ): OpenAiChatCompletions => {
@@ -170,13 +182,19 @@ export const makeOpenAiChatCompletions = (
         }),
       );
 
-      // One bounded retry at the transport boundary covers every caller —
+      // Bounded retries at the transport boundary cover every caller —
       // clarify, rank, synthesis, judge and the follow-up agent — instead of
       // each of them inventing its own idea of a hiccup.
       return once.pipe(
         Effect.retry({
+          schedule: Schedule.exponential(RATE_LIMIT_BACKOFF, 2).pipe(
+            Schedule.intersect(Schedule.recurs(RATE_LIMIT_RETRIES)),
+          ),
+          while: isRateLimited,
+        }),
+        Effect.retry({
           times: options.transientRetries ?? DEFAULT_TRANSIENT_RETRIES,
-          while: isTransient,
+          while: (error) => isTransient(error) && !isRateLimited(error),
         }),
       );
     },

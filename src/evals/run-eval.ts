@@ -694,8 +694,10 @@ const runCaseWithRetry = async (
   );
   if (!retryable) return first;
 
-  const hasSearchNoResult = first.failures.includes("no_selectable_sources");
-  if (hasSearchNoResult) await sleep(2_000);
+  // Re-running a case straight into the same rate limit wastes the retry.
+  const rateLimited = JSON.stringify(first.tools).includes("429");
+  if (rateLimited) await sleep(20_000);
+  else if (first.failures.includes("no_selectable_sources")) await sleep(2_000);
   const second = await evaluate(golden, deps);
   const chosen = second.failures.length <= first.failures.length ? second : first;
   return {
