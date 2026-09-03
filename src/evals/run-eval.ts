@@ -178,6 +178,7 @@ const evaluate = async (
     excerptStore: ExcerptStore;
     threadStore: ThreadArtifactStore;
     quotaGuard: DailyQuotaGuard;
+    judge: boolean;
   },
 ): Promise<EvalCaseResult> => {
   const startedAt = Date.now();
@@ -607,7 +608,9 @@ const evaluate = async (
     modelOutput,
   };
 
-  if (deps.openaiKey) {
+  // EVAL_JUDGE=false used to be parsed and then ignored, so every case paid
+  // for a judge call whether the operator asked for one or not.
+  if (deps.openaiKey && deps.judge) {
     const judge = await judgeWithModel(deps.model, deps.openaiKey, deps.baseUrl, golden, result);
     if (judge) {
       result.judge = judge;
@@ -840,6 +843,7 @@ export const runGoldenEval = async (args = parseArgs([])) => {
           excerptStore,
           threadStore,
           quotaGuard,
+          judge: args.judge,
         });
         writeFileSync(
           join(".local/evals/traces", `${runId}-${result.caseId}.json`),
