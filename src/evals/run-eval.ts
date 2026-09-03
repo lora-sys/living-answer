@@ -189,12 +189,17 @@ const evaluate = async (
   const question = sanitizeQuestion(golden.input.question);
   let threadId: string | undefined;
   const synthesisErrors: string[] = [];
+  const clarifyErrors: string[] = [];
+  const rankErrors: string[] = [];
   const synthesisRejections: string[] = [];
 
   const [clarifyOutput, clarifyTrace] = await timed("clarify", { question }, async () =>
     createClarifyQuestionHandler({
       getSecret: () => deps.openaiKey,
       getModel: () => deps.model,
+      onError: (error) => {
+        clarifyErrors.push(error instanceof Error ? error.message : String(error));
+      },
       createChat: async (apiKey, model) =>
         makeOpenAiChatCompletions({
           apiKey,
@@ -205,7 +210,10 @@ const evaluate = async (
         }),
     })({ question }),
   );
-  tools.push(clarifyTrace);
+  tools.push({
+    ...clarifyTrace,
+    output: { response: clarifyOutput, errors: clarifyErrors },
+  });
   modelOutput.clarify = clarifyOutput;
   const clarification =
     (clarifyOutput as ClarifyQuestionResponse | undefined)?.success === true
@@ -251,11 +259,14 @@ const evaluate = async (
     const [rankOutput, rankTrace] = await timed(
       "rank",
       { query, count: candidates.length },
-      async () =>
-        createRankAnswerCandidatesHandler({
-          getSecret: () => deps.openaiKey,
-          getModel: () => deps.model,
-          createChat: async (apiKey, model) =>
+    async () =>
+      createRankAnswerCandidatesHandler({
+        getSecret: () => deps.openaiKey,
+        getModel: () => deps.model,
+        onError: (error) => {
+          rankErrors.push(error instanceof Error ? error.message : String(error));
+        },
+        createChat: async (apiKey, model) =>
             makeOpenAiChatCompletions({
               apiKey,
               model,
@@ -275,7 +286,7 @@ const evaluate = async (
           })),
         }),
     );
-    tools.push(rankTrace);
+    tools.push({ ...rankTrace, output: { response: rankOutput, errors: rankErrors } });
     modelOutput.rank = rankOutput;
     if ((rankOutput as { success?: boolean })?.success !== true) failures.push("rank_failed");
   }

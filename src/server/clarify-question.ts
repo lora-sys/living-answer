@@ -9,7 +9,7 @@
  * @module clarify-question
  */
 
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
@@ -47,6 +47,8 @@ export interface ClarifyQuestionDeps {
   readonly getSecret: () => string | undefined;
   readonly getModel: () => string;
   readonly createChat: (secret: string, model: string) => Promise<OpenAiChatCompletions>;
+  /** Server-side failure hook for traces; the client still sees one message. */
+  readonly onError?: (error: unknown) => void;
 }
 
 export const createClarifyQuestionHandler =
@@ -78,6 +80,7 @@ export const createClarifyQuestionHandler =
       const exit = await Effect.runPromiseExit(workflow({ question }));
       if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
         const error = exit.cause.error as { reason?: string };
+        deps.onError?.(new Error(`ClarifyError:${error.reason ?? "unknown"}`));
         if (error.reason === "REFUSED_QUESTION") {
           return {
             success: false as const,
@@ -87,6 +90,7 @@ export const createClarifyQuestionHandler =
         }
       }
       if (exit._tag === "Failure") {
+        deps.onError?.(new Error(`ClarifyError:${Cause.pretty(exit.cause).slice(0, 200)}`));
         return {
           success: false as const,
           code: "CLARIFICATION_UNAVAILABLE",

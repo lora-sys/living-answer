@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Cause, Effect, Option } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
@@ -42,6 +42,8 @@ export interface RankAnswerCandidatesDeps {
     secret: string,
     model: string,
   ) => Promise<ReturnType<typeof makeOpenAiChatCompletions>>;
+  /** Server-side failure hook for traces; the client still sees one message. */
+  readonly onError?: (error: unknown) => void;
 }
 
 export const createRankAnswerCandidatesHandler =
@@ -78,7 +80,10 @@ export const createRankAnswerCandidatesHandler =
     try {
       const model = deps.getModel();
       const chat = await deps.createChat(secret, model);
-      const analysis = await Effect.runPromise(
+      // runPromise rejects with an opaque FiberFailure, which made every rank
+      // failure look identical in a trace.  Reading the typed exit keeps the
+      // reason server-side without adding anything to the client response.
+      const exit = await Effect.runPromiseExit(
         rankAnswerCandidates({ model, chat })({
           question,
           refinedQuery,
@@ -86,8 +91,25 @@ export const createRankAnswerCandidatesHandler =
           candidates,
         }),
       );
+      if (exit._tag === "Failure") {
+        const failure = Cause.failureOption(exit.cause);
+        deps.onError?.(
+          new Error(
+            Option.isSome(failure)
+              ? `CandidateRankingError:${String(failure.value)}`
+              : "CandidateRankingError:unknown",
+          ),
+        );
+        return {
+          success: false as const,
+          code: "RANKING_UNAVAILABLE",
+          message: "AI 候选分析暂时不可用，请稍后再试。",
+        };
+      }
+      const analysis = exit.value;
       return { success: true as const, analysis };
-    } catch {
+    } catch (error) {
+      deps.onError?.(error instanceof Error ? error : new Error(String(error)));
       return {
         success: false as const,
         code: "RANKING_UNAVAILABLE",
