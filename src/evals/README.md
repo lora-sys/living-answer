@@ -94,6 +94,15 @@ output, evidence references, and judge verdict. Hidden chain-of-thought is not
 available or stored; the system intentionally records model input/output and
 tool effects instead.
 
+## Dashboard
+
+`/evals` renders the local reports as a product dashboard. It provides run
+selection, quality summary, baseline delta, category/difficulty coverage,
+quality metrics, failure map, case filters, and a full trace inspector. The
+page reads only validated summaries, case lists, comparisons, and selected
+trace JSON through a server boundary; filesystem paths and provider errors are
+not exposed.
+
 ## Scoring
 
 Every case receives:

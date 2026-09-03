@@ -16,6 +16,12 @@ export function SiteNav() {
           <span className="absolute -bottom-0.5 left-2 h-3 w-3 bg-accent" aria-hidden="true" />
           <span className="relative ml-3">LIVING ANSWER</span>
         </Link>
+        <Link
+          to="/evals"
+          className="ml-auto inline-flex min-h-11 items-center font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted transition-colors duration-150 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          EVAL DASHBOARD
+        </Link>
       </nav>
     </header>
   );
