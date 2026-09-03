@@ -12,6 +12,8 @@ import {
 import { createAnswerExcerpt } from "../lib/answer-excerpt";
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
 
+import { buildQueryVariants } from "../lib/search-query-variants";
+
 import { makeSqliteExcerptStore, type ExcerptStore } from "../lib/excerpt-store";
 import { StoreError } from "../lib/excerpt-store";
 
@@ -173,7 +175,7 @@ const MAX_CANDIDATES = 5;
 // Below this the "thread" is really a single source, so broadening is worth a
 // second search.
 const MIN_USEFUL_CANDIDATES = 3;
-const MAX_ALT_QUERIES = 2;
+const MAX_ALT_QUERIES = 3;
 
 export interface SearchAnswerCandidatesDeps {
   readonly getSecret: () => string | undefined;
@@ -181,7 +183,42 @@ export interface SearchAnswerCandidatesDeps {
   readonly createStore: () => Promise<ExcerptStore>;
   /** Create a daily quota guard. */
   readonly createQuotaGuard: () => Promise<DailyQuotaGuard>;
+  /**
+   * Observability hook for the query forms actually dispatched.  Server-side
+   * only: it never reaches the client response, and it exists so an eval trace
+   * can tell a retrieval gap apart from a synthesis gap.
+   */
+  readonly onSearchAttempt?: (attempt: SearchAttemptRecord) => void;
 }
+
+export interface SearchAttemptRecord {
+  readonly query: string;
+  readonly ok: boolean;
+  readonly candidates: number;
+}
+
+/** Failures that cannot recover within a single request. */
+const isTerminalFailure = (error: unknown): boolean =>
+  (error instanceof SearchError &&
+    (error.reason === "API_RATE_LIMITED" || error.reason === "API_QUOTA_EXCEEDED")) ||
+  (error instanceof SearchTransportError &&
+    error.reason === "HTTP_STATUS" &&
+    error.status === 429);
+
+const failureCode = (error: unknown): SearchCandidatesFailureCode => {
+  if (error instanceof SearchError) {
+    if (error.reason === "API_RATE_LIMITED") return "SEARCH_RATE_LIMITED";
+    if (error.reason === "API_QUOTA_EXCEEDED") return "SEARCH_QUOTA_EXCEEDED";
+  }
+  if (
+    error instanceof SearchTransportError &&
+    error.reason === "HTTP_STATUS" &&
+    error.status === 429
+  ) {
+    return "SEARCH_RATE_LIMITED";
+  }
+  return "SEARCH_ERROR";
+};
 
 export const createSearchAnswerCandidatesHandler =
   (deps: SearchAnswerCandidatesDeps) =>
@@ -224,54 +261,63 @@ export const createSearchAnswerCandidatesHandler =
         ),
       );
 
-    const exit = await runSearch(query);
-
-    if (exit._tag !== "Success") {
-      const searchError = exit.cause._tag === "Fail" ? exit.cause.error : null;
-      if (searchError instanceof SearchError) {
-        if (searchError.reason === "API_RATE_LIMITED")
-          return safeErrorResponse("SEARCH_RATE_LIMITED");
-        if (searchError.reason === "API_QUOTA_EXCEEDED")
-          return safeErrorResponse("SEARCH_QUOTA_EXCEEDED");
-      }
-      if (searchError instanceof SearchTransportError && searchError.reason === "HTTP_STATUS") {
-        if (searchError.status === 429) return safeErrorResponse("SEARCH_RATE_LIMITED");
-      }
-      return safeErrorResponse("SEARCH_ERROR");
-    }
-
     const now = Date.now();
-    const primary = processSearchItems(exit.value, now);
-    const candidates = [...primary.candidates];
-    const excerpts = [...primary.excerpts];
-    const seenAnswerIds = new Set(candidates.map((candidate) => candidate.answerId));
-    const seenFingerprints = new Set(excerpts.map((excerpt) => excerpt.fingerprint));
+    const candidates: AnswerCandidate[] = [];
+    const excerpts: AnswerExcerpt[] = [];
+    const seenAnswerIds = new Set<string>();
+    const seenFingerprints = new Set<string>();
 
-    // Thin primary result: broaden with the clarified alternatives. These are
-    // best-effort — a failing extra query must not turn a working search into
-    // an error.
-    const altQueries = (input.altQueries ?? [])
-      .map((alt) => (typeof alt === "string" ? alt.trim() : ""))
-      .filter((alt) => alt !== "" && alt !== query)
-      .slice(0, MAX_ALT_QUERIES);
-
-    for (const altQuery of altQueries) {
-      if (candidates.length >= MIN_USEFUL_CANDIDATES) break;
-      const altExit = await runSearch(altQuery);
-      if (altExit._tag !== "Success") continue;
-      const extra = processSearchItems(altExit.value, now);
-      for (const candidate of extra.candidates) {
+    const merge = (batch: SearchProcessingResult): void => {
+      for (const candidate of batch.candidates) {
         if (candidates.length >= MAX_CANDIDATES) break;
         if (seenAnswerIds.has(candidate.answerId)) continue;
         seenAnswerIds.add(candidate.answerId);
         candidates.push(candidate);
       }
-      for (const excerpt of extra.excerpts) {
+      for (const excerpt of batch.excerpts) {
         if (seenFingerprints.has(excerpt.fingerprint)) continue;
         seenFingerprints.add(excerpt.fingerprint);
         excerpts.push(excerpt);
       }
+    };
+
+    // Zhihu content search is a keyword engine, and the clarified sentence
+    // form usually comes back as column articles — which this product cannot
+    // cite as an answer.  So the derived keyword forms are searched in order
+    // and the pool accumulates across them.  A thin first form costs one more
+    // request instead of ending the run with nothing to learn from.
+    const variants = buildQueryVariants({
+      question: query,
+      refinedQuery: query,
+      alternatives: input.altQueries ?? [],
+    });
+    const forms = variants.length > 0 ? variants : [query];
+
+    let firstFailure: unknown = null;
+    let successes = 0;
+
+    for (const form of forms) {
+      if (candidates.length >= MIN_USEFUL_CANDIDATES) break;
+      const exit = await runSearch(form);
+
+      if (exit._tag !== "Success") {
+        const searchError = exit.cause._tag === "Fail" ? exit.cause.error : null;
+        firstFailure ??= searchError;
+        deps.onSearchAttempt?.({ query: form, ok: false, candidates: candidates.length });
+        // Rate limit and quota will not recover mid-request; a form that
+        // returns nothing useful is not a provider failure either.
+        if (isTerminalFailure(searchError)) break;
+        continue;
+      }
+
+      successes += 1;
+      merge(processSearchItems(exit.value, now));
+      deps.onSearchAttempt?.({ query: form, ok: true, candidates: candidates.length });
     }
+
+    // Every form failed at the provider. Report the first mapped cause rather
+    // than pretending an empty pool is a successful search.
+    if (successes === 0) return safeErrorResponse(failureCode(firstFailure));
 
     // Persist each valid excerpt.  Store failures are collected explicitly —
     // they must not be silently swallowed or mapped to a successful search.

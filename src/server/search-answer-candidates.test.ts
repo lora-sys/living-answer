@@ -455,9 +455,9 @@ describe("search-answer-candidates", () => {
     });
   });
 
-  // ── Query broadening with clarified alternatives ──────────────────────
+  // ── Query form broadening ─────────────────────────────────────────────
 
-  describe("alt query broadening", () => {
+  describe("query form broadening", () => {
     const answerItem = (answerId: string, text: string) => ({
       ContentType: "Answer",
       Title: `回答 ${answerId}`,
@@ -465,6 +465,76 @@ describe("search-answer-candidates", () => {
       ContentID: answerId,
       EditTime: 1_700_000_000,
       ContentText: text,
+    });
+
+    it("searches the keyword form before the clarified sentence", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const queries: string[] = [];
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) => {
+        queries.push(args.query);
+        return Effect.succeed(args.query === "Redis 分布式锁" ? [answerItem("100", "命中")] : []);
+      });
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      await h({ query: "Redis分布式锁的原理是什么？", altQueries: [] });
+
+      // The sentence form comes back as column articles, so it must not be
+      // the request that spends the first quota unit.
+      expect(queries[0]).toBe("Redis 分布式锁");
+      expect(queries.at(-1)).toBe("Redis分布式锁的原理是什么？");
+    });
+
+    it("stops dispatching forms once the provider rate limits", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const queries: string[] = [];
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) => {
+        queries.push(args.query);
+        return Effect.fail(new SearchError({ reason: "API_RATE_LIMITED" }));
+      });
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a", "alt-b"] });
+
+      expect(result).toMatchObject({ status: "error", code: "SEARCH_RATE_LIMITED" });
+      expect(queries).toHaveLength(1);
+    });
+
+    it("keeps a usable pool when a later form hits the rate limit", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) =>
+        args.query === "primary"
+          ? Effect.succeed([answerItem("100", "主命中")])
+          : Effect.fail(new SearchError({ reason: "API_RATE_LIMITED" })),
+      );
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a"] });
+
+      // A thin but real result beats an error that throws the work away.
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates.map((c) => c.answerId)).toEqual(["100"]);
+      }
+    });
+
+    it("reports which forms were dispatched", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) =>
+        args.query === "primary"
+          ? Effect.succeed([answerItem("100", "甲"), answerItem("200", "乙")])
+          : Effect.succeed([answerItem("200", "乙"), answerItem("300", "丙")]),
+      );
+      const attempts: string[] = [];
+      const deps = makeDeps("secret", makeFakeStore());
+      const h = createSearchAnswerCandidatesHandler({
+        ...deps,
+        onSearchAttempt: (attempt) => attempts.push(`${attempt.query}:${attempt.candidates}`),
+      });
+
+      await h({ query: "primary", altQueries: ["alt-a"] });
+
+      // The running count is what tells a trace "the pool never grew".
+      expect(attempts).toEqual(["primary:2", "alt-a:3"]);
     });
 
     it("broadens with alt queries when the primary query returns a thin set", async () => {

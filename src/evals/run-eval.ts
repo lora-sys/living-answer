@@ -217,6 +217,9 @@ const evaluate = async (
     .map((alt) => alt.trim())
     .filter((alt) => alt !== "" && alt !== query)
     .slice(0, 2);
+  // Recording every dispatched form is what separates "the provider had
+  // nothing" from "we asked the keyword engine in the wrong shape".
+  const searchForms: { query: string; ok: boolean; candidates: number }[] = [];
   const [searchOutput, searchTrace] = await timed(
     "search",
     { query, altQueries },
@@ -225,9 +228,15 @@ const evaluate = async (
         getSecret: () => deps.searchSecret,
         createStore: async () => deps.excerptStore,
         createQuotaGuard: async () => deps.quotaGuard,
+        onSearchAttempt: (attempt) => {
+          searchForms.push(attempt);
+        },
       })({ query, altQueries }),
   );
-  tools.push(searchTrace);
+  tools.push({
+    ...searchTrace,
+    output: { response: searchOutput, forms: searchForms },
+  });
   const search =
     (searchOutput as SearchAnswerCandidatesResponse | undefined)?.status === "ok"
       ? (searchOutput as Extract<SearchAnswerCandidatesResponse, { status: "ok" }>)
@@ -309,6 +318,11 @@ const evaluate = async (
   });
   if (golden.expected.flow === "full" && selected.length === 0)
     failures.push("no_selectable_sources");
+  // A one- or two-answer pool cannot show an evolution, only an opinion. It is
+  // a retrieval outcome, so it is scored as one rather than hidden behind a
+  // synthesis failure that happens downstream.
+  if (golden.expected.flow === "full" && candidates.length > 0 && candidates.length < 3)
+    failures.push("thin_retrieval");
 
   if (clarifyRefused && golden.expected.flow === "full") {
     failures.push("clarify_refused");
