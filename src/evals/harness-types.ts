@@ -58,6 +58,12 @@ export interface EvalCaseResult {
     outputValid: boolean;
     similarity: number;
     judgeScore: number;
+    /**
+     * Share of follow-ups the thread honestly could not answer.  Honest gaps
+     * are not evidence failures, but they are a coverage signal worth
+     * tracking across versions.
+     */
+    agentGapRate: number;
   };
   counts: {
     hallucination: boolean;

@@ -409,6 +409,8 @@ const evaluate = async (
   }
 
   let agentEvidenceGrounded = true;
+  let agentEvidenceGaps = 0;
+  let agentTurns = 0;
   const aiAuthoredText: string[] = [];
   if (threadId) {
     const [readOutput, readTrace] = await timed("read", { threadId }, async () =>
@@ -502,7 +504,12 @@ const evaluate = async (
       const agent = agentOutput as
         | {
             success?: boolean;
-            response?: { answer?: string; evidenceRefs?: readonly { quote?: string }[] };
+            response?: {
+              status?: string;
+              answer?: string;
+              evidenceRefs?: readonly { quote?: string }[];
+              nextActions?: readonly { type?: string; query?: string }[];
+            };
           }
         | undefined;
       if (agent?.success !== true) {
@@ -511,9 +518,23 @@ const evaluate = async (
       }
       conversation.push({ role: "user", content: followUp });
       conversation.push({ role: "assistant", content: agent.response?.answer ?? "" });
+      agentTurns += 1;
       const evidenceRefs = agent.response?.evidenceRefs ?? [];
-      if (evidenceRefs.length === 0) {
-        failures.push("agent_evidence_gap");
+      if (agent.response?.status === "evidence_gap" && evidenceRefs.length === 0) {
+        // An honest "the thread does not cover this" is the behaviour the
+        // product invariant demands, so it must not be scored as an ungrounded
+        // claim.  It is still a coverage limitation worth counting, and the
+        // domain layer already rejects grounded-without-citations, so an empty
+        // ref list can only mean a declared gap.
+        agentEvidenceGaps += 1;
+        // What makes a gap useful is the way out.  A gap with no runnable
+        // supplement query is a real defect, and that is where the failure is.
+        const supplement = (agent.response.nextActions ?? []).some(
+          (action) => action.type === "search_supplement" && typeof action.query === "string" && action.query.trim() !== "",
+        );
+        if (!supplement) failures.push("agent_gap_without_exit");
+      } else if (evidenceRefs.length === 0) {
+        failures.push("agent_ungrounded_claim");
         agentEvidenceGrounded = false;
       } else {
         const grounded = evidenceRefs.every((ref) => {
@@ -606,6 +627,7 @@ const evaluate = async (
       outputValid,
       similarity,
       judgeScore: 0,
+      agentGapRate: agentTurns === 0 ? 0 : agentEvidenceGaps / agentTurns,
     },
     counts: {
       hallucination: evidenceGrounded === false && golden.expected.flow === "full",
