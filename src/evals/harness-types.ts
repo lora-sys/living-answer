@@ -64,6 +64,12 @@ export interface EvalCaseResult {
      * tracking across versions.
      */
     agentGapRate: number;
+    /**
+     * Diagnostic split of the literal must_include misses.  Recorded after
+     * scoring, so it cannot influence pass/fail.
+     */
+    conceptSynonymCovered?: number;
+    conceptRealGap?: number;
   };
   counts: {
     hallucination: boolean;
@@ -78,6 +84,7 @@ export interface EvalCaseResult {
     clarify?: unknown;
     rank?: unknown;
     agent?: unknown;
+    conceptCoverage?: { missed: string[]; coveredBySynonym: string[] };
   };
   judge?: EvalJudge;
 }

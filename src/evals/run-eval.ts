@@ -104,6 +104,65 @@ const metric = (metrics: ReadonlyArray<EvalCaseResult["metrics"]>): Record<strin
   );
 };
 
+/**
+ * Literal substring matching is the wrong instrument for concept coverage.
+ * "服务器组件" and "服务端组件" are the same idea, and a learner who reads one
+ * has the concept; a scorer that demands the other reports a gap that is not
+ * there.  This asks the model, per missed concept, whether the text actually
+ * conveys it.
+ *
+ * Diagnostic only.  It never changes pass/fail, so golden-v1 stays frozen and
+ * its scores stay comparable across versions.
+ */
+const classifyMissedConcepts = async (
+  model: string,
+  apiKey: string,
+  baseUrl: string,
+  missed: readonly string[],
+  authoredText: string,
+): Promise<string[]> => {
+  if (missed.length === 0) return [];
+  const transport = makeFetchOpenAiTransport({ timeoutMs: "30 seconds" });
+  const chat = makeOpenAiChatCompletions({
+    apiKey,
+    model,
+    baseUrl,
+    transport,
+    timeoutMs: "30 seconds",
+  });
+  const prompt = [
+    "你在检查一段中文学习材料是否讲到了某些概念。",
+    "只判断概念是否被实质表达：换了同义词、别名或英文原名但意思到位，算 covered；",
+    "只是话题相近、或者压根没提，算 missing。不要奖励空话。",
+    `概念列表：${JSON.stringify(missed)}`,
+    `学习材料：${authoredText.slice(0, 6000)}`,
+    '只返回 JSON：{"covered":["概念1"],"missing":["概念2"]}',
+  ].join("\n");
+
+  const [output] = await timed("concept_coverage", { missed }, async () =>
+    Effect.runPromise(
+      chat.complete({
+        model,
+        messages: [
+          { role: "system", content: prompt },
+          { role: "user", content: "请判断" },
+        ],
+      }),
+    ),
+  );
+  if (!output) return [];
+  try {
+    const parsed = JSON.parse(output) as { covered?: unknown };
+    const covered = Array.isArray(parsed.covered)
+      ? parsed.covered.filter((item): item is string => typeof item === "string")
+      : [];
+    // Only trust terms we actually asked about.
+    return covered.filter((term) => missed.includes(term));
+  } catch {
+    return [];
+  }
+};
+
 const judgeWithModel = async (
   model: string,
   apiKey: string,
@@ -558,6 +617,7 @@ const evaluate = async (
   const rendered = JSON.stringify({ modelOutput, tools: productTools, threadId });
   const authoredText = aiAuthoredText.join(" \n ");
   const finalOutputText = safeText(modelOutput.agent);
+  const missedConcepts: string[] = [];
   for (const phrase of golden.expected.mustInclude ?? []) {
     const scope = golden.category === "adversarial" ? finalOutputText : authoredText;
     if (scope.includes(phrase)) continue;
@@ -569,6 +629,7 @@ const evaluate = async (
     failures.push(
       evidenceScope.includes(phrase) ? `must_include_ai:${phrase}` : `must_include_absent:${phrase}`,
     );
+    missedConcepts.push(phrase);
   }
   for (const phrase of golden.expected.mustNotInclude ?? []) {
     const scope = golden.category === "adversarial" ? finalOutputText : rendered;
@@ -652,6 +713,25 @@ const evaluate = async (
         ...result.metrics,
         evidenceGrounded: evidenceGrounded && judge.evidenceGrounded,
       };
+    }
+
+    // Recorded after scoring so a synonym match can never inflate the pass
+    // rate.  Its purpose is to size the literal-matching error, which decides
+    // whether golden-v2 needs synonym sets or the product has a real gap.
+    if (missedConcepts.length > 0) {
+      const covered = await classifyMissedConcepts(
+        deps.model,
+        deps.openaiKey,
+        deps.baseUrl,
+        missedConcepts,
+        authoredText,
+      );
+      result.metrics = {
+        ...result.metrics,
+        conceptSynonymCovered: covered.length,
+        conceptRealGap: missedConcepts.length - covered.length,
+      };
+      modelOutput.conceptCoverage = { missed: missedConcepts, coveredBySynonym: covered };
     }
   }
 
