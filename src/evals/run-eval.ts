@@ -187,6 +187,7 @@ const evaluate = async (
   const artifactEvidence = new Map<string, { answerId: string; excerpt: string }>();
   const question = sanitizeQuestion(golden.input.question);
   let threadId: string | undefined;
+  const synthesisErrors: string[] = [];
 
   const [clarifyOutput, clarifyTrace] = await timed("clarify", { question }, async () =>
     createClarifyQuestionHandler({
@@ -338,6 +339,9 @@ const evaluate = async (
           getModel: () => deps.model,
           createExcerptStore: async () => deps.excerptStore,
           createThreadStore: async () => deps.threadStore,
+          onError: (error) => {
+            synthesisErrors.push(error instanceof Error ? error.message : String(error));
+          },
           createChat: async (apiKey, model) =>
             makeOpenAiChatCompletions({
               apiKey,
@@ -362,10 +366,18 @@ const evaluate = async (
           })),
         }),
     );
-    tools.push(generateTrace);
+    tools.push({ ...generateTrace, output: { response: generateOutput, errors: synthesisErrors } });
     const generated = generateOutput as GenerateThreadResponse | undefined;
-    if (generated?.success !== true) failures.push("generate_failed");
-    else {
+    if (generated?.success !== true) {
+      failures.push("generate_failed");
+      // The generic response hides whether the model payload was unusable or
+      // the provider call failed. Those need different fixes and different
+      // retry treatment, so the trace carries the distinction.
+      if (synthesisErrors.some((message) => message.includes("MALFORMED_RESPONSE")))
+        failures.push("synthesis_malformed");
+      if (synthesisErrors.some((message) => message.includes("TRANSPORT_FAILED")))
+        failures.push("synthesis_transport");
+    } else {
       threadId = generated.threadId;
       // The thread exists, but the AI layer silently degraded to a raw
       // excerpt dump. That is a product failure, not a pass.
@@ -627,6 +639,7 @@ const runCaseWithRetry = async (
       "search_failed",
       "rank_failed",
       "generate_failed",
+      "synthesis_transport",
       "read_failed",
       "agent_failed",
       "timeout_or_network_failure",

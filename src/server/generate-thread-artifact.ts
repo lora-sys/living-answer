@@ -29,6 +29,8 @@ import {
   type ThreadSynthesisResult,
 } from "../lib/thread-synthesis";
 import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
+import { OpenAiTransportError } from "../lib/openai-adapter";
+import { ThreadSynthesisError } from "../lib/thread-synthesis";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ExcerptStore } from "../lib/excerpt-store";
 
@@ -83,6 +85,11 @@ export interface GenerateThreadDeps {
     secret: string,
     model: string,
   ) => Promise<ReturnType<typeof makeOpenAiChatCompletions>>;
+  /**
+   * Server-side failure hook for traces.  The client still receives the
+   * generic message; this keeps diagnosis possible without leaking the cause.
+   */
+  readonly onError?: (error: unknown) => void;
 }
 
 export const createGenerateThreadHandler =
@@ -247,7 +254,20 @@ export const createGenerateThreadHandler =
         threadId: artifactResult.artifact.threadId,
         mode: synthesisMode,
       };
-    } catch {
+    } catch (error) {
+      // runPromise rejects with an opaque FiberFailure; unwrap the typed
+      // domain error so a trace can distinguish a malformed model payload
+      // from a transport timeout or quota failure.
+      const cause = (error as { cause?: { failure?: unknown } })?.cause?.failure;
+      const detail =
+        cause instanceof ThreadSynthesisError
+          ? `ThreadSynthesisError:${cause.reason}`
+          : cause instanceof OpenAiTransportError
+            ? `OpenAiTransportError:${cause.reason}${cause.status === undefined ? "" : `:${cause.status}`}`
+            : error instanceof Error
+              ? `${error.name}: ${error.message}`
+              : String(error);
+      deps.onError?.(new Error(detail));
       return {
         success: false as const,
         code: "SYNTHESIS_FAILED",
