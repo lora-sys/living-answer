@@ -482,6 +482,23 @@ const validateLearningGuide = (
 export const synthesizeThread =
   (deps: ThreadSynthesisDeps) =>
   (input: SynthesisInput): Effect.Effect<ThreadSynthesisResult, ThreadSynthesisError> =>
+    synthesizeOnce(deps)(input).pipe(
+      // The provider intermittently returns a payload that will not parse even
+      // though the transport succeeded.  One bounded retry keeps that from
+      // collapsing the thread into an evidence-only dump.  Transport hiccups
+      // are already retried at the adapter boundary, so they are not repeated
+      // here, and a deterministic rejection still fails fast.
+      Effect.retry({
+        times: SYNTHESIS_ATTEMPTS - 1,
+        while: (error) => error.reason === "MALFORMED_RESPONSE",
+      }),
+    );
+
+const SYNTHESIS_ATTEMPTS = 2;
+
+const synthesizeOnce =
+  (deps: ThreadSynthesisDeps) =>
+  (input: SynthesisInput): Effect.Effect<ThreadSynthesisResult, ThreadSynthesisError> =>
     Effect.gen(function* () {
       const question = input.question.trim();
       if (question === "" || question.length > MAX_QUESTION_LENGTH) {

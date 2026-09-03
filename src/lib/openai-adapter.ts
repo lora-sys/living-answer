@@ -2,7 +2,17 @@ import { Data, Duration, Effect } from "effect";
 
 // ── Transport types ─────────────────────────────────────────────────────────────
 
-export type OpenAiTransportFailureReason = "NETWORK_FAILED" | "HTTP_STATUS" | "NON_JSON_RESPONSE";
+/**
+ * `EMPTY_CONTENT` is its own reason because the envelope is perfectly valid:
+ * the provider answered with no message text.  Reasoning models do this
+ * intermittently, and callers that then parse JSON see a syntax error, which
+ * hides a transient transport problem as a model-quality problem.
+ */
+export type OpenAiTransportFailureReason =
+  | "NETWORK_FAILED"
+  | "HTTP_STATUS"
+  | "NON_JSON_RESPONSE"
+  | "EMPTY_CONTENT";
 
 export class OpenAiTransportError extends Data.TaggedError("OpenAiTransportError")<{
   readonly reason: OpenAiTransportFailureReason;
@@ -34,7 +44,11 @@ export interface OpenAiChatCompletionsOptions {
   readonly transport: OpenAiTransport;
   readonly timeoutMs: Duration.DurationInput;
   readonly now?: () => Effect.Effect<number, never>;
+  /** Retry budget for transient provider failures. Defaults to one retry. */
+  readonly transientRetries?: number;
 }
+
+const DEFAULT_TRANSIENT_RETRIES = 1;
 
 // ── Response validation ────────────────────────────────────────────────────────
 
@@ -85,6 +99,13 @@ const validateChatCompletionResponse = (
     };
   }
 
+  if (content.trim() === "") {
+    return {
+      _tag: "failure",
+      error: new OpenAiTransportError({ reason: "EMPTY_CONTENT" }),
+    };
+  }
+
   return { _tag: "success", content };
 };
 
@@ -98,14 +119,21 @@ export interface OpenAiChatCompletions {
 
 // ── Adapter ────────────────────────────────────────────────────────────────────
 
+/** Failures that can plausibly succeed on an immediate second attempt. */
+const isTransient = (error: OpenAiTransportError): boolean => {
+  if (error.reason === "EMPTY_CONTENT" || error.reason === "NETWORK_FAILED") return true;
+  if (error.reason !== "HTTP_STATUS") return false;
+  return error.status === 429 || (error.status !== undefined && error.status >= 500);
+};
+
 export const makeOpenAiChatCompletions = (
   options: OpenAiChatCompletionsOptions,
 ): OpenAiChatCompletions => {
   const baseUrl = options.baseUrl.replace(/\/$/, "");
 
   return {
-    complete: (request) =>
-      Effect.flatMap(Effect.succeed(request), (req) =>
+    complete: (request) => {
+      const once = Effect.flatMap(Effect.succeed(request), (req) =>
         options.transport({
           url: `${baseUrl}/chat/completions`,
           method: "POST",
@@ -126,7 +154,18 @@ export const makeOpenAiChatCompletions = (
           }
           return Effect.succeed(validated.content);
         }),
-      ),
+      );
+
+      // One bounded retry at the transport boundary covers every caller —
+      // clarify, rank, synthesis, judge and the follow-up agent — instead of
+      // each of them inventing its own idea of a hiccup.
+      return once.pipe(
+        Effect.retry({
+          times: options.transientRetries ?? DEFAULT_TRANSIENT_RETRIES,
+          while: isTransient,
+        }),
+      );
+    },
   };
 };
 

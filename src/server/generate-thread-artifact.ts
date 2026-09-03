@@ -16,7 +16,7 @@
  * @module generate-thread-artifact
  */
 
-import { Effect } from "effect";
+import { Cause, Effect, Option } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import { makeSqliteThreadArtifactStore } from "../lib/thread-artifact-store";
@@ -29,8 +29,6 @@ import {
   type ThreadSynthesisResult,
 } from "../lib/thread-synthesis";
 import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
-import { OpenAiTransportError } from "../lib/openai-adapter";
-import { ThreadSynthesisError } from "../lib/thread-synthesis";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ExcerptStore } from "../lib/excerpt-store";
 
@@ -196,9 +194,24 @@ export const createGenerateThreadHandler =
 
       if (typeof secret === "string" && secret.trim() !== "") {
         const chat = await deps.createChat(secret, model);
-        synthesisResult = await Effect.runPromise(
+        // runPromise rejects with an opaque FiberFailure whose cause is not
+        // enumerable, which made every synthesis failure look identical in a
+        // trace.  Reading the typed exit keeps the reason visible server-side
+        // while the client still gets the one generic message.
+        const synthesisExit = await Effect.runPromiseExit(
           synthesizeThread({ model, chat })(synthesisInput),
         );
+        if (synthesisExit._tag === "Failure") {
+          const failure = Cause.failureOption(synthesisExit.cause);
+          const reason = Option.isSome(failure) ? String(failure.value) : "unknown";
+          deps.onError?.(new Error(`ThreadSynthesisError:${reason}`));
+          return {
+            success: false as const,
+            code: "SYNTHESIS_FAILED",
+            message: "生成学习线程时出现异常，请稍后再试。",
+          };
+        }
+        synthesisResult = synthesisExit.value;
         // Only claim "synthesized" when the model's own nodes survived
         // validation; a silent fallback to raw excerpts is evidence-only.
         synthesisMode = synthesisResult.source === "model" ? "synthesized" : "evidence_only";
@@ -255,19 +268,9 @@ export const createGenerateThreadHandler =
         mode: synthesisMode,
       };
     } catch (error) {
-      // runPromise rejects with an opaque FiberFailure; unwrap the typed
-      // domain error so a trace can distinguish a malformed model payload
-      // from a transport timeout or quota failure.
-      const cause = (error as { cause?: { failure?: unknown } })?.cause?.failure;
-      const detail =
-        cause instanceof ThreadSynthesisError
-          ? `ThreadSynthesisError:${cause.reason}`
-          : cause instanceof OpenAiTransportError
-            ? `OpenAiTransportError:${cause.reason}${cause.status === undefined ? "" : `:${cause.status}`}`
-            : error instanceof Error
-              ? `${error.name}: ${error.message}`
-              : String(error);
-      deps.onError?.(new Error(detail));
+      // Anything left here is a store or artifact-construction defect rather
+      // than a model outcome; the synthesis path reports its own typed reason.
+      deps.onError?.(error instanceof Error ? error : new Error(String(error)));
       return {
         success: false as const,
         code: "SYNTHESIS_FAILED",

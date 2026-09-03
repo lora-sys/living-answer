@@ -2,6 +2,7 @@ import { Effect } from "effect";
 
 import { describe, expect, it } from "vite-plus/test";
 
+import { OpenAiTransportError } from "./openai-adapter";
 import type { TimelineStage, LearningGuideInput } from "./thread-artifact";
 
 import {
@@ -250,6 +251,43 @@ describe("thread-synthesis synthesizeThread", () => {
     if (outcome._tag === "error") {
       expect(outcome.error.reason).toBe("TRANSPORT_FAILED");
     }
+  });
+
+  it("recovers when a transient empty payload is followed by a valid one", async () => {
+    // Observed live: the same excerpts produced valid nodes on one call and an
+    // empty content string on the next.  Without a bounded retry that hiccup
+    // collapses the whole thread into an evidence-only dump.
+    let calls = 0;
+    const chat: ThreadSynthesisDeps["chat"] = {
+      complete: () => {
+        calls += 1;
+        return calls === 1
+          ? Effect.succeed("")
+          : Effect.succeed(buildValidResponse([{ ...validNodePayload }]));
+      },
+    };
+
+    const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("success");
+    expect(calls).toBe(2);
+    if (outcome._tag === "success") expect(outcome.result.source).toBe("model");
+  });
+
+  it("does not re-retry a transport failure, which the adapter already retried", async () => {
+    let calls = 0;
+    const chat: ThreadSynthesisDeps["chat"] = {
+      complete: () => {
+        calls += 1;
+        return Effect.fail(
+          new OpenAiTransportError({ reason: "NETWORK_FAILED" }),
+        ) as unknown as Effect.Effect<string, never>;
+      },
+    };
+
+    const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("error");
+    if (outcome._tag === "error") expect(outcome.error.reason).toBe("TRANSPORT_FAILED");
+    expect(calls).toBe(1);
   });
 
   it("returns fallback nodes when all model nodes have banned wording in summary", async () => {

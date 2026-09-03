@@ -365,6 +365,79 @@ describe("openai-adapter", () => {
     });
   });
 
+  // ── Transient failure handling ──────────────────────────────────────────────
+
+  describe("transient retry", () => {
+    const makeCountingService = (
+      responses: readonly unknown[],
+      transientRetries?: number,
+    ): { service: OpenAiChatCompletions; calls: () => number } => {
+      let index = 0;
+      const service = makeOpenAiChatCompletions({
+        apiKey: "sk-test",
+        model: "gpt-4o",
+        baseUrl: "https://api.openai.com",
+        transport: makeFakeTransport(() => responses[Math.min(index++, responses.length - 1)]),
+        timeoutMs: 10_000,
+        ...(transientRetries === undefined ? {} : { transientRetries }),
+      });
+      return { service, calls: () => index };
+    };
+
+    const request: OpenAiChatCompletionsRequest = {
+      model: "gpt-4o",
+      messages: makeMessages(),
+    };
+
+    it("treats an empty assistant message as a transport failure", async () => {
+      const { service } = makeCountingService([
+        { choices: [{ message: { role: "assistant", content: "   " } }] },
+      ]);
+
+      const err = await runFailure(service.complete(request));
+      expect(err.reason).toBe("EMPTY_CONTENT");
+    });
+
+    it("retries an empty payload and returns the content that follows", async () => {
+      const { service, calls } = makeCountingService([
+        { choices: [{ message: { role: "assistant", content: "" } }] },
+        VALID_CHAT_RESPONSE,
+      ]);
+
+      const result = await runSuccess(service.complete(request));
+      expect(result).toBe(VALID_CHAT_RESPONSE.choices[0].message.content);
+      expect(calls()).toBe(2);
+    });
+
+    it("retries a 429 but not a 400", async () => {
+      const rateLimited = makeCountingService([
+        Effect.fail(new OpenAiTransportError({ reason: "HTTP_STATUS", status: 429 })),
+        VALID_CHAT_RESPONSE,
+      ]);
+      await runSuccess(rateLimited.service.complete(request));
+      expect(rateLimited.calls()).toBe(2);
+
+      const badRequest = makeCountingService([
+        Effect.fail(new OpenAiTransportError({ reason: "HTTP_STATUS", status: 400 })),
+        VALID_CHAT_RESPONSE,
+      ]);
+      const err = await runFailure(badRequest.service.complete(request));
+      expect(err.status).toBe(400);
+      expect(badRequest.calls()).toBe(1);
+    });
+
+    it("stops after the retry budget instead of looping on a dead provider", async () => {
+      const { service, calls } = makeCountingService(
+        [Effect.fail(new OpenAiTransportError({ reason: "NETWORK_FAILED" }))],
+        2,
+      );
+
+      const err = await runFailure(service.complete(request));
+      expect(err.reason).toBe("NETWORK_FAILED");
+      expect(calls()).toBe(3);
+    });
+  });
+
   // ── Fetch transport helper ──────────────────────────────────────────────────
 
   describe("makeFetchOpenAiTransport", () => {
