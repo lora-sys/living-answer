@@ -320,6 +320,9 @@ const SYSTEM_PROMPT =
   "The guide has overview {headline, summary, evidenceRefs}, one stage per selected answer with {answerId, role, explanation, transition, evidenceRefs}, and openQuestions. Roles are baseline, correction, extension, counterpoint, current_usage, or unclear. " +
   "每个 summary 必须用中文点出这段摘录里的具体概念、机制或术语本身，不要复述摘录开头，也不要只写泛泛的过渡句。 " +
   "优先写成：这一层讲的是什么机制、它和上一层有什么不同、在什么条件下成立。 " +
+  "摘录里出现的技术术语必须原样保留在 title 或 summary 中，包括中文术语原词和英文原名，" +
+  "不要用「它」「这种机制」之类的指代代替，也不要用你自己的同义词改写——学习者要靠这些原词继续搜索和延伸阅读。 " +
+  "overview.summary 要点名这条学习线最关键的技术术语。 " +
   "Every evidenceRef.quote MUST be copied verbatim from the corresponding excerpt text. " +
   "Never say the author was wrong; say the premise has changed. " +
   "SourceAnswerId must be one of the provided timeline stage answer IDs. " +
