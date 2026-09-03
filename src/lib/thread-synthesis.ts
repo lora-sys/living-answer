@@ -51,6 +51,7 @@ const hasBannedWording = (text: string): boolean =>
 export class ThreadSynthesisError extends Data.TaggedError("ThreadSynthesisError")<{
   readonly reason:
     | "MALFORMED_RESPONSE"
+    | "ALL_NODES_REJECTED"
     | "UNCITED_CLAIM"
     | "UNKNOWN_ANSWER_ID"
     | "BANNED_WORDING"
@@ -86,6 +87,8 @@ export interface ThreadSynthesisDeps {
       readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string }>;
     }) => Effect.Effect<string, unknown>;
   };
+  /** Why model nodes were dropped.  Server-side diagnosis; never user-facing. */
+  readonly onDiagnostics?: (diagnostics: { readonly rejected: readonly string[] }) => void;
 }
 
 export interface ThreadSynthesisResult {
@@ -175,6 +178,7 @@ interface ExcerptCitationData {
   readonly fingerprint: string;
   readonly text: string;
   readonly view: CollapsedView;
+  readonly answerId: string;
 }
 
 const buildExcerptCitationMap = (
@@ -187,6 +191,7 @@ const buildExcerptCitationMap = (
       fingerprint: stage.excerpt.fingerprint,
       text,
       view: buildCollapsedView(text),
+      answerId: stage.answerId,
     });
   }
   return map;
@@ -198,7 +203,8 @@ const validateNode = (
   raw: Record<string, unknown>,
   answerIdMap: Map<string, string>,
   excerptCitationMap: Map<string, ExcerptCitationData>,
-): SynthesizedNode | null => {
+): { readonly node: SynthesizedNode | null; readonly reason: string } => {
+  const reject = (reason: string) => ({ node: null, reason });
   // kind
   const kind = raw.kind;
   if (
@@ -211,26 +217,26 @@ const validateNode = (
       kind !== "changed_premise" &&
       kind !== "unknown")
   ) {
-    return null;
+    return reject("bad_kind");
   }
 
   // title
   const title = typeof raw.title === "string" ? raw.title.trim() : "";
-  if (title === "") return null;
+  if (title === "") return reject("empty_title");
 
   // summary
   const summary = typeof raw.summary === "string" ? raw.summary.trim() : "";
-  if (summary === "") return null;
+  if (summary === "") return reject("empty_summary");
 
   // Check banned wording
   if (hasBannedWording(summary) || hasBannedWording(title)) {
-    return null;
+    return reject("banned_wording");
   }
 
   // evidenceRefs
   const evidenceRefsRaw = raw.evidenceRefs;
   if (!Array.isArray(evidenceRefsRaw) || evidenceRefsRaw.length === 0) {
-    return null;
+    return reject("no_evidence_refs");
   }
 
   const evidenceRefs: EvidenceRef[] = [];
@@ -255,19 +261,31 @@ const validateNode = (
     evidenceRefs.push({ excerptFingerprint, quote: snapped });
   }
   // A node survives as long as at least one citation is real evidence.
-  if (evidenceRefs.length === 0) return null;
+  if (evidenceRefs.length === 0) return reject("no_grounded_citation");
 
-  // sourceAnswerId
-  const sourceAnswerId = typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
-  if (sourceAnswerId === "" || !answerIdMap.has(sourceAnswerId)) {
-    return null;
-  }
+  // sourceAnswerId.  The citations are already verified against a specific
+  // excerpt, so when they all point at one answer we can recover the source
+  // even if the model echoed a placeholder or dropped the field.  That is
+  // strictly better than discarding a grounded node over a bookkeeping slip.
+  const citedAnswerIds = new Set(
+    evidenceRefs
+      .map((ref) => excerptCitationMap.get(ref.excerptFingerprint)?.answerId)
+      .filter((id): id is string => typeof id === "string" && id !== ""),
+  );
+  const declaredAnswerId =
+    typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
+  const sourceAnswerId = answerIdMap.has(declaredAnswerId)
+    ? declaredAnswerId
+    : citedAnswerIds.size === 1
+      ? [...citedAnswerIds][0]
+      : "";
+  if (sourceAnswerId === "") return reject("unknown_source_answer");
 
-  // sourceUrl
-  const sourceUrl = typeof raw.sourceUrl === "string" ? raw.sourceUrl.trim() : "";
-  if (sourceUrl === "" || sourceUrl !== answerIdMap.get(sourceAnswerId)) {
-    return null;
-  }
+  // sourceUrl is metadata we already own, not a model claim.  Trusting our
+  // canonical form instead of demanding a byte-identical echo removes a class
+  // of false rejections without weakening the evidence guarantee.
+  const sourceUrl = answerIdMap.get(sourceAnswerId) ?? "";
+  if (sourceUrl === "") return reject("missing_canonical_url");
 
   // uncertainty
   const uncertainty = raw.uncertainty;
@@ -277,17 +295,20 @@ const validateNode = (
     uncertainty < 0 ||
     uncertainty > 1
   ) {
-    return null;
+    return reject("bad_uncertainty");
   }
 
   return {
-    kind: kind as LearningNodeKind,
-    title,
-    summary,
-    evidenceRefs,
-    sourceAnswerId,
-    sourceUrl,
-    uncertainty,
+    node: {
+      kind: kind as LearningNodeKind,
+      title,
+      summary,
+      evidenceRefs,
+      sourceAnswerId,
+      sourceUrl,
+      uncertainty,
+    },
+    reason: "ok",
   };
 };
 
@@ -482,17 +503,39 @@ const validateLearningGuide = (
 export const synthesizeThread =
   (deps: ThreadSynthesisDeps) =>
   (input: SynthesisInput): Effect.Effect<ThreadSynthesisResult, ThreadSynthesisError> =>
-    synthesizeOnce(deps)(input).pipe(
-      // The provider intermittently returns a payload that will not parse even
-      // though the transport succeeded.  One bounded retry keeps that from
-      // collapsing the thread into an evidence-only dump.  Transport hiccups
-      // are already retried at the adapter boundary, so they are not repeated
-      // here, and a deterministic rejection still fails fast.
-      Effect.retry({
-        times: SYNTHESIS_ATTEMPTS - 1,
-        while: (error) => error.reason === "MALFORMED_RESPONSE",
-      }),
-    );
+    Effect.gen(function* () {
+      // The provider intermittently returns a payload that will not parse, or
+      // that misuses the node contract.  Both are worth one bounded retry
+      // before the thread degrades.  Transport hiccups are already retried at
+      // the adapter boundary, so they are not repeated here.
+      const attempt = yield* Effect.either(
+        synthesizeOnce(deps)(input).pipe(
+          Effect.retry({
+            times: SYNTHESIS_ATTEMPTS - 1,
+            while: (error) => error.reason === "ALL_NODES_REJECTED",
+          }),
+        ),
+      );
+
+      if (attempt._tag === "Left") {
+        // Only after the retry budget is spent do we fall back to an honest
+        // evidence-only thread.  It is labelled "fallback" so the product and
+        // the eval both know the AI layer did not author it.  A payload that
+        // never parsed at all stays a hard error rather than being silently
+        // downgraded into a dump.
+        if (attempt.left.reason !== "ALL_NODES_REJECTED") return yield* Effect.fail(attempt.left);
+        const fallbackNodes = makeFallbackNodes(input.timelineStages, input.maxNodes ?? MAX_NODES);
+        const question = input.question.trim();
+        return {
+          _tag: "success" as const,
+          nodes: fallbackNodes,
+          learningGuide: makeFallbackLearningGuide(question, input.timelineStages, fallbackNodes),
+          source: "fallback" as const,
+        };
+      }
+
+      return attempt.right;
+    });
 
 const SYNTHESIS_ATTEMPTS = 2;
 
@@ -566,30 +609,29 @@ const synthesizeOnce =
 
       // Validate each node
       const validNodes: SynthesizedNode[] = [];
+      const rejectionReasons: string[] = [];
       for (const nodeRaw of nodesRaw) {
         if (typeof nodeRaw !== "object" || nodeRaw === null || Array.isArray(nodeRaw)) {
           continue;
         }
-        const validated = validateNode(
+        const { node: validated, reason } = validateNode(
           nodeRaw as Record<string, unknown>,
           answerIdMap,
           excerptCitationMap,
         );
-        if (validated !== null) {
-          validNodes.push(validated);
-        }
+        if (validated !== null) validNodes.push(validated);
+        else rejectionReasons.push(reason);
       }
 
+      // Every node rejected means the model misused the contract, not that the
+      // evidence was thin.  Degrading to a raw excerpt dump on the first miss
+      // was being reported as a success, so the retry budget never got used
+      // and the AI layer quietly stopped doing its job.
       if (validNodes.length === 0) {
-        const fallbackNodes = makeFallbackNodes(input.timelineStages, maxNodes);
-        // All nodes failed validation — use fallback
-        return {
-          _tag: "success",
-          nodes: fallbackNodes,
-          learningGuide: makeFallbackLearningGuide(question, input.timelineStages, fallbackNodes),
-          source: "fallback",
-        };
+        deps.onDiagnostics?.({ rejected: rejectionReasons });
+        return yield* Effect.fail(new ThreadSynthesisError({ reason: "ALL_NODES_REJECTED" }));
       }
+      deps.onDiagnostics?.({ rejected: rejectionReasons });
 
       const learningGuide =
         validateLearningGuide(obj.guide, input.timelineStages, answerIdMap, excerptCitationMap) ??

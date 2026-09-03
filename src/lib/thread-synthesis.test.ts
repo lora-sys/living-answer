@@ -253,16 +253,16 @@ describe("thread-synthesis synthesizeThread", () => {
     }
   });
 
-  it("recovers when a transient empty payload is followed by a valid one", async () => {
-    // Observed live: the same excerpts produced valid nodes on one call and an
-    // empty content string on the next.  Without a bounded retry that hiccup
-    // collapses the whole thread into an evidence-only dump.
+  it("recovers when the first payload rejects every node and the second is valid", async () => {
+    // Observed live: identical excerpts produced valid nodes on one call and a
+    // contract-violating payload on the next.  Without a bounded retry that
+    // hiccup collapses the whole thread into an evidence-only dump.
     let calls = 0;
     const chat: ThreadSynthesisDeps["chat"] = {
       complete: () => {
         calls += 1;
         return calls === 1
-          ? Effect.succeed("")
+          ? Effect.succeed(JSON.stringify({ nodes: [{ kind: "nonsense" }] }))
           : Effect.succeed(buildValidResponse([{ ...validNodePayload }]));
       },
     };
@@ -326,7 +326,10 @@ describe("thread-synthesis synthesizeThread", () => {
     }
   });
 
-  it("returns fallback nodes when all model nodes have unknown answer IDs", async () => {
+  it("recovers the source answer from the citation when the model's id is wrong", async () => {
+    // The quote has already been verified against one specific excerpt, so the
+    // answer it came from is known to us.  Discarding a grounded node over a
+    // bookkeeping field the model got wrong loses real learning value.
     const response = JSON.stringify({
       nodes: [
         {
@@ -347,8 +350,41 @@ describe("thread-synthesis synthesizeThread", () => {
     });
     const chat = makeSucceedChat(response);
     const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
       const { result } = outcome;
+      expect(result.source).toBe("model");
+      expect(result.nodes).toHaveLength(1);
+      expect(result.nodes[0].kind).toBe("relationship");
+      expect(result.nodes[0].sourceAnswerId).toBe("100");
+      expect(result.nodes[0].sourceUrl).toBe("https://www.zhihu.com/question/42/answer/100");
+    }
+  });
+
+  it("still falls back when no citation resolves to a known excerpt", async () => {
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "relationship",
+          title: "Valid",
+          summary: "A valid summary.",
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:does-not-exist",
+              quote: "This quote came from nowhere.",
+            },
+          ],
+          sourceAnswerId: "unknown-id",
+          uncertainty: 0.5,
+        },
+      ],
+    });
+    const chat = makeSucceedChat(response);
+    const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") {
+      const { result } = outcome;
+      expect(result.source).toBe("fallback");
       expect(result.nodes.every((n: SynthesizedNode) => n.kind === "unknown")).toBe(true);
     }
   });
@@ -473,7 +509,10 @@ describe("thread-synthesis synthesizeThread", () => {
     }
   });
 
-  it("falls back to unknown nodes when the source URL does not match the selected stage", async () => {
+  it("replaces a model-echoed URL with our canonical URL instead of rejecting", async () => {
+    // The provider hands back URLs carrying utm tracking params, and the model
+    // often cleans them.  We already own the canonical URL, so a mismatch is a
+    // formatting difference, not an evidence problem.
     const response = JSON.stringify({
       nodes: [
         {
@@ -494,10 +533,43 @@ describe("thread-synthesis synthesizeThread", () => {
     });
     const chat = makeSucceedChat(response);
     const outcome = await runWorkflow(baseDeps(chat), makeInput());
+    expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
       const { result } = outcome;
-      expect(result.nodes.every((n: SynthesizedNode) => n.kind === "unknown")).toBe(true);
+      expect(result.source).toBe("model");
+      expect(result.nodes[0].kind).toBe("relationship");
+      expect(result.nodes[0].sourceUrl).toBe("https://www.zhihu.com/question/42/answer/100");
     }
+  });
+
+  it("reports why every model node was rejected", async () => {
+    const rejected: string[] = [];
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "not_a_real_kind",
+          title: "Valid",
+          summary: "A valid summary.",
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "This is the exact excerpt text that must appear in the quote.",
+            },
+          ],
+          sourceAnswerId: "100",
+          uncertainty: 0.5,
+        },
+      ],
+    });
+    const chat = makeSucceedChat(response);
+    const outcome = await runWorkflow(
+      { model: "zhida-thinking-1p5", chat, onDiagnostics: (d) => rejected.push(...d.rejected) },
+      makeInput(),
+    );
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") expect(outcome.result.source).toBe("fallback");
+    // One reason per attempt, proving the retry budget was actually spent.
+    expect(rejected).toEqual(["bad_kind", "bad_kind"]);
   });
 
   it("snaps a whitespace-drifted quote back to verbatim source text", async () => {

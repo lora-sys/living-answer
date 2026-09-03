@@ -88,6 +88,8 @@ export interface GenerateThreadDeps {
    * generic message; this keeps diagnosis possible without leaking the cause.
    */
   readonly onError?: (error: unknown) => void;
+  /** Why model nodes were dropped; server-side diagnosis only. */
+  readonly onDiagnostics?: (diagnostics: { readonly rejected: readonly string[] }) => void;
 }
 
 export const createGenerateThreadHandler =
@@ -199,7 +201,11 @@ export const createGenerateThreadHandler =
         // trace.  Reading the typed exit keeps the reason visible server-side
         // while the client still gets the one generic message.
         const synthesisExit = await Effect.runPromiseExit(
-          synthesizeThread({ model, chat })(synthesisInput),
+          synthesizeThread({
+            model,
+            chat,
+            ...(deps.onDiagnostics ? { onDiagnostics: deps.onDiagnostics } : {}),
+          })(synthesisInput),
         );
         if (synthesisExit._tag === "Failure") {
           const failure = Cause.failureOption(synthesisExit.cause);

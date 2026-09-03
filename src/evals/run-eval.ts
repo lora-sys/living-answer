@@ -188,6 +188,7 @@ const evaluate = async (
   const question = sanitizeQuestion(golden.input.question);
   let threadId: string | undefined;
   const synthesisErrors: string[] = [];
+  const synthesisRejections: string[] = [];
 
   const [clarifyOutput, clarifyTrace] = await timed("clarify", { question }, async () =>
     createClarifyQuestionHandler({
@@ -342,6 +343,9 @@ const evaluate = async (
           onError: (error) => {
             synthesisErrors.push(error instanceof Error ? error.message : String(error));
           },
+          onDiagnostics: (diagnostics) => {
+            synthesisRejections.push(...diagnostics.rejected);
+          },
           createChat: async (apiKey, model) =>
             makeOpenAiChatCompletions({
               apiKey,
@@ -366,7 +370,14 @@ const evaluate = async (
           })),
         }),
     );
-    tools.push({ ...generateTrace, output: { response: generateOutput, errors: synthesisErrors } });
+    tools.push({
+      ...generateTrace,
+      output: {
+        response: generateOutput,
+        errors: synthesisErrors,
+        rejectedNodes: synthesisRejections,
+      },
+    });
     const generated = generateOutput as GenerateThreadResponse | undefined;
     if (generated?.success !== true) {
       failures.push("generate_failed");
