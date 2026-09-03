@@ -9,7 +9,7 @@
  * @module clarify-question
  */
 
-import { Cause, Effect } from "effect";
+import { Cause, Effect, Option } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import {
@@ -17,6 +17,7 @@ import {
   makeOpenAiChatCompletions,
   type OpenAiChatCompletions,
 } from "../lib/openai-adapter";
+import { describeDomainError } from "../lib/domain-error";
 import { clarifyQuestion } from "../lib/thread-clarification";
 
 // ── Response types ─────────────────────────────────────────────────────────────
@@ -78,19 +79,17 @@ export const createClarifyQuestionHandler =
       const chat = await deps.createChat(secret, model);
       const workflow = clarifyQuestion({ model, chat });
       const exit = await Effect.runPromiseExit(workflow({ question }));
-      if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
-        const error = exit.cause.error as { reason?: string };
-        deps.onError?.(new Error(`ClarifyError:${error.reason ?? "unknown"}`));
-        if (error.reason === "REFUSED_QUESTION") {
+      if (exit._tag === "Failure") {
+        const failure = Cause.failureOption(exit.cause);
+        const error = Option.getOrUndefined(failure) as { reason?: string } | undefined;
+        deps.onError?.(new Error(describeDomainError(error)));
+        if (error?.reason === "REFUSED_QUESTION") {
           return {
             success: false as const,
             code: "CLARIFICATION_UNAVAILABLE",
             message: "这个问题触发了安全边界，请换一个学习主题。",
           };
         }
-      }
-      if (exit._tag === "Failure") {
-        deps.onError?.(new Error(`ClarifyError:${Cause.pretty(exit.cause).slice(0, 200)}`));
         return {
           success: false as const,
           code: "CLARIFICATION_UNAVAILABLE",

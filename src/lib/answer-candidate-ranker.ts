@@ -1,4 +1,5 @@
 import { Data, Effect } from "effect";
+import { describeTransportError } from "./openai-adapter";
 
 // ── Banned wording (author respect) ─────────────────────────────────────────
 
@@ -18,6 +19,8 @@ const hasBannedWording = (text: string): boolean =>
 
 export class CandidateRankingError extends Data.TaggedError("CandidateRankingError")<{
   readonly reason: "INVALID_INPUT" | "MALFORMED_RESPONSE" | "TRANSPORT_FAILED";
+  /** Underlying transport detail, kept for traces only. */
+  readonly cause?: string;
 }> {}
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -238,7 +241,15 @@ export const rankAnswerCandidates =
             { role: "user", content: buildUserPrompt(validatedInput) },
           ],
         })
-        .pipe(Effect.mapError(() => new CandidateRankingError({ reason: "TRANSPORT_FAILED" })));
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new CandidateRankingError({
+                reason: "TRANSPORT_FAILED",
+                cause: describeTransportError(error),
+              }),
+          ),
+        );
 
       const parsed = parseRanking(raw, validatedInput);
       if (!parsed) {

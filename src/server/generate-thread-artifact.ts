@@ -19,6 +19,7 @@
 import { Cause, Effect, Option } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
+import { describeDomainError } from "../lib/domain-error";
 import { makeSqliteThreadArtifactStore } from "../lib/thread-artifact-store";
 import { makeSqliteExcerptStore } from "../lib/excerpt-store";
 import { createQuestionLearningThread } from "../lib/thread-artifact";
@@ -209,8 +210,7 @@ export const createGenerateThreadHandler =
         );
         if (synthesisExit._tag === "Failure") {
           const failure = Cause.failureOption(synthesisExit.cause);
-          const reason = Option.isSome(failure) ? String(failure.value) : "unknown";
-          deps.onError?.(new Error(`ThreadSynthesisError:${reason}`));
+          deps.onError?.(new Error(describeDomainError(Option.getOrNull(failure))));
           return {
             success: false as const,
             code: "SYNTHESIS_FAILED",

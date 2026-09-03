@@ -5,6 +5,7 @@ import {
   rankAnswerCandidates,
   type CandidateRankingAnalysis,
 } from "../lib/answer-candidate-ranker";
+import { describeDomainError } from "../lib/domain-error";
 import { makeFetchOpenAiTransport, makeOpenAiChatCompletions } from "../lib/openai-adapter";
 
 export type RankAnswerCandidatesFailureCode =
@@ -93,13 +94,7 @@ export const createRankAnswerCandidatesHandler =
       );
       if (exit._tag === "Failure") {
         const failure = Cause.failureOption(exit.cause);
-        deps.onError?.(
-          new Error(
-            Option.isSome(failure)
-              ? `CandidateRankingError:${String(failure.value)}`
-              : "CandidateRankingError:unknown",
-          ),
-        );
+        deps.onError?.(new Error(describeDomainError(Option.getOrNull(failure))));
         return {
           success: false as const,
           code: "RANKING_UNAVAILABLE",

@@ -19,6 +19,20 @@ export class OpenAiTransportError extends Data.TaggedError("OpenAiTransportError
   readonly status?: number;
 }> {}
 
+/**
+ * A compact, credential-free description for logs and eval traces.  Callers
+ * that map a transport failure into their own domain error need to keep the
+ * underlying reason and status, otherwise a 429, a timeout and a 500 all
+ * arrive as the same opaque "TRANSPORT_FAILED".
+ */
+export const describeTransportError = (error: unknown): string => {
+  if (error instanceof OpenAiTransportError) {
+    return `${error.reason}${error.status === undefined ? "" : `:${error.status}`}`;
+  }
+  if (error instanceof Error) return `${error.name}:${error.message}`;
+  return String(error);
+};
+
 export type OpenAiChatCompletionsRequest = {
   readonly model: string;
   readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string }>;

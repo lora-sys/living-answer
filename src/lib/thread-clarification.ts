@@ -13,6 +13,7 @@
  */
 
 import { Data, Effect } from "effect";
+import { describeTransportError } from "./openai-adapter";
 
 // ── Errors ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,8 @@ export class ClarificationWorkflowError extends Data.TaggedError("ClarificationW
     | "MISSING_INTENT"
     | "EMPTY_ALTERNATIVES"
     | "TRANSPORT_FAILED";
+  /** Underlying transport detail, kept for traces only. */
+  readonly cause?: string;
 }> {}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -184,7 +187,13 @@ export const clarifyQuestion =
           ],
         })
         .pipe(
-          Effect.mapError(() => new ClarificationWorkflowError({ reason: "TRANSPORT_FAILED" })),
+          Effect.mapError(
+            (error) =>
+              new ClarificationWorkflowError({
+                reason: "TRANSPORT_FAILED",
+                cause: describeTransportError(error),
+              }),
+          ),
         );
 
       const parsed = parseResponse(raw);

@@ -31,6 +31,7 @@ import type {
   LearningGuideRole,
 } from "./thread-artifact";
 import { buildDeterministicLearningGuide } from "./thread-guide";
+import { describeTransportError } from "./openai-adapter";
 
 // ── Banned wording patterns (author-respect) ───────────────────────────────────
 
@@ -57,6 +58,8 @@ export class ThreadSynthesisError extends Data.TaggedError("ThreadSynthesisError
     | "BANNED_WORDING"
     | "MALFORMED_CITATION"
     | "TRANSPORT_FAILED";
+  /** Underlying transport detail, kept for traces only. */
+  readonly cause?: string;
 }> {}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -590,7 +593,15 @@ const synthesizeOnce =
             { role: "user", content: userPrompt },
           ],
         })
-        .pipe(Effect.mapError(() => new ThreadSynthesisError({ reason: "TRANSPORT_FAILED" })));
+        .pipe(
+          Effect.mapError(
+            (error) =>
+              new ThreadSynthesisError({
+                reason: "TRANSPORT_FAILED",
+                cause: describeTransportError(error),
+              }),
+          ),
+        );
 
       // Parse the JSON response
       let parsed: unknown;
