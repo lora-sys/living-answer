@@ -501,7 +501,8 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
       return failure("INVALID_TIMELINE_STAGE");
     }
 
-    excerptFingerprints.set(raw.excerpt.fingerprint, raw.excerpt.fingerprint);
+    const normalizedExcerpt = normalizeText(raw.excerpt.excerpt);
+    excerptFingerprints.set(raw.excerpt.fingerprint, normalizedExcerpt);
 
     timelineStages.push({
       questionId: raw.questionId,
@@ -517,7 +518,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
         sourceContentId: raw.excerpt.sourceContentId,
         sourceContentType: "Answer",
         sourceEditTime: raw.excerpt.sourceEditTime,
-        excerpt: normalizeText(raw.excerpt.excerpt),
+        excerpt: normalizedExcerpt,
         fingerprint: raw.excerpt.fingerprint,
       }),
       excerptBoundaryNote: EXCERPT_BOUNDARY_NOTE,
@@ -531,6 +532,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
   }
 
   const learningNodes: LearningNode[] = [];
+  const answerIdMap = new Map(timelineStages.map((stage) => [stage.answerId, stage]));
 
   for (const raw of input.learningNodes) {
     // kind
@@ -563,9 +565,14 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
       ) {
         return failure("INVALID_LEARNING_NODE");
       }
+      const evidenceRefQuote = normalizeText(ref.quote);
+      const sourceExcerpt = excerptFingerprints.get(ref.excerptFingerprint);
+      if (!sourceExcerpt || !sourceExcerpt.includes(evidenceRefQuote)) {
+        return failure("INVALID_LEARNING_NODE");
+      }
       evidenceRefs.push({
         excerptFingerprint: ref.excerptFingerprint,
-        quote: normalizeText(ref.quote),
+        quote: evidenceRefQuote,
       });
     }
 
@@ -576,6 +583,10 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
 
     // uncertainty
     if (!isValidUncertainty(raw.uncertainty)) {
+      return failure("INVALID_LEARNING_NODE");
+    }
+
+    if (!answerIdMap.has(raw.sourceAnswerId)) {
       return failure("INVALID_LEARNING_NODE");
     }
 

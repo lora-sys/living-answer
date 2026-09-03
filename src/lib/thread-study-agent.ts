@@ -271,7 +271,7 @@ export const answerThreadAgentOffline = (
               {
                 type: "boundary_check",
                 label: "检查证据边界",
-                detail: "当前模型不可用；这是基于已保存节点和开放问题的确定性摘要。",
+                detail: "这是基于已保存节点和开放问题的确定性证据摘要。",
               },
               ...artifact.learningGuide.openQuestions.slice(0, 2).map((item) => ({
                 type: "next_question" as const,

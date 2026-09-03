@@ -45,7 +45,7 @@ const makeNode = (overrides: Partial<LearningNodeInput> = {}): LearningNodeInput
   evidenceRefs: [
     {
       excerptFingerprint: "v1:aaaaaaaaaaaaaaaa",
-      quote: "These things are related.",
+      quote: "This is a excerpt text from the answer.",
     },
   ],
   sourceAnswerId: "456",

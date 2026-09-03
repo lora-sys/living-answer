@@ -9,7 +9,8 @@
     "dev": "vp dev",
     "generate-routes": "tsr generate",
     "build": "vp build",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "eval": "EVAL_COMMAND=run NODE_OPTIONS=--env-file=.env vp exec vitest run src/evals/eval-harness.test.ts"
   },
   "dependencies": {
     "@tanstack/react-router": "latest",

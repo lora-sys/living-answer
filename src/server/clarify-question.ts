@@ -74,16 +74,33 @@ export const createClarifyQuestionHandler =
 
     try {
       const chat = await deps.createChat(secret, model);
-
-      const result = await Effect.runPromise(clarifyQuestion({ model, chat })({ question }));
+      const workflow = clarifyQuestion({ model, chat });
+      const exit = await Effect.runPromiseExit(workflow({ question }));
+      if (exit._tag === "Failure" && exit.cause._tag === "Fail") {
+        const error = exit.cause.error as { reason?: string };
+        if (error.reason === "REFUSED_QUESTION") {
+          return {
+            success: false as const,
+            code: "CLARIFICATION_UNAVAILABLE",
+            message: "这个问题触发了安全边界，请换一个学习主题。",
+          };
+        }
+      }
+      if (exit._tag === "Failure") {
+        return {
+          success: false as const,
+          code: "CLARIFICATION_UNAVAILABLE",
+          message: "澄清服务暂时不可用，请稍后再试。",
+        };
+      }
 
       return {
         success: true,
-        refinedQuery: result.refinedQuery,
-        alternatives: result.alternatives,
-        learningIntent: result.learningIntent,
-        guidance: result.guidance,
-        confidence: result.confidence,
+        refinedQuery: exit.value.refinedQuery,
+        alternatives: exit.value.alternatives,
+        learningIntent: exit.value.learningIntent,
+        guidance: exit.value.guidance,
+        confidence: exit.value.confidence,
       };
     } catch (raw: unknown) {
       if (

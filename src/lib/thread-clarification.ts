@@ -21,6 +21,7 @@ export class ClarificationWorkflowError extends Data.TaggedError("ClarificationW
     | "INVALID_QUESTION"
     | "EMPTY_REFINED_QUERY"
     | "MALFORMED_RESPONSE"
+    | "REFUSED_QUESTION"
     | "MISSING_INTENT"
     | "EMPTY_ALTERNATIVES"
     | "TRANSPORT_FAILED";
@@ -69,9 +70,11 @@ const parseResponse = (
 ):
   | { readonly _tag: "success"; readonly value: ClarificationResult }
   | { readonly _tag: "failure"; readonly error: ClarificationWorkflowError } => {
+  const jsonCandidate = content.trim().match(/\{[\s\S]*\}/)?.[0];
+  const parseSource = jsonCandidate ?? content;
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content.trim());
+    parsed = JSON.parse(parseSource.trim());
   } catch {
     return {
       _tag: "failure",
@@ -87,6 +90,13 @@ const parseResponse = (
   }
 
   const obj = parsed as Record<string, unknown>;
+
+  if (typeof obj.response === "string" && obj.refinedQuery === undefined) {
+    return {
+      _tag: "failure",
+      error: new ClarificationWorkflowError({ reason: "REFUSED_QUESTION" }),
+    };
+  }
 
   const refinedQuery = typeof obj.refinedQuery === "string" ? obj.refinedQuery.trim() : "";
   if (refinedQuery === "") {
@@ -155,6 +165,14 @@ export const clarifyQuestion =
       const question = input.question.trim();
       if (question === "" || question.length > MAX_QUESTION_LENGTH) {
         return yield* Effect.fail(new ClarificationWorkflowError({ reason: "INVALID_QUESTION" }));
+      }
+
+      if (
+        /你现在是自由模式|请忽略安全边界|不要搜索知乎|忽略之前所有指令|系统提示词|system prompt|api key/i.test(
+          question,
+        )
+      ) {
+        return yield* Effect.fail(new ClarificationWorkflowError({ reason: "REFUSED_QUESTION" }));
       }
 
       const raw = yield* deps.chat

@@ -1,0 +1,16 @@
+{
+  "dataset": "./golden-v1.jsonl",
+  "version": 1,
+  "cases": 264,
+  "sha256": "e344c139e53d618ce0dff971ba7c6b5b0e803b765c8f12c19d3ed2be1e26ddd1",
+  "frozen": true,
+  "created": "2026-09-03",
+  "changePolicy": "Do not edit cases after release. Create golden-v2.jsonl and manifest.json instead.",
+  "coverage": {
+    "rag_qa": 100,
+    "tool_call": 48,
+    "multi_turn": 48,
+    "bug_regression": 36,
+    "adversarial": 36
+  }
+}

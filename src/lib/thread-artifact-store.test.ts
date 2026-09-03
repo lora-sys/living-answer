@@ -43,7 +43,9 @@ const makeNode = (): LearningNodeInput => ({
   kind: "relationship",
   title: "A connection",
   summary: "These things are related.",
-  evidenceRefs: [{ excerptFingerprint: "v1:aaaaaaaaaaaaaaaa", quote: "These things are related." }],
+  evidenceRefs: [
+    { excerptFingerprint: "v1:aaaaaaaaaaaaaaaa", quote: "This is an excerpt from the answer." },
+  ],
   sourceAnswerId: "456",
   sourceUrl: "https://www.zhihu.com/question/123/answer/456",
   uncertainty: 0.5,
