@@ -92,12 +92,22 @@ export interface ThreadSynthesisResult {
   readonly _tag: "success";
   readonly nodes: readonly SynthesizedNode[];
   readonly learningGuide: LearningGuide;
+  /**
+   * Whether the nodes came from the model or from the deterministic evidence
+   * dump. Callers must not report "synthesized" when this is `fallback`.
+   */
+  readonly source: "model" | "fallback";
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MAX_NODES = 7; // one per kind
 const MAX_QUESTION_LENGTH = 500;
+
+// The model needs enough of each excerpt to name real concepts, but the whole
+// call stays bounded so long answers cannot blow the context window.
+const EXCERPT_CHARS_PER_STAGE = 1_500;
+const EXCERPT_CHARS_TOTAL_BUDGET = 6_000;
 
 // ── Answer ID map for validation ───────────────────────────────────────────────
 
@@ -111,9 +121,60 @@ const buildAnswerIdMap = (timelineStages: readonly TimelineStage[]): Map<string,
 
 // ── Excerpt fingerprint map for citation validation ─────────────────────────────
 
+/**
+ * Models drift on internal whitespace when copying a quote (newlines become
+ * single spaces, indentation disappears). Matching happens on a
+ * whitespace-collapsed view, but the quote that ships is always the verbatim
+ * source substring, so the artifact-level "exact substring" guarantee still
+ * holds byte-for-byte.
+ */
+interface CollapsedView {
+  readonly text: string;
+  readonly starts: readonly number[];
+  readonly ends: readonly number[];
+}
+
+const buildCollapsedView = (source: string): CollapsedView => {
+  const starts: number[] = [];
+  const ends: number[] = [];
+  const parts: string[] = [];
+  let index = 0;
+  while (index < source.length) {
+    const char = source[index];
+    if (/\s/.test(char)) {
+      let end = index;
+      while (end < source.length && /\s/.test(source[end])) end += 1;
+      parts.push(" ");
+      starts.push(index);
+      ends.push(end);
+      index = end;
+      continue;
+    }
+    parts.push(char);
+    starts.push(index);
+    ends.push(index + 1);
+    index += 1;
+  }
+  return { text: parts.join(""), starts, ends };
+};
+
+const collapseWhitespace = (value: string): string => value.replace(/\s+/g, " ").trim();
+
+const snapQuote = (view: CollapsedView, source: string, quote: string): string | null => {
+  const needle = collapseWhitespace(quote);
+  if (needle === "") return null;
+  const at = view.text.indexOf(needle);
+  if (at === -1) return null;
+  const start = view.starts[at];
+  const end = view.ends[at + needle.length - 1];
+  if (start === undefined || end === undefined) return null;
+  return source.slice(start, end).trim();
+};
+
 interface ExcerptCitationData {
   readonly fingerprint: string;
-  readonly normalizedText: string;
+  readonly text: string;
+  readonly view: CollapsedView;
 }
 
 const buildExcerptCitationMap = (
@@ -121,9 +182,11 @@ const buildExcerptCitationMap = (
 ): Map<string, ExcerptCitationData> => {
   const map = new Map<string, ExcerptCitationData>();
   for (const stage of timelineStages) {
+    const text = stage.excerpt.excerpt;
     map.set(stage.excerpt.fingerprint, {
       fingerprint: stage.excerpt.fingerprint,
-      normalizedText: stage.excerpt.excerpt,
+      text,
+      view: buildCollapsedView(text),
     });
   }
   return map;
@@ -173,30 +236,26 @@ const validateNode = (
   const evidenceRefs: EvidenceRef[] = [];
   for (const ref of evidenceRefsRaw) {
     if (typeof ref !== "object" || ref === null || Array.isArray(ref)) {
-      return null;
+      continue;
     }
     const refObj = ref as Record<string, unknown>;
     const excerptFingerprint =
       typeof refObj.excerptFingerprint === "string" ? refObj.excerptFingerprint.trim() : "";
-    if (excerptFingerprint === "") return null;
+    if (excerptFingerprint === "") continue;
 
     const quote = typeof refObj.quote === "string" ? refObj.quote.trim() : "";
-    if (quote === "") return null;
+    if (quote === "") continue;
 
-    // Verify the quote is an exact substring of the validated excerpt
+    // Snap the citation back to verbatim source text; drop it if it is not there.
     const excerptData = excerptCitationMap.get(excerptFingerprint);
-    if (excerptData === undefined) {
-      return null;
-    }
-    if (!excerptData.normalizedText.includes(quote)) {
-      return null;
-    }
+    if (excerptData === undefined) continue;
+    const snapped = snapQuote(excerptData.view, excerptData.text, quote);
+    if (snapped === null) continue;
 
-    evidenceRefs.push({
-      excerptFingerprint,
-      quote,
-    });
+    evidenceRefs.push({ excerptFingerprint, quote: snapped });
   }
+  // A node survives as long as at least one citation is real evidence.
+  if (evidenceRefs.length === 0) return null;
 
   // sourceAnswerId
   const sourceAnswerId = typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
@@ -235,16 +294,25 @@ const validateNode = (
 // ── System prompt ──────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT =
-  "You help build a learning bridge from selected Zhihu answer excerpts. Produce learning nodes and a learning guide. " +
+  "你在为中文学习者搭建一座从真实知乎摘录出发的学习廊桥。产出学习节点和学习指南。 " +
   "Each node has: kind (relationship, cause, evolution, consensus, divergence, changed_premise, or unknown), title, summary, evidenceRefs (array of {excerptFingerprint, quote}), sourceAnswerId, sourceUrl (canonical Zhihu URL), uncertainty (0.0-1.0). " +
   "The guide has overview {headline, summary, evidenceRefs}, one stage per selected answer with {answerId, role, explanation, transition, evidenceRefs}, and openQuestions. Roles are baseline, correction, extension, counterpoint, current_usage, or unclear. " +
-  "Every evidenceRef.quote MUST be an exact substring of the corresponding excerpt text. " +
+  "每个 summary 必须用中文点出这段摘录里的具体概念、机制或术语本身，不要复述摘录开头，也不要只写泛泛的过渡句。 " +
+  "优先写成：这一层讲的是什么机制、它和上一层有什么不同、在什么条件下成立。 " +
+  "Every evidenceRef.quote MUST be copied verbatim from the corresponding excerpt text. " +
   "Never say the author was wrong; say the premise has changed. " +
   "SourceAnswerId must be one of the provided timeline stage answer IDs. " +
   "If you are not certain about a claim, use kind 'unknown' with a factual summary. " +
   "Do not add fields such as id, content, evidenceRef, source, selection_reference, or misconception_reminder. " +
   "Use exactly the requested field names. " +
   'Reply with only raw JSON: {"nodes":[...],"guide":{...}}';
+
+/** Per-stage excerpt budget, shrunk further when several stages share one call. */
+const excerptBudget = (stageCount: number): number =>
+  Math.max(
+    400,
+    Math.min(EXCERPT_CHARS_PER_STAGE, Math.floor(EXCERPT_CHARS_TOTAL_BUDGET / Math.max(stageCount, 1))),
+  );
 
 // ── Fallback generation ────────────────────────────────────────────────────────
 
@@ -302,6 +370,7 @@ export const buildEvidenceOnlySynthesis = (input: SynthesisInput): ThreadSynthes
     _tag: "success",
     nodes,
     learningGuide,
+    source: "fallback",
   };
 };
 
@@ -315,16 +384,18 @@ const validateGuideEvidence = (
   if (!Array.isArray(refs) || refs.length === 0) return null;
   const output: EvidenceRef[] = [];
   for (const ref of refs) {
-    if (typeof ref !== "object" || ref === null || Array.isArray(ref)) return null;
+    if (typeof ref !== "object" || ref === null || Array.isArray(ref)) continue;
     const fingerprint =
       typeof ref.excerptFingerprint === "string" ? ref.excerptFingerprint.trim() : "";
     const quote = typeof ref.quote === "string" ? ref.quote.trim() : "";
-    if (fingerprint === "" || quote === "") return null;
+    if (fingerprint === "" || quote === "") continue;
     const excerpt = excerptCitationMap.get(fingerprint);
-    if (!excerpt || !excerpt.normalizedText.includes(quote)) return null;
-    output.push({ excerptFingerprint: fingerprint, quote });
+    if (!excerpt) continue;
+    const snapped = snapQuote(excerpt.view, excerpt.text, quote);
+    if (snapped === null) continue;
+    output.push({ excerptFingerprint: fingerprint, quote: snapped });
   }
-  return output;
+  return output.length > 0 ? output : null;
 };
 
 const isValidGuideRole = (value: unknown): value is LearningGuideRole =>
@@ -422,11 +493,14 @@ export const synthesizeThread =
       const excerptCitationMap = buildExcerptCitationMap(input.timelineStages);
 
       // Build the context payload from timeline stages
+      const perStage = excerptBudget(input.timelineStages.length);
       const stagesSummary = input.timelineStages
-        .map(
-          (s) =>
-            `[Answer ${s.answerId}] ${s.authorDisplayName}: ${s.excerpt.excerpt.slice(0, 300)}`,
-        )
+        .map((s) => {
+          const body = s.excerpt.excerpt.slice(0, perStage);
+          const year =
+            s.editTime > 0 ? new Date(s.editTime * 1000).getFullYear() : "时间未知";
+          return `[Answer ${s.answerId}] (${year}, ${s.authorDisplayName})\n${body}`;
+        })
         .join("\n\n");
 
       const userPrompt = [
@@ -496,6 +570,7 @@ export const synthesizeThread =
           _tag: "success",
           nodes: fallbackNodes,
           learningGuide: makeFallbackLearningGuide(question, input.timelineStages, fallbackNodes),
+          source: "fallback",
         };
       }
 
@@ -503,5 +578,5 @@ export const synthesizeThread =
         validateLearningGuide(obj.guide, input.timelineStages, answerIdMap, excerptCitationMap) ??
         makeFallbackLearningGuide(question, input.timelineStages, validNodes);
 
-      return { _tag: "success", nodes: validNodes, learningGuide };
+      return { _tag: "success", nodes: validNodes, learningGuide, source: "model" };
     });

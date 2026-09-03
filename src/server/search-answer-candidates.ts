@@ -160,9 +160,20 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
 
 export interface SearchAnswerCandidatesInput {
   readonly query: string;
+  /**
+   * Clarified alternative phrasings of the same need. They are only searched
+   * when the primary query comes back thin, so a learning thread can still
+   * reach several years of answers instead of stopping at one excerpt.
+   */
+  readonly altQueries?: readonly string[];
 }
 
 const MAX_CANDIDATES = 5;
+
+// Below this the "thread" is really a single source, so broadening is worth a
+// second search.
+const MIN_USEFUL_CANDIDATES = 3;
+const MAX_ALT_QUERIES = 2;
 
 export interface SearchAnswerCandidatesDeps {
   readonly getSecret: () => string | undefined;
@@ -190,28 +201,30 @@ export const createSearchAnswerCandidatesHandler =
 
     const transport = makeFetchSearchTransport({ timeoutMs: 10_000 });
 
-    // Consume one quota unit before dispatching the network request.  Quota
-    // failures are mapped to SearchError reasons so the existing error branch
-    // below handles them uniformly.
-    const exit = await Effect.runPromiseExit(
-      quotaGuard.consume("zhihu_search").pipe(
-        Effect.mapError((error): SearchError => {
-          if (error instanceof QuotaExceededError) {
-            return new SearchError({ reason: "API_QUOTA_EXCEEDED" });
-          }
-          // Store-level quota errors are surfaced as a generic search failure.
-          return new SearchError({ reason: "NON_ZERO_CODE" });
-        }),
-        Effect.flatMap(() =>
-          fetchSearchItems({
-            provider: "zhihu_search",
-            query,
-            accessSecret: secret,
-            transport,
+    // One quota unit per dispatched network request. Quota failures are mapped
+    // to SearchError reasons so the error branch below handles them uniformly.
+    const runSearch = (searchQuery: string) =>
+      Effect.runPromiseExit(
+        quotaGuard.consume("zhihu_search").pipe(
+          Effect.mapError((error): SearchError => {
+            if (error instanceof QuotaExceededError) {
+              return new SearchError({ reason: "API_QUOTA_EXCEEDED" });
+            }
+            // Store-level quota errors are surfaced as a generic search failure.
+            return new SearchError({ reason: "NON_ZERO_CODE" });
           }),
+          Effect.flatMap(() =>
+            fetchSearchItems({
+              provider: "zhihu_search",
+              query: searchQuery,
+              accessSecret: secret,
+              transport,
+            }),
+          ),
         ),
-      ),
-    );
+      );
+
+    const exit = await runSearch(query);
 
     if (exit._tag !== "Success") {
       const searchError = exit.cause._tag === "Fail" ? exit.cause.error : null;
@@ -228,7 +241,37 @@ export const createSearchAnswerCandidatesHandler =
     }
 
     const now = Date.now();
-    const { candidates, excerpts } = processSearchItems(exit.value, now);
+    const primary = processSearchItems(exit.value, now);
+    const candidates = [...primary.candidates];
+    const excerpts = [...primary.excerpts];
+    const seenAnswerIds = new Set(candidates.map((candidate) => candidate.answerId));
+    const seenFingerprints = new Set(excerpts.map((excerpt) => excerpt.fingerprint));
+
+    // Thin primary result: broaden with the clarified alternatives. These are
+    // best-effort — a failing extra query must not turn a working search into
+    // an error.
+    const altQueries = (input.altQueries ?? [])
+      .map((alt) => (typeof alt === "string" ? alt.trim() : ""))
+      .filter((alt) => alt !== "" && alt !== query)
+      .slice(0, MAX_ALT_QUERIES);
+
+    for (const altQuery of altQueries) {
+      if (candidates.length >= MIN_USEFUL_CANDIDATES) break;
+      const altExit = await runSearch(altQuery);
+      if (altExit._tag !== "Success") continue;
+      const extra = processSearchItems(altExit.value, now);
+      for (const candidate of extra.candidates) {
+        if (candidates.length >= MAX_CANDIDATES) break;
+        if (seenAnswerIds.has(candidate.answerId)) continue;
+        seenAnswerIds.add(candidate.answerId);
+        candidates.push(candidate);
+      }
+      for (const excerpt of extra.excerpts) {
+        if (seenFingerprints.has(excerpt.fingerprint)) continue;
+        seenFingerprints.add(excerpt.fingerprint);
+        excerpts.push(excerpt);
+      }
+    }
 
     // Persist each valid excerpt.  Store failures are collected explicitly —
     // they must not be silently swallowed or mapped to a successful search.
@@ -285,7 +328,14 @@ const parseInput = (input: unknown): SearchAnswerCandidatesInput => {
     return { query: "" };
   }
   const value = (input as { query: unknown }).query;
-  return { query: typeof value === "string" ? value : "" };
+  const rawAlt = (input as { altQueries?: unknown }).altQueries;
+  const altQueries = Array.isArray(rawAlt)
+    ? rawAlt.filter((item): item is string => typeof item === "string").slice(0, MAX_ALT_QUERIES)
+    : undefined;
+  return {
+    query: typeof value === "string" ? value : "",
+    ...(altQueries ? { altQueries } : {}),
+  };
 };
 
 export const searchAnswerCandidates = createServerFn({

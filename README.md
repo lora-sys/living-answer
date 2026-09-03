@@ -84,7 +84,8 @@ Study Agent 建议补充来源时，会回到首页并重新澄清原始学习�
 
 ## 评测
 
-`src/evals/` 包含 264 条冻结黄金题、真实工作流 harness、trace、四层评分和版本对比。
+`src/evals/` 包含 264 条冻结黄金题（RAG 96、工具 48、多轮 48、Bug 36、对抗 36）、
+真实工作流 harness、trace、四层评分和版本对比。
 普通 `vp test` 只做数据集完整性校验；真实评测使用 `pnpm eval` 并受 `EVAL_LIMIT`
 控制。当前首批对抗安全题已全通过，基线保存在 `src/evals/baselines/`。
 本地运行报告可在 `/evals` 可视化查看：质量概览、场景/难度覆盖、失败分布

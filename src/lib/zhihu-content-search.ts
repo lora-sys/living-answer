@@ -102,7 +102,7 @@ function buildUrl(
   baseUrl: string,
   filter?: string,
 ): string {
-  const encodedQuery = encodeURIComponent(query);
+  const encodedQuery = encodeURIComponent(query.replace(/\s+/g, " ").trim());
   const path = provider === "zhihu_search" ? "zhihu_search" : "global_search";
   let url = `${baseUrl}/api/v1/content/${path}?Query=${encodedQuery}`;
   if (provider === "global_search" && filter !== undefined) {

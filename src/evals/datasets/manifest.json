@@ -7,7 +7,7 @@
   "created": "2026-09-03",
   "changePolicy": "Do not edit cases after release. Create golden-v2.jsonl and manifest.json instead.",
   "coverage": {
-    "rag_qa": 100,
+    "rag_qa": 96,
     "tool_call": 48,
     "multi_turn": 48,
     "bug_regression": 36,

@@ -10,7 +10,10 @@ import {
   createSearchAnswerCandidatesHandler,
   type SearchAnswerCandidatesResponse,
 } from "../server/search-answer-candidates";
-import { createClarifyQuestionHandler } from "../server/clarify-question";
+import {
+  createClarifyQuestionHandler,
+  type ClarifyQuestionResponse,
+} from "../server/clarify-question";
 import { createRankAnswerCandidatesHandler } from "../server/rank-answer-candidates";
 import {
   createGenerateThreadHandler,
@@ -56,6 +59,8 @@ const timed = async <T>(
     ];
   }
 };
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const readJsonl = <T>(path: string): readonly T[] =>
   readFileSync(path, "utf8")
@@ -200,27 +205,27 @@ const evaluate = async (
   tools.push(clarifyTrace);
   modelOutput.clarify = clarifyOutput;
   const clarification =
-    (
-      clarifyOutput as {
-        success?: boolean;
-        refinedQuery?: string;
-        learningIntent?: string;
-        confidence?: number;
-      }
-    )?.success === true
-      ? (clarifyOutput as { refinedQuery: string; learningIntent: string; confidence: number })
+    (clarifyOutput as ClarifyQuestionResponse | undefined)?.success === true
+      ? (clarifyOutput as Extract<ClarifyQuestionResponse, { success: true }>)
       : null;
   const clarifyMessage = (clarifyOutput as { message?: string } | undefined)?.message ?? "";
   const clarifyRefused = clarifyMessage.includes("安全边界");
   if (!clarification && !clarifyRefused) failures.push("clarify_failed");
 
   const query = clarification?.refinedQuery ?? question;
-  const [searchOutput, searchTrace] = await timed("search", { query }, async () =>
-    createSearchAnswerCandidatesHandler({
-      getSecret: () => deps.searchSecret,
-      createStore: async () => deps.excerptStore,
-      createQuotaGuard: async () => deps.quotaGuard,
-    })({ query }),
+  const altQueries = (clarification?.alternatives ?? [])
+    .map((alt) => alt.trim())
+    .filter((alt) => alt !== "" && alt !== query)
+    .slice(0, 2);
+  const [searchOutput, searchTrace] = await timed(
+    "search",
+    { query, altQueries },
+    async () =>
+      createSearchAnswerCandidatesHandler({
+        getSecret: () => deps.searchSecret,
+        createStore: async () => deps.excerptStore,
+        createQuotaGuard: async () => deps.quotaGuard,
+      })({ query, altQueries }),
   );
   tools.push(searchTrace);
   const search =
@@ -291,7 +296,7 @@ const evaluate = async (
         ]
       : candidates;
   const selectionTarget = Math.min(
-    2,
+    3,
     Math.max(recommended.length, golden.expected.minSources ?? 1),
   );
   const selected =
@@ -346,10 +351,16 @@ const evaluate = async (
     tools.push(generateTrace);
     const generated = generateOutput as GenerateThreadResponse | undefined;
     if (generated?.success !== true) failures.push("generate_failed");
-    else threadId = generated.threadId;
+    else {
+      threadId = generated.threadId;
+      // The thread exists, but the AI layer silently degraded to a raw
+      // excerpt dump. That is a product failure, not a pass.
+      if (generated.mode === "evidence_only") failures.push("synthesis_fallback");
+    }
   }
 
   let agentEvidenceGrounded = true;
+  const aiAuthoredText: string[] = [];
   if (threadId) {
     const [readOutput, readTrace] = await timed("read", { threadId }, async () =>
       createReadThreadHandler({ createThreadStore: async () => deps.threadStore })({
@@ -394,6 +405,26 @@ const evaluate = async (
         failures.push("too_few_sources");
       if ((artifact.learningGuide.openQuestions?.length ?? 0) === 0)
         failures.push("no_open_questions");
+
+      // Text the AI actually wrote, as opposed to quoted source material.
+      // Concept coverage is judged on this alone, so a keyword that merely
+      // happens to sit inside a retrieved excerpt cannot count as synthesis.
+      for (const node of artifact.learningNodes as ReadonlyArray<{
+        title?: string;
+        summary?: string;
+      }>) {
+        aiAuthoredText.push(`${node.title ?? ""} ${node.summary ?? ""}`);
+      }
+      const guide = artifact.learningGuide as unknown as {
+        overview?: { headline?: string; summary?: string };
+        stages?: ReadonlyArray<{ explanation?: string; transition?: string }>;
+        openQuestions?: ReadonlyArray<string>;
+      };
+      aiAuthoredText.push(`${guide.overview?.headline ?? ""} ${guide.overview?.summary ?? ""}`);
+      for (const stage of guide.stages ?? []) {
+        aiAuthoredText.push(`${stage.explanation ?? ""} ${stage.transition ?? ""}`);
+      }
+      aiAuthoredText.push((guide.openQuestions ?? []).join(" "));
     }
 
     const followUps = golden.input.followUps?.length
@@ -450,14 +481,24 @@ const evaluate = async (
       }
     }
     modelOutput.agent = finalAgentOutput;
+    aiAuthoredText.push(safeText(finalAgentOutput));
   }
 
   const productTools = tools.filter((trace) => trace.tool !== "llm_judge");
   const rendered = JSON.stringify({ modelOutput, tools: productTools, threadId });
+  const authoredText = aiAuthoredText.join(" \n ");
   const finalOutputText = safeText(modelOutput.agent);
   for (const phrase of golden.expected.mustInclude ?? []) {
-    const scope = golden.category === "adversarial" ? finalOutputText : rendered;
-    if (!scope.includes(phrase)) failures.push(`must_include:${phrase}`);
+    const scope = golden.category === "adversarial" ? finalOutputText : authoredText;
+    if (scope.includes(phrase)) continue;
+    // Distinguish "the AI never surfaced it" from "the evidence never had it".
+    // The first is a synthesis defect; the second is a retrieval/dataset gap.
+    const evidenceScope = JSON.stringify(
+      Array.from(artifactEvidence.values()).map((entry) => entry.excerpt),
+    );
+    failures.push(
+      evidenceScope.includes(phrase) ? `must_include_ai:${phrase}` : `must_include_absent:${phrase}`,
+    );
   }
   for (const phrase of golden.expected.mustNotInclude ?? []) {
     const scope = golden.category === "adversarial" ? finalOutputText : rendered;
@@ -579,6 +620,8 @@ const runCaseWithRetry = async (
   );
   if (!retryable) return first;
 
+  const hasSearchNoResult = first.failures.includes("no_selectable_sources");
+  if (hasSearchNoResult) await sleep(2_000);
   const second = await evaluate(golden, deps);
   const chosen = second.failures.length <= first.failures.length ? second : first;
   return {
@@ -601,6 +644,10 @@ const parseArgs = (argv: readonly string[]) => {
     category: process.env.EVAL_CATEGORY ?? values.get("category"),
     judge: (process.env.EVAL_JUDGE ?? values.get("judge") ?? "true") === "true",
     filter: process.env.EVAL_FILTER ?? values.get("filter"),
+    concurrency: Math.max(
+      1,
+      Math.min(8, Number(process.env.EVAL_CONCURRENCY ?? values.get("concurrency") ?? 1)),
+    ),
   };
 };
 
@@ -638,24 +685,30 @@ export const runGoldenEval = async (args = parseArgs([])) => {
     limitPerDay: Number(process.env.EVAL_QUOTA_LIMIT ?? 100),
   });
 
-  for (const golden of selected) {
-    const result = await runCaseWithRetry(golden, {
-      model,
-      openaiKey,
-      baseUrl,
-      searchSecret,
-      excerptStore,
-      threadStore,
-      quotaGuard,
-    });
-    results.push(result);
-    writeFileSync(
-      join(".local/evals/traces", `${runId}-${result.caseId}.json`),
-      JSON.stringify(result, null, 2),
+  for (let offset = 0; offset < selected.length; offset += args.concurrency) {
+    const batch = selected.slice(offset, offset + args.concurrency);
+    const batchResults = await Promise.all(
+      batch.map(async (golden) => {
+        const result = await runCaseWithRetry(golden, {
+          model,
+          openaiKey,
+          baseUrl,
+          searchSecret,
+          excerptStore,
+          threadStore,
+          quotaGuard,
+        });
+        writeFileSync(
+          join(".local/evals/traces", `${runId}-${result.caseId}.json`),
+          JSON.stringify(result, null, 2),
+        );
+        console.log(
+          `${result.status.toUpperCase()} ${result.caseId} (${result.failures.join(", ") || "ok"})`,
+        );
+        return result;
+      }),
     );
-    console.log(
-      `${result.status.toUpperCase()} ${result.caseId} (${result.failures.join(", ") || "ok"})`,
-    );
+    results.push(...batchResults);
   }
 
   writeFileSync(

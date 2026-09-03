@@ -126,7 +126,7 @@ function QuestionThreadEntry() {
   // Handlers
 
   const performSearch = useCallback(
-    async (query: string) => {
+    async (query: string, altQueries?: readonly string[]) => {
       setSearchLoading(true);
       setSearchRan(true);
       setSearchResult(null);
@@ -134,7 +134,9 @@ function QuestionThreadEntry() {
       setRankingLoading(false);
       setSelectedIds(new Set());
 
-      const result = await boundSearch({ data: { query } }).catch(() => null);
+      const result = await boundSearch({
+        data: { query, ...(altQueries && altQueries.length > 0 ? { altQueries } : {}) },
+      }).catch(() => null);
       if (result) {
         setSearchResult(result as SearchAnswerCandidatesResponse);
         setSearchLoading(false);
@@ -158,7 +160,7 @@ function QuestionThreadEntry() {
       const raw = await boundClarify({ data: { question } }).catch(() => null);
       if (raw && raw.success) {
         setClarification(raw);
-        const searchResponse = await performSearch(raw.refinedQuery);
+        const searchResponse = await performSearch(raw.refinedQuery, raw.alternatives);
         if (searchResponse?.status === "ok" && searchResponse.candidates.length > 0) {
           setRankingLoading(true);
           const analysis = await boundRank({

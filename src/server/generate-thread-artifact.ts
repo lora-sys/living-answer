@@ -192,7 +192,9 @@ export const createGenerateThreadHandler =
         synthesisResult = await Effect.runPromise(
           synthesizeThread({ model, chat })(synthesisInput),
         );
-        synthesisMode = "synthesized";
+        // Only claim "synthesized" when the model's own nodes survived
+        // validation; a silent fallback to raw excerpts is evidence-only.
+        synthesisMode = synthesisResult.source === "model" ? "synthesized" : "evidence_only";
       } else {
         synthesisResult = buildEvidenceOnlySynthesis(synthesisInput);
       }

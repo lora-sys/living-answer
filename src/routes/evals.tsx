@@ -151,6 +151,216 @@ function PanelHeader({
   );
 }
 
+const DONUT_RADIUS = 54;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+
+function ResultDonut({
+  passed,
+  weak,
+  failed,
+  successRate,
+}: {
+  readonly passed: number;
+  readonly weak: number;
+  readonly failed: number;
+  readonly successRate: number;
+}) {
+  const total = Math.max(1, passed + weak + failed);
+  const segments = [
+    { count: passed, color: "var(--color-success)", label: "通过" },
+    { count: weak, color: "var(--color-update)", label: "偏弱" },
+    { count: failed, color: "var(--color-danger)", label: "失败" },
+  ];
+  let offset = 0;
+
+  return (
+    <div className="flex min-w-0 items-center gap-5">
+      <svg
+        viewBox="0 0 140 140"
+        className="h-36 w-36 shrink-0"
+        role="img"
+        aria-label="通过结果分布"
+      >
+        <circle
+          cx="70"
+          cy="70"
+          r={DONUT_RADIUS}
+          className="fill-none stroke-rule"
+          strokeWidth="16"
+        />
+        {segments.map((segment) => {
+          const fraction = segment.count / total;
+          const length = fraction * DONUT_CIRCUMFERENCE;
+          const dash = `${length} ${DONUT_CIRCUMFERENCE - length}`;
+          const element = (
+            <circle
+              key={segment.label}
+              cx="70"
+              cy="70"
+              r={DONUT_RADIUS}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth="16"
+              strokeDasharray={dash}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 70 70)"
+            />
+          );
+          offset += length;
+          return element;
+        })}
+        <text
+          x="70"
+          y="66"
+          textAnchor="middle"
+          className="fill-ink font-display text-2xl font-bold"
+        >
+          {toPercent(successRate)}
+        </text>
+        <text
+          x="70"
+          y="88"
+          textAnchor="middle"
+          className="fill-muted font-mono text-[10px] uppercase"
+        >
+          PASS RATE
+        </text>
+      </svg>
+      <div className="min-w-0 space-y-2">
+        {segments.map((segment) => (
+          <div key={segment.label} className="flex items-center gap-2">
+            <span aria-hidden="true" className="h-2 w-4" style={{ background: segment.color }} />
+            <span className="text-sm text-ink">{segment.label}</span>
+            <span className="font-mono text-xs text-muted">{segment.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TrendChart({ runs }: { readonly runs: readonly EvalRunBrief[] }) {
+  const chronological = [...runs].sort(
+    (left, right) => Date.parse(left.finishedAt) - Date.parse(right.finishedAt),
+  );
+  if (chronological.length === 0) return null;
+
+  const width = 720;
+  const height = 180;
+  const padding = 32;
+  const points = chronological.map((run, index) => {
+    const x =
+      chronological.length === 1
+        ? width / 2
+        : padding + (index / (chronological.length - 1)) * (width - padding * 2);
+    const y = height - padding - run.successRate * (height - padding * 2);
+    return { x, y, run };
+  });
+  const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const area = `${padding},${height - padding} ${line} ${width - padding},${height - padding}`;
+
+  return (
+    <div className="min-w-0 overflow-x-auto">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-48 w-full min-w-[520px]"
+        role="img"
+        aria-label="历史通过率趋势"
+      >
+        <line
+          x1={padding}
+          y1={height - padding}
+          x2={width - padding}
+          y2={height - padding}
+          className="stroke-rule"
+          strokeWidth="2"
+        />
+        <line
+          x1={padding}
+          y1={padding}
+          x2={padding}
+          y2={height - padding}
+          className="stroke-rule"
+          strokeWidth="2"
+        />
+        <polygon points={area} className="fill-accent/10" />
+        <polyline
+          points={line}
+          className="fill-none stroke-accent"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+        {points.map((point) => (
+          <g key={point.run.runId}>
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r="5"
+              className="fill-paper-3 stroke-accent"
+              strokeWidth="3"
+            />
+            <title>{`${point.run.runId} · ${toPercent(point.run.successRate)}`}</title>
+          </g>
+        ))}
+        <text x={padding} y={22} className="fill-muted font-mono text-[11px]">
+          100%
+        </text>
+        <text x={padding} y={height - 10} className="fill-muted font-mono text-[11px]">
+          {chronological[0].finishedAt.slice(5, 16).replace("T", " ")}
+        </text>
+        <text
+          x={width - padding}
+          y={height - 10}
+          textAnchor="end"
+          className="fill-muted font-mono text-[11px]"
+        >
+          {chronological[chronological.length - 1].finishedAt.slice(5, 16).replace("T", " ")}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function StackedQualityChart({
+  title,
+  rows,
+}: {
+  readonly title: string;
+  readonly rows: ReadonlyArray<{
+    readonly key: string;
+    readonly label: string;
+    readonly passed: number;
+    readonly weak: number;
+    readonly failed: number;
+  }>;
+}) {
+  return (
+    <div className="border border-rule bg-paper-3 p-5 shadow-[var(--shadow-card)]">
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      <div className="mt-4 space-y-4">
+        {rows.map((row) => {
+          const total = Math.max(1, row.passed + row.weak + row.failed);
+          return (
+            <div key={row.key}>
+              <div className="flex min-w-0 items-baseline justify-between gap-3">
+                <span className="min-w-0 truncate text-sm font-medium text-ink">{row.label}</span>
+                <span className="shrink-0 font-mono text-[11px] text-muted">
+                  {row.passed}/{row.passed + row.weak + row.failed}
+                </span>
+              </div>
+              <div className="mt-2 flex h-3 w-full overflow-hidden bg-rule">
+                <div className="bg-success" style={{ width: `${(row.passed / total) * 100}%` }} />
+                <div className="bg-update" style={{ width: `${(row.weak / total) * 100}%` }} />
+                <div className="bg-danger" style={{ width: `${(row.failed / total) * 100}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function TracePre({ value, label }: { readonly value?: string; readonly label: string }) {
   if (!value || value === "null") return null;
   return (
@@ -305,11 +515,6 @@ function EvalDashboardPage() {
     );
   }
 
-  const qualitySegments = [
-    { count: summary.passed, className: "bg-success" },
-    { count: summary.weak, className: "bg-update" },
-    { count: summary.failed, className: "bg-danger" },
-  ];
   const qualityTotal = Math.max(1, summary.executed);
   const comparison = dashboard.comparison;
 
@@ -389,16 +594,13 @@ function EvalDashboardPage() {
             />
           </div>
 
-          <div className="mt-4 border border-rule bg-paper-3 p-4 shadow-[var(--shadow-card)]">
-            <div className="flex h-3 w-full overflow-hidden">
-              {qualitySegments.map((segment) => (
-                <div
-                  key={segment.className}
-                  className={segment.className}
-                  style={{ width: `${(segment.count / qualityTotal) * 100}%` }}
-                />
-              ))}
-            </div>
+          <div className="mt-4 border border-rule bg-paper-3 p-5 shadow-[var(--shadow-card)]">
+            <ResultDonut
+              passed={summary.passed}
+              weak={summary.weak}
+              failed={summary.failed}
+              successRate={summary.successRate}
+            />
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[11px] text-muted">
               <span>PASS {summary.passed}</span>
               <span>WEAK {summary.weak}</span>
@@ -439,6 +641,23 @@ function EvalDashboardPage() {
           )}
         </section>
 
+        <section aria-labelledby="trend-heading">
+          <PanelHeader
+            eyebrow="TREND"
+            title="历史通过率趋势"
+            description="按报告结束时间从左到右排列，圆点悬停可看 run ID。"
+          />
+          <h2 id="trend-heading" className="sr-only">
+            历史通过率趋势
+          </h2>
+          <div className="mt-6 border border-rule bg-paper-3 p-5 shadow-[var(--shadow-card)]">
+            <TrendChart runs={dashboard.runs} />
+            <p className="mt-3 font-mono text-[11px] text-muted">
+              {qualityTotal} 条本轮样本 · {dashboard.runs.length} 次真实报告
+            </p>
+          </div>
+        </section>
+
         <section aria-labelledby="coverage-heading">
           <PanelHeader
             eyebrow="COVERAGE"
@@ -449,18 +668,16 @@ function EvalDashboardPage() {
             覆盖率
           </h2>
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4 border border-rule bg-paper-3 p-5 shadow-[var(--shadow-card)]">
-              <h3 className="text-sm font-semibold text-ink">场景</h3>
-              {Object.entries(summary.byCategory).map(([key, value]) => (
-                <CoverageRow
-                  key={key}
-                  label={CATEGORY_LABELS[key] ?? key}
-                  executed={value.executed}
-                  passed={value.passed}
-                  total={value.total}
-                />
-              ))}
-            </div>
+            <StackedQualityChart
+              title="场景质量"
+              rows={Object.entries(summary.byCategory).map(([key, value]) => ({
+                key,
+                label: CATEGORY_LABELS[key] ?? key,
+                passed: value.passed,
+                weak: Math.max(0, value.executed - value.passed),
+                failed: 0,
+              }))}
+            />
             <div className="space-y-4 border border-rule bg-paper-3 p-5 shadow-[var(--shadow-card)]">
               <h3 className="text-sm font-semibold text-ink">难度</h3>
               {Object.entries(summary.byDifficulty).map(([key, value]) => (

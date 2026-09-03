@@ -461,4 +461,144 @@ describe("thread-synthesis synthesizeThread", () => {
       expect(result.nodes.every((n: SynthesizedNode) => n.kind === "unknown")).toBe(true);
     }
   });
+
+  it("snaps a whitespace-drifted quote back to verbatim source text", async () => {
+    const stage = makeStage({
+      excerpt: {
+        ...makeStage().excerpt,
+        excerpt: "第一行说明\n\n第二行给出机制：序列化边界决定了数据何时跨越服务端与客户端。",
+      },
+    });
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "evolution",
+          title: "跨端边界",
+          summary: "摘录把序列化边界当作服务端与客户端之间的分界条件。",
+          evidenceRefs: [
+            {
+              excerptFingerprint: stage.excerpt.fingerprint,
+              // Same words, collapsed newline — models do this constantly.
+              quote: "第二行给出机制：序列化边界决定了数据何时跨越服务端与客户端。",
+            },
+          ],
+          sourceAnswerId: stage.answerId,
+          sourceUrl: stage.canonicalUrl,
+          uncertainty: 0.3,
+        },
+      ],
+    });
+    const outcome = await runWorkflow(baseDeps(makeSucceedChat(response)), makeInput({
+      timelineStages: [stage],
+    }));
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") {
+      const node = outcome.result.nodes[0];
+      expect(node.kind).toBe("evolution");
+      expect(node.evidenceRefs[0].quote).toBe(
+        "第二行给出机制：序列化边界决定了数据何时跨越服务端与客户端。",
+      );
+      // The shipped quote must still be a byte-exact substring of the source.
+      expect(stage.excerpt.excerpt.includes(node.evidenceRefs[0].quote)).toBe(true);
+    }
+  });
+
+  it("keeps a node when one citation is invented but another is real", async () => {
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "cause",
+          title: "部分可引用的节点",
+          summary: "一条引用是编造的，另一条来自摘录，节点应当保留。",
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "这句话在摘录里根本不存在，属于模型编造。",
+            },
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "exact excerpt text",
+            },
+          ],
+          sourceAnswerId: "100",
+          sourceUrl: "https://www.zhihu.com/question/42/answer/100",
+          uncertainty: 0.4,
+        },
+      ],
+    });
+    const outcome = await runWorkflow(baseDeps(makeSucceedChat(response)), makeInput());
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") {
+      expect(outcome.result.source).toBe("model");
+      expect(outcome.result.nodes).toHaveLength(1);
+      expect(outcome.result.nodes[0].kind).toBe("cause");
+      expect(outcome.result.nodes[0].evidenceRefs).toHaveLength(1);
+      expect(outcome.result.nodes[0].evidenceRefs[0].quote).toBe("exact excerpt text");
+    }
+  });
+
+  it("reports fallback source when every citation is invented", async () => {
+    const response = JSON.stringify({
+      nodes: [
+        {
+          kind: "consensus",
+          title: "无证据节点",
+          summary: "所有引用都不在摘录里。",
+          evidenceRefs: [
+            {
+              excerptFingerprint: "v1:5555555555555555",
+              quote: "完全不存在的句子",
+            },
+          ],
+          sourceAnswerId: "100",
+          sourceUrl: "https://www.zhihu.com/question/42/answer/100",
+          uncertainty: 0.2,
+        },
+      ],
+    });
+    const outcome = await runWorkflow(baseDeps(makeSucceedChat(response)), makeInput());
+    expect(outcome._tag).toBe("success");
+    if (outcome._tag === "success") {
+      expect(outcome.result.source).toBe("fallback");
+      expect(outcome.result.nodes[0].kind).toBe("unknown");
+    }
+  });
+
+  it("sends the model more than a headline fragment of each excerpt", async () => {
+    const longBody = `序列化边界 ${"机制说明".repeat(200)}`;
+    const stage = makeStage({
+      excerpt: { ...makeStage().excerpt, excerpt: longBody },
+    });
+    const prompts: string[] = [];
+    const chat: ThreadSynthesisDeps["chat"] = {
+      complete: ({ messages }) => {
+        prompts.push(messages[messages.length - 1].content);
+        return Effect.succeed(
+          JSON.stringify({
+            nodes: [
+              {
+                kind: "evolution",
+                title: "长摘录节点",
+                summary: "摘录中段的机制被完整提供给模型。",
+                evidenceRefs: [
+                  {
+                    excerptFingerprint: stage.excerpt.fingerprint,
+                    quote: "机制说明".repeat(3),
+                  },
+                ],
+                sourceAnswerId: stage.answerId,
+                sourceUrl: stage.canonicalUrl,
+                uncertainty: 0.3,
+              },
+            ],
+          }),
+        );
+      },
+    };
+    await runWorkflow(baseDeps(chat), makeInput({ timelineStages: [stage] }));
+    expect(prompts).toHaveLength(1);
+    // The old budget cut every excerpt at 300 characters; the learning nodes
+    // need the body, not just the opening line.
+    expect(prompts[0].split("机制说明").length - 1).toBeGreaterThan(100);
+  });
 });

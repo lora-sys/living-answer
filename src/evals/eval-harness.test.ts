@@ -73,7 +73,8 @@ describe("golden eval command", () => {
       category: process.env.EVAL_CATEGORY,
       judge: process.env.EVAL_JUDGE !== "false",
       filter: process.env.EVAL_FILTER,
+      concurrency: Number(process.env.EVAL_CONCURRENCY ?? 1),
     });
     expect(process.env.EVAL_COMMAND).toBe("run");
-  }, 600_000);
+  }, 3_600_000);
 });

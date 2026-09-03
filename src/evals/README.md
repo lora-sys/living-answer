@@ -15,7 +15,7 @@ Current categories:
 
 | Category         | Cases | Purpose                                                |
 | ---------------- | ----: | ------------------------------------------------------ |
-| `rag_qa`         |   100 | End-to-end question to evidence-backed learning thread |
+| `rag_qa`         |    96 | End-to-end question to evidence-backed learning thread |
 | `tool_call`      |    48 | Clarify, search, rank, select, generate, read, agent   |
 | `multi_turn`     |    48 | Two- and three-turn follow-up behavior                 |
 | `bug_regression` |    36 | Regressions observed during real use                   |

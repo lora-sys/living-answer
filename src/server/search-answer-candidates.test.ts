@@ -9,6 +9,7 @@ import {
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
 import type { ExcerptStore } from "../lib/excerpt-store";
 import { StoreError } from "../lib/excerpt-store";
+import { SearchError } from "../lib/zhihu-content-search";
 import type { DailyQuotaGuard } from "../lib/daily-quota";
 import { QuotaExceededError, DailyQuotaStoreError } from "../lib/daily-quota";
 
@@ -450,6 +451,93 @@ describe("search-answer-candidates", () => {
         expect(result.candidates).toHaveLength(1);
         expect(result.candidates[0].authorDisplayName).toBeUndefined();
         expect(result.candidates[0].editAt).toBe(1_700_000_000);
+      }
+    });
+  });
+
+  // ── Query broadening with clarified alternatives ──────────────────────
+
+  describe("alt query broadening", () => {
+    const answerItem = (answerId: string, text: string) => ({
+      ContentType: "Answer",
+      Title: `回答 ${answerId}`,
+      Url: `https://www.zhihu.com/question/42/answer/${answerId}`,
+      ContentID: answerId,
+      EditTime: 1_700_000_000,
+      ContentText: text,
+    });
+
+    it("broadens with alt queries when the primary query returns a thin set", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const queries: string[] = [];
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) => {
+        queries.push(args.query);
+        if (args.query === "primary") return Effect.succeed([answerItem("100", "主命中")]);
+        return Effect.succeed([answerItem("200", "备选甲"), answerItem("300", "备选乙")]);
+      });
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a", "alt-b"] });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates.map((c) => c.answerId).sort()).toEqual(["100", "200", "300"]);
+      }
+      // Stops as soon as the set is useful instead of burning the whole list.
+      expect(queries).toEqual(["primary", "alt-a"]);
+    });
+
+    it("dedupes answers that appear under several queries", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) =>
+        args.query === "primary"
+          ? Effect.succeed([answerItem("100", "重复")])
+          : Effect.succeed([answerItem("100", "重复"), answerItem("200", "新增")]),
+      );
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a"] });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates.map((c) => c.answerId)).toEqual(["100", "200"]);
+      }
+    });
+
+    it("skips alt queries once the primary result is already useful", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      const queries: string[] = [];
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) => {
+        queries.push(args.query);
+        return Effect.succeed([
+          answerItem("100", "甲"),
+          answerItem("200", "乙"),
+          answerItem("300", "丙"),
+        ]);
+      });
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a"] });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") expect(result.candidates).toHaveLength(3);
+      expect(queries).toEqual(["primary"]);
+    });
+
+    it("keeps the primary result when an alt query fails", async () => {
+      const { fetchSearchItems } = await import("../lib/zhihu-content-search");
+      (fetchSearchItems as ReturnType<typeof vi.fn>).mockImplementation((args: any) =>
+        args.query === "primary"
+          ? Effect.succeed([answerItem("100", "主命中")])
+          : Effect.fail(new SearchError({ reason: "NON_ZERO_CODE" })),
+      );
+
+      const h = createSearchAnswerCandidatesHandler(makeDeps("secret", makeFakeStore()));
+      const result = await h({ query: "primary", altQueries: ["alt-a"] });
+
+      expect(result.status).toBe("ok");
+      if (result.status === "ok") {
+        expect(result.candidates.map((c) => c.answerId)).toEqual(["100"]);
       }
     });
   });
