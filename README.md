@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="Zhihu Threads — 用 AI 把模糊问题变成知乎证据学习线">
+  <img src="./assets/readme/hero.png" width="100%" alt="Zhihu Threads — 用 AI 把模糊问题变成知乎证据学习线">
 </p>
 
 # Zhihu Threads
