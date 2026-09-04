@@ -630,8 +630,14 @@ const evaluate = async (
     );
     missedConcepts.push(phrase);
   };
+  // A concept with a synonym group is satisfied by any accepted wording, so it
+  // must not also be scored by literal substring match — that would double-count
+  // a miss the group already cleared.
+  const groupedTerms = new Set(
+    (golden.expected.mustIncludeAny ?? []).flatMap((alternatives) => alternatives),
+  );
   for (const phrase of golden.expected.mustInclude ?? []) {
-    if (conceptScope.includes(phrase)) continue;
+    if (groupedTerms.has(phrase) || conceptScope.includes(phrase)) continue;
     recordMiss(phrase);
   }
   // A concept may legitimately arrive under a different standard wording.
