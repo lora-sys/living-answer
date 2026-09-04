@@ -17,6 +17,12 @@ export interface GoldenCase {
     readonly flow: "full" | "safe_no_thread";
     readonly requiredTools: readonly string[];
     readonly mustInclude?: readonly string[];
+    /**
+     * Same idea, multiple accepted wordings.  Satisfying any member counts as
+     * coverage, because learners who read "服务端组件" have "服务器组件" even
+     * though a substring scorer cannot see it.
+     */
+    readonly mustIncludeAny?: readonly (readonly string[])[];
     readonly mustNotInclude?: readonly string[];
     readonly minSources?: number;
   };

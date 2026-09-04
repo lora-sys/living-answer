@@ -1,0 +1,23 @@
+{
+  "dataset": "./golden-v2.jsonl",
+  "version": 2,
+  "cases": 264,
+  "sha256": "c67b44ac0228d7fd6ff60bec2542b85cd5af0cd77ea6ef25529939480f0fff9c",
+  "frozen": true,
+  "created": "2026-09-04",
+  "supersedes": "./golden-v1.jsonl",
+  "changePolicy": "Do not edit cases after release. Create golden-v3.jsonl and manifest.json instead.",
+  "coverage": {
+    "rag_qa": 96,
+    "tool_call": 48,
+    "multi_turn": 48,
+    "bug_regression": 36,
+    "adversarial": 36
+  },
+  "changesFromV1": {
+    "kind": "additive-only",
+    "casesTouchedWithSynonymGroups": 62,
+    "mustIncludeCasesPreserved": true,
+    "reason": "Substring scoring under-measured concept coverage: 45% of misses were wording, e.g. 服务端组件 vs 服务器组件. Synonym groups keep the original assertion and add accepted wordings."
+  }
+}

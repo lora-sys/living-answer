@@ -618,18 +618,27 @@ const evaluate = async (
   const authoredText = aiAuthoredText.join(" \n ");
   const finalOutputText = safeText(modelOutput.agent);
   const missedConcepts: string[] = [];
-  for (const phrase of golden.expected.mustInclude ?? []) {
-    const scope = golden.category === "adversarial" ? finalOutputText : authoredText;
-    if (scope.includes(phrase)) continue;
-    // Distinguish "the AI never surfaced it" from "the evidence never had it".
-    // The first is a synthesis defect; the second is a retrieval/dataset gap.
-    const evidenceScope = JSON.stringify(
-      Array.from(artifactEvidence.values()).map((entry) => entry.excerpt),
-    );
+  const conceptScope = golden.category === "adversarial" ? finalOutputText : authoredText;
+  // Distinguish "the AI never surfaced it" from "the evidence never had it".
+  // The first is a synthesis defect; the second is a retrieval/dataset gap.
+  const evidenceScope = JSON.stringify(
+    Array.from(artifactEvidence.values()).map((entry) => entry.excerpt),
+  );
+  const recordMiss = (phrase: string): void => {
     failures.push(
       evidenceScope.includes(phrase) ? `must_include_ai:${phrase}` : `must_include_absent:${phrase}`,
     );
     missedConcepts.push(phrase);
+  };
+  for (const phrase of golden.expected.mustInclude ?? []) {
+    if (conceptScope.includes(phrase)) continue;
+    recordMiss(phrase);
+  }
+  // A concept may legitimately arrive under a different standard wording.
+  // Any member of the group counts, because the learner has the idea either way.
+  for (const alternatives of golden.expected.mustIncludeAny ?? []) {
+    if (alternatives.some((phrase) => conceptScope.includes(phrase))) continue;
+    recordMiss(alternatives.join("/"));
   }
   for (const phrase of golden.expected.mustNotInclude ?? []) {
     const scope = golden.category === "adversarial" ? finalOutputText : rendered;
@@ -838,7 +847,10 @@ const parseArgs = (argv: readonly string[]) => {
 };
 
 export const runGoldenEval = async (args = parseArgs([])) => {
-  const datasetPath = "src/evals/datasets/golden-v1.jsonl";
+  // golden-v2 keeps every v1 assertion and adds synonym groups for concepts the
+  // live endpoint proves are described under more than one standard wording.
+  const datasetFile = process.env.EVAL_DATASET ?? "golden-v1.jsonl";
+  const datasetPath = `src/evals/datasets/${datasetFile}`;
   const dataset = readJsonl<GoldenCase>(datasetPath);
   const raw = readFileSync(datasetPath);
   const datasetHash = createHash("sha256").update(raw).digest("hex");
@@ -913,7 +925,7 @@ export const runGoldenEval = async (args = parseArgs([])) => {
       finishedAt: new Date().toISOString(),
       commit: process.env.GIT_COMMIT ?? "local-run",
       model,
-      datasetVersion: 1,
+      datasetVersion: datasetFile.endsWith("v2.jsonl") ? 2 : 1,
       datasetHash,
       total: dataset.length,
       executed: results.length,
