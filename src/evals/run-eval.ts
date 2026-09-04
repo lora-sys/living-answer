@@ -797,7 +797,18 @@ const runCaseWithRetry = async (
   if (rateLimited) await sleep(20_000);
   else if (first.failures.includes("no_selectable_sources")) await sleep(2_000);
   const second = await evaluate(golden, deps);
-  const chosen = second.failures.length <= first.failures.length ? second : first;
+  // Equal failure counts are not a tie.  A run that produced a thread and got
+  // further downstream teaches us more than an earlier-stage failure, and the
+  // workflow metrics depend on that progress, so depth decides before coin
+  // order does.
+  const progress = (r: EvalCaseResult): number =>
+    (r.threadId ? 1 : 0) + (r.metrics.requiredToolsUsed ? 1 : 0);
+  const chosen =
+    second.failures.length < first.failures.length ||
+    (second.failures.length === first.failures.length &&
+      progress(second) >= progress(first))
+      ? second
+      : first;
   return {
     ...chosen,
     tools: [
