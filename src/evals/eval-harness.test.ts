@@ -72,9 +72,10 @@ describe("golden eval command", () => {
   
       const { runGoldenEval } = await import("./run-eval");
       await runGoldenEval({
-        limit: Number(process.env.EVAL_LIMIT ?? 12),
-        offset: Number(process.env.EVAL_OFFSET ?? 0),
-        category: process.env.EVAL_CATEGORY,
+      limit: Number(process.env.EVAL_LIMIT ?? 12),
+      offset: Number(process.env.EVAL_OFFSET ?? 0),
+      stride: Number(process.env.EVAL_STRIDE ?? 0),
+      category: process.env.EVAL_CATEGORY,
         judge: process.env.EVAL_JUDGE !== "false",
         filter: process.env.EVAL_FILTER,
         concurrency: Number(process.env.EVAL_CONCURRENCY ?? 1),

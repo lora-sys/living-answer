@@ -815,6 +815,7 @@ const parseArgs = (argv: readonly string[]) => {
   return {
     limit: Number(process.env.EVAL_LIMIT ?? values.get("limit") ?? 12),
     offset: Number(process.env.EVAL_OFFSET ?? values.get("offset") ?? 0),
+    stride: Number(process.env.EVAL_STRIDE ?? values.get("stride") ?? 0),
     category: process.env.EVAL_CATEGORY ?? values.get("category"),
     judge: (process.env.EVAL_JUDGE ?? values.get("judge") ?? "true") === "true",
     filter: process.env.EVAL_FILTER ?? values.get("filter"),
@@ -835,7 +836,12 @@ export const runGoldenEval = async (args = parseArgs([])) => {
     .filter(
       (item) => !args.filter || item.id.includes(args.filter) || item.title.includes(args.filter),
     )
-    .slice(args.offset, args.offset + args.limit);
+    // A stride keeps every difficulty and topic family in a fast iteration
+    // sample instead of grabbing the first few cases, which all share one
+    // topic.  `EVAL_LIMIT` still caps the result, so the sample size is
+    // explicit and comparable between runs.
+    .filter((_, index) => args.stride <= 0 || index % args.stride === args.offset % args.stride)
+    .slice(0, args.limit);
   const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
   const openaiKey = process.env.OPENAI_API_KEY;
   const baseUrl = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
