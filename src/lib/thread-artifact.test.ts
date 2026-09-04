@@ -310,15 +310,43 @@ describe("thread-artifact", () => {
       expect(asFailure(result).reason).toBe("EMPTY_EXCERPT");
     });
 
-    it("returns INVALID_TIMELINE_STAGE when excerpt sourceContentType is not Answer", () => {
+    it("rejects an excerpt content type outside Answer and Article", () => {
       const stage = makeStage({
         excerpt: {
           ...makeStage().excerpt,
-          sourceContentType: "Article",
+          sourceContentType: "Pin" as unknown as "Answer",
         },
       });
       const result = createQuestionLearningThread(makeInput({ timelineStages: [stage] }));
       expect(asFailure(result).reason).toBe("INVALID_TIMELINE_STAGE");
+    });
+
+    it("accepts an Article stage with no question id", () => {
+      // Column articles carry no question and use the zhuanlan URL shape.
+      const stage = makeStage({
+        questionId: "",
+        answerId: "9001",
+        canonicalUrl: "https://zhuanlan.zhihu.com/p/9001",
+        excerpt: {
+          ...makeStage().excerpt,
+          questionId: "",
+          answerId: "9001",
+          sourceContentType: "Article",
+        },
+      });
+      const node = makeNode({
+        sourceAnswerId: "9001",
+        sourceUrl: "https://zhuanlan.zhihu.com/p/9001",
+        evidenceRefs: [
+          { excerptFingerprint: stage.excerpt.fingerprint, quote: stage.excerpt.excerpt },
+        ],
+      });
+      const result = createQuestionLearningThread(
+        makeInput({ timelineStages: [stage], learningNodes: [node] }),
+      );
+      const artifact = asSuccess(result).artifact;
+      expect(artifact.timelineStages[0]?.excerpt.sourceContentType).toBe("Article");
+      expect(artifact.timelineStages[0]?.questionId).toBe("");
     });
 
     it("accepts multiple timeline stages totaling different counts", () => {

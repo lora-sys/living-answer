@@ -39,7 +39,7 @@ export interface TimelineStage {
     readonly answerId: string;
     readonly capturedAt: number;
     readonly sourceContentId: string;
-    readonly sourceContentType: "Answer";
+    readonly sourceContentType: "Answer" | "Article";
     readonly sourceEditTime: number;
     readonly excerpt: string;
     readonly fingerprint: string;
@@ -258,6 +258,9 @@ const isValidLearningGuideRole = (value: unknown): value is LearningGuideRole =>
 const isValidZhihuUrl = (value: string): boolean =>
   value !== "" && /^https?:\/\/(www\.)?zhihu\.com\/question\/\d+\/answer\/\d+$/.test(value);
 
+const isValidZhihuArticleUrl = (value: string): boolean =>
+  value !== "" && /^https?:\/\/zhuanlan\.zhihu\.com\/p\/\d+$/.test(value);
+
 // ── Sorting ──────────────────────────────────────────────────────────────────
 
 export const sortLearningNodes = (nodes: readonly LearningNode[]): readonly LearningNode[] => {
@@ -455,11 +458,11 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
   const timelineStages: TimelineStage[] = [];
 
   for (const raw of input.timelineStages) {
-    // questionId and answerId are non-empty numeric strings
-    if (typeof raw.questionId !== "string" || !/^\d+$/.test(raw.questionId)) {
-      return failure("INVALID_TIMELINE_STAGE");
-    }
-    if (typeof raw.answerId !== "string" || !/^\d+$/.test(raw.answerId)) {
+    if (
+      typeof raw.answerId !== "string" ||
+      !/^\d+$/.test(raw.answerId) ||
+      (typeof raw.questionId !== "string" || (raw.questionId !== "" && !/^\d+$/.test(raw.questionId)))
+    ) {
       return failure("INVALID_TIMELINE_STAGE");
     }
 
@@ -481,7 +484,10 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     }
 
     // canonicalUrl
-    if (typeof raw.canonicalUrl !== "string" || !isValidZhihuUrl(raw.canonicalUrl)) {
+    if (
+      typeof raw.canonicalUrl !== "string" ||
+      (!isValidZhihuUrl(raw.canonicalUrl) && !isValidZhihuArticleUrl(raw.canonicalUrl))
+    ) {
       return failure("INVALID_TIMELINE_STAGE");
     }
 
@@ -496,8 +502,8 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
       return failure("EMPTY_EXCERPT");
     }
 
-    // Validate excerpt sourceContentType is "Answer"
-    if (raw.excerpt.sourceContentType !== "Answer") {
+    // Both kinds are summary-class evidence; anything else is out of scope.
+    if (raw.excerpt.sourceContentType !== "Answer" && raw.excerpt.sourceContentType !== "Article") {
       return failure("INVALID_TIMELINE_STAGE");
     }
 
@@ -516,7 +522,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
         answerId: raw.excerpt.answerId,
         capturedAt: raw.excerpt.capturedAt,
         sourceContentId: raw.excerpt.sourceContentId,
-        sourceContentType: "Answer",
+        sourceContentType: raw.excerpt.sourceContentType,
         sourceEditTime: raw.excerpt.sourceEditTime,
         excerpt: normalizedExcerpt,
         fingerprint: raw.excerpt.fingerprint,
@@ -577,7 +583,13 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     }
 
     // sourceUrl
-    if (typeof raw.sourceUrl !== "string" || !isValidZhihuUrl(raw.sourceUrl)) {
+    // The node must point at a source we actually cited, and the URL shape
+    // follows that source's kind: answer questions or column articles.
+    const sourceStage = answerIdMap.get(raw.sourceAnswerId);
+    const urlIsValid =
+      typeof raw.sourceUrl === "string" &&
+      raw.sourceUrl === sourceStage?.canonicalUrl;
+    if (!urlIsValid) {
       return failure("INVALID_LEARNING_NODE");
     }
 
@@ -586,7 +598,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
       return failure("INVALID_LEARNING_NODE");
     }
 
-    if (!answerIdMap.has(raw.sourceAnswerId)) {
+    if (!sourceStage) {
       return failure("INVALID_LEARNING_NODE");
     }
 

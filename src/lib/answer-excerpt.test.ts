@@ -613,18 +613,51 @@ describe("createAnswerExcerpt", () => {
     ).toEqual({ _tag: "failure", reason: "INVALID_SOURCE_CONTENT_ID" });
   });
 
-  it("rejects Article sourceContentType", () => {
+  it("accepts an Article with no question id", () => {
+    // Column articles are first-class evidence and are not attached to a
+    // question, so questionId may be empty for that kind only.
+    const result = createAnswerExcerpt({
+      questionId: "",
+      answerId: "42",
+      capturedAt: 0,
+      sourceContentId: "42",
+      sourceContentType: "Article",
+      sourceEditTime: 0,
+      excerpt: "ok",
+    });
+    expect(result._tag).toBe("success");
+    if (result._tag === "success") {
+      expect(result.excerpt.sourceContentType).toBe("Article");
+      expect(result.excerpt.questionId).toBe("");
+    }
+  });
+
+  it("rejects an unsupported content type", () => {
     expect(
       createAnswerExcerpt({
         questionId: "1",
         answerId: "1",
         capturedAt: 0,
         sourceContentId: "1",
-        sourceContentType: "Article" as "Answer",
+        sourceContentType: "Pin" as unknown as "Answer",
         sourceEditTime: 0,
         excerpt: "ok",
       }),
     ).toEqual({ _tag: "failure", reason: "INVALID_SOURCE_CONTENT_TYPE" });
+  });
+
+  it("rejects an Answer without a question id", () => {
+    expect(
+      createAnswerExcerpt({
+        questionId: "",
+        answerId: "1",
+        capturedAt: 0,
+        sourceContentId: "1",
+        sourceContentType: "Answer",
+        sourceEditTime: 0,
+        excerpt: "ok",
+      }),
+    ).toEqual({ _tag: "failure", reason: "INVALID_QUESTION_ID" });
   });
 
   it("rejects lowercase 'answer' sourceContentType", () => {
@@ -832,7 +865,7 @@ describe("createAnswerExcerpt", () => {
         answerId: "1",
         capturedAt: 0,
         sourceContentId: "1",
-        sourceContentType: "Article" as "Answer",
+        sourceContentType: "Pin" as unknown as "Answer",
         sourceEditTime: -1,
         excerpt: "ok",
       }),

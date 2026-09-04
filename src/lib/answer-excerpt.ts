@@ -13,6 +13,9 @@
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** Zhihu content kinds this product can cite as summary-class evidence. */
+export type SourceContentType = "Answer" | "Article";
+
 /** Reason an excerpt creation returned `{ _tag: "failure" }`. */
 export type AnswerExcerptFailureReason =
   | "INVALID_QUESTION_ID"
@@ -29,7 +32,7 @@ export interface AnswerExcerptInput {
   readonly answerId: string;
   readonly capturedAt: number;
   readonly sourceContentId: string;
-  readonly sourceContentType: "Answer";
+  readonly sourceContentType: SourceContentType;
   readonly sourceEditTime: number;
   readonly excerpt: string;
 }
@@ -40,7 +43,7 @@ export interface AnswerExcerpt {
   readonly answerId: string;
   readonly capturedAt: number;
   readonly sourceContentId: string;
-  readonly sourceContentType: "Answer";
+  readonly sourceContentType: SourceContentType;
   readonly sourceEditTime: number;
   readonly excerpt: string;
   readonly fingerprint: string;
@@ -160,19 +163,21 @@ const failure = (reason: AnswerExcerptFailureReason): AnswerExcerptFailure => ({
  *
  * Validation order:
  * 1. Safe-integer, non-negative `capturedAt`
- * 2. `questionId` — non-empty numeric string
+ * 2. `questionId` — numeric string.  Empty is allowed only for an Article,
+ *    which is not attached to a question.  An Answer without one is malformed.
  * 3. `answerId` — non-empty numeric string
  * 4. `sourceContentId` — canonical decimal string matching `^-?(?:0|[1-9][0-9]*)$`
- * 5. `sourceContentType` — runtime equality with `"Answer"`
+ * 5. `sourceContentType` — must be a supported kind ("Answer" or "Article");
+ *    other provider content types are out of scope and rejected, because only
+ *    these two carry a usable canonical URL shape.
  * 6. `sourceEditTime` — safe integer, non-negative
  * 7. Excerpt normalisation (NFC → LF → trim) and non-empty check
  *
  * Never throws – returns {@link AnswerExcerptFailure} on any validation error.
  *
- * The input interface uses the literal type `sourceContentType: "Answer"` for
- * ergonomics and compile-time narrowing, but the factory still performs a
- * runtime equality check because API payloads and other external data are
- * untrusted: a TypeScript type does not validate runtime data.
+ * The factory still performs runtime checks because API payloads and other
+ * external data are untrusted: a TypeScript type does not validate runtime
+ * data.
  */
 export const createAnswerExcerpt = (input: AnswerExcerptInput): AnswerExcerptResult => {
   // 1. capturedAt (no dependency on normalisation)
@@ -183,7 +188,8 @@ export const createAnswerExcerpt = (input: AnswerExcerptInput): AnswerExcerptRes
 
   // 2. questionId
 
-  if (!isNumericId(input.questionId)) {
+  const questionIdRequired = input.sourceContentType === "Answer";
+  if (questionIdRequired && !isNumericId(input.questionId)) {
     return failure("INVALID_QUESTION_ID");
   }
 
@@ -204,7 +210,7 @@ export const createAnswerExcerpt = (input: AnswerExcerptInput): AnswerExcerptRes
 
   // 5. sourceContentType
 
-  if (input.sourceContentType !== "Answer") {
+  if (input.sourceContentType !== "Answer" && input.sourceContentType !== "Article") {
     return failure("INVALID_SOURCE_CONTENT_TYPE");
   }
 
@@ -233,7 +239,7 @@ export const createAnswerExcerpt = (input: AnswerExcerptInput): AnswerExcerptRes
     answerId: input.answerId,
     capturedAt: input.capturedAt,
     sourceContentId: input.sourceContentId,
-    sourceContentType: "Answer",
+    sourceContentType: input.sourceContentType,
     sourceEditTime: input.sourceEditTime,
     excerpt,
     fingerprint: buildFingerprint({

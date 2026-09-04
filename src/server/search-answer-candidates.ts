@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { createServerFn } from "@tanstack/react-start";
 
 import { parseZhihuAnswerUrl } from "../lib/zhihu-answer-url";
+import { parseZhihuArticleUrl } from "../lib/zhihu-article-url";
 import {
   fetchSearchItems,
   makeFetchSearchTransport,
@@ -28,6 +29,8 @@ import { makeDailyQuotaGuard, QuotaExceededError, type DailyQuotaGuard } from ".
 export interface AnswerCandidate {
   readonly questionId: string;
   readonly answerId: string;
+  /** What kind of Zhihu content this is; drives the source badge in the UI. */
+  readonly sourceContentType: "Answer" | "Article";
   readonly title: string;
   readonly url: string;
   readonly preview: string;
@@ -89,15 +92,34 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
     if (typeof item !== "object" || item === null) continue;
 
     const record = item as Record<string, unknown>;
-    if (record.ContentType !== "Answer") continue;
-
     const rawUrl = typeof record.Url === "string" ? record.Url : undefined;
     if (!rawUrl) continue;
 
-    const parsed = parseZhihuAnswerUrl(rawUrl);
-    if (parsed._tag !== "success") continue;
-    if (seen.has(parsed.answerId)) continue;
-    seen.add(parsed.answerId);
+    // Articles are first-class results of this endpoint and, for the technical
+    // concepts this product teaches, they carry most of the vocabulary.
+    const contentType = typeof record.ContentType === "string" ? record.ContentType : "";
+    if (contentType !== "Answer" && contentType !== "Article") continue;
+
+    let questionId = "";
+    let sourceId: string;
+    let canonicalUrl: string;
+    const kind = contentType as "Answer" | "Article";
+    if (contentType === "Answer") {
+      const parsed = parseZhihuAnswerUrl(rawUrl);
+      if (parsed._tag !== "success") continue;
+      questionId = parsed.questionId;
+      sourceId = parsed.answerId;
+      canonicalUrl = parsed.canonicalUrl;
+    } else {
+      const parsed = parseZhihuArticleUrl(rawUrl);
+      if (parsed._tag !== "success") continue;
+      sourceId = parsed.articleId;
+      canonicalUrl = parsed.canonicalUrl;
+
+    }
+
+    if (seen.has(sourceId)) continue;
+    seen.add(sourceId);
 
     // Malformed items are silently skipped, not converted into invalid excerpts.
     const contentId = record.ContentID;
@@ -118,11 +140,11 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
     let excerpt: AnswerExcerpt | undefined;
     if (isValidForExcerpt) {
       const result = createAnswerExcerpt({
-        questionId: parsed.questionId,
-        answerId: parsed.answerId,
+        questionId,
+        answerId: sourceId,
         capturedAt: now,
         sourceContentId: contentId,
-        sourceContentType: "Answer",
+        sourceContentType: kind,
         sourceEditTime: editTime,
         excerpt: contentText, // createAnswerExcerpt normalizes and strips <em>
       });
@@ -134,10 +156,11 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
 
     excerpts.push(excerpt);
     candidates.push({
-      questionId: parsed.questionId,
-      answerId: parsed.answerId,
+      questionId,
+      answerId: sourceId,
+      sourceContentType: kind,
       title: typeof record.Title === "string" ? record.Title.trim() : "",
-      url: parsed.canonicalUrl,
+      url: canonicalUrl,
       preview: excerpt.excerpt.slice(0, 200),
       excerptFingerprint: excerpt.fingerprint,
       authorDisplayName:
