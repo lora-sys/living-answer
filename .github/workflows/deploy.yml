@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment target"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  docker-build:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build Docker image
+        run: docker build -t zhihu-threads:${{ github.sha }} .
+      - name: Verify build artifacts inside container
+        run: |
+          docker run --rm zhihu-threads:${{ github.sha }} test -f dist/server/server.js
+          docker run --rm zhihu-threads:${{ github.sha }} test -d dist/client/assets

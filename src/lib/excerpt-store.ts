@@ -57,7 +57,7 @@ LIMIT 1;
 
 // ── Default DB path helper ─────────────────────────────────────────────────────
 
-const DEFAULT_DB_PATH = ".local/excerpts.db";
+const DEFAULT_DB_PATH = process.env.EXCERPT_DB_PATH ?? ".local/excerpts.db";
 
 /**
  * Create a lazy Effect that opens (or creates) a SQLite database at `dbPath`

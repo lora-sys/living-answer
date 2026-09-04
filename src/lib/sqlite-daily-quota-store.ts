@@ -36,7 +36,7 @@ WHERE provider = ? AND quota_day = ?;
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-const DEFAULT_DB_PATH = ".local/provider-quota.db";
+const DEFAULT_DB_PATH = process.env.QUOTA_DB_PATH ?? ".local/provider-quota.db";
 
 export const makeSqliteDailyQuotaStore = (
   dbPath = DEFAULT_DB_PATH,

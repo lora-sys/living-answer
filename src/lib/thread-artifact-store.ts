@@ -46,7 +46,7 @@ WHERE thread_id = ?;
 
 // ── Default DB path ────────────────────────────────────────────────────────────
 
-const DEFAULT_DB_PATH = ".local/thread-artifacts.db";
+const DEFAULT_DB_PATH = process.env.DATABASE_PATH ?? ".local/thread-artifacts.db";
 
 /**
  * Create a lazy Effect that opens (or creates) a SQLite database at `dbPath`
