@@ -29,8 +29,8 @@ export const Route = createRootRoute({
 function NotFound() {
   return (
     <>
-      <title>页面不存在 · Living Answer</title>
-      <meta name="description" content="当前地址不存在，请返回 Living Answer 开发环境首页。" />
+      <title>页面不存在 · Zhihu Threads</title>
+      <meta name="description" content="当前地址不存在，请返回 Zhihu Threads 开发环境首页。" />
       <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-12 text-ink">
         <section className="w-full max-w-xl border-2 border-rule-strong bg-paper-3 p-8 shadow-[var(--shadow-card)] sm:p-12">
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">

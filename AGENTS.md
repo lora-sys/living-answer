@@ -1,6 +1,6 @@
-# Living Answer coding rules
+# Zhihu Threads coding rules
 
-Living Answer turns a fuzzy question into an evidence-backed learning thread.
+Zhihu Threads turns a fuzzy question into an evidence-backed learning thread.
 It organizes real Zhihu answers across time; it does not replace Zhihu and does
 not invent a generic "latest answer".
 

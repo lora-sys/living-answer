@@ -14,7 +14,7 @@ export function SiteNav() {
         >
           <span className="relative mr-2 h-3.5 w-3.5 border-2 border-ink" aria-hidden="true" />
           <span className="absolute -bottom-0.5 left-2 h-3 w-3 bg-accent" aria-hidden="true" />
-          <span className="relative ml-3">LIVING ANSWER</span>
+          <span className="relative ml-3">ZHIHU THREADS</span>
         </Link>
         <Link
           to="/evals"

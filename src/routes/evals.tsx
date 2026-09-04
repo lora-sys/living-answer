@@ -8,7 +8,7 @@ import type { EvalDashboard, EvalRunBrief } from "../evals/eval-report-store";
 export const Route = createFileRoute("/evals")({
   head: () => ({
     meta: [
-      { title: "Eval Dashboard · Living Answer" },
+      { title: "Eval Dashboard · Zhihu Threads" },
       {
         name: "description",
         content: "真实工作流评测结果、失败分布和可回放的执行 trace。",
@@ -530,7 +530,7 @@ function EvalDashboardPage() {
         />
         <div className="relative z-10 mx-auto w-full max-w-[1120px] px-5 py-10 sm:px-8 sm:py-12">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-            LIVING ANSWER · GOLDEN EVAL
+            ZHIHU THREADS · GOLDEN EVAL
           </p>
           <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
             真实工作流

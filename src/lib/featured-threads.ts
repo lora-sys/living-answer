@@ -11,47 +11,48 @@ export interface FeaturedThreadSummary {
 
 export const FEATURED_THREADS: readonly FeaturedThreadSummary[] = [
   {
-    threadId: "cb07a763224b4119",
-    label: "ALGORITHM",
-    title: "如何真正理解算法时间复杂度？",
+    threadId: "7717a55363d44765",
+    label: "REACT RSC",
+    title: "React Server Components 的核心机制是什么？",
     description:
-      "从 2018 年的工程直觉，到 2025 年的真实项目取舍，再到渐进分析与学习误区，把一个大O概念串成完整理解路径。",
-    yearRange: "2018—2026",
-    stageCount: 4,
-    nodeCount: 4,
-    takeaways: [
-      "核心：大 O 关注增长趋势，不是精确耗时。",
-      "分歧：相同复杂度的实际速度可能差距很大。",
-      "追问：为什么算法选择不能只看大 O？",
-    ],
-  },
-  {
-    threadId: "b6dc2142b5a4420d",
-    label: "CSS LAYOUT",
-    title: "Flexbox 和 Grid 应该怎么选？",
-    description:
-      "把一维与二维布局的边界、典型使用场景和发展趋势放回真实回答里比较，避免只记住一句话口诀。",
-    yearRange: "2022—2024",
+      "从 RSC 渲染完备性和序列化模型，到 Pages Router 到 App Router 的架构变迁，用 3 条真实知乎回答串起 RSC 的完整演进路径。",
+    yearRange: "2023—2026",
     stageCount: 3,
     nodeCount: 7,
     takeaways: [
-      "基础：Flex 适合一维，Grid 适合二维。",
-      "深化：真实页面常把两者组合使用。",
-      "追问：哪些场景 Grid 反而更麻烦？",
+      "组件级数据获取替代页面级数据获取的边界在哪里。",
+      "序列化模型如何决定 Server / Client 组件的分界。",
+      "RSC 与传统 SSR 在 SEO 和首屏加载上的真实差异。",
     ],
   },
   {
-    threadId: "a8959e9f4fe2409c",
-    label: "REACT RSC",
-    title: "React Server Components 为什么重要？",
-    description: "从服务器资源的利用动机，到序列化模型与客户端组件边界，理解 RSC 解决的真正问题。",
-    yearRange: "2023—2024",
+    threadId: "376d90bd70194b24",
+    label: "DATABASE INDEX",
+    title: "数据库索引失效的常见场景有哪些？",
+    description:
+      "从函数包裹、隐式类型转换、LIKE 前导通配符到成本优化器主动放弃，用 2 条真实知乎回答拆解索引失效的根因和排查方法。",
+    yearRange: "2025—2026",
     stageCount: 2,
-    nodeCount: 2,
+    nodeCount: 6,
     takeaways: [
-      "动机：减少客户端资源消耗。",
-      "边界：序列化模型决定组件边界。",
-      "追问：什么场景还适合客户端组件？",
+      "B+ 树有序性被破坏和优化器成本评估是两大根因。",
+      "函数索引和跳跃扫描在 InnoDB 中的实现差异。",
+      "如何通过 EXPLAIN 快速定位索引失效的具体原因。",
+    ],
+  },
+  {
+    threadId: "3beed55578484f1b",
+    label: "ALGORITHM",
+    title: "算法时间复杂度到底怎么理解？",
+    description:
+      "从 2025 年知乎上最详细的复杂度教程出发，理解大 O 的严格数学定义和行业通用惯例之间的差异。",
+    yearRange: "2025—2025",
+    stageCount: 2,
+    nodeCount: 7,
+    takeaways: [
+      "大 O 的严格数学定义和行业口诀不完全一致。",
+      "递归树和主定理是推导递归复杂度的两个工具。",
+      "复杂度选型要综合考虑常数因子和硬件特性。",
     ],
   },
 ];

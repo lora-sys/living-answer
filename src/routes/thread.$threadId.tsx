@@ -97,7 +97,7 @@ const QUICK_PROMPTS = [
 
 export const Route = createFileRoute("/thread/$threadId")({
   head: ({ params }) => ({
-    title: `学习线程 #${params.threadId.slice(0, 8)} · Living Answer`,
+    title: `学习线程 #${params.threadId.slice(0, 8)} · Zhihu Threads`,
     meta: [{ title: "学习线程", name: "description", content: "问题学习线程" }],
     links: [
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon.png" },

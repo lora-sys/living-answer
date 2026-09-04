@@ -45,7 +45,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title: "问题学习线程 · Living Answer",
+        title: "问题学习线程 · Zhihu Threads",
       },
       {
         name: "description",
@@ -379,7 +379,7 @@ function QuestionThreadEntry() {
             {/* Left column */}
             <div>
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                LIVING ANSWER · 问题学习线程
+                ZHIHU THREADS · 问题学习线程
               </p>
               <h1 className="mt-6 font-display text-[36px] font-bold leading-[1.08] tracking-tight sm:text-[52px] lg:text-[56px]">
                 把回答
@@ -902,7 +902,7 @@ function QuestionThreadEntry() {
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink">
-                LIVING ANSWER
+                ZHIHU THREADS
               </p>
               <p className="mt-3 max-w-[68ch] text-sm leading-6 text-muted">
                 输入一个模糊问题，澄清学习意图，从真实知乎回答中选取摘录，生成一份持久的学习线程。
