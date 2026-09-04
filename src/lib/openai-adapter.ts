@@ -62,7 +62,7 @@ export interface OpenAiChatCompletionsOptions {
   readonly transientRetries?: number;
 }
 
-const DEFAULT_TRANSIENT_RETRIES = 1;
+const DEFAULT_TRANSIENT_RETRIES = 2;
 
 // ── Response validation ────────────────────────────────────────────────────────
 
@@ -148,6 +148,7 @@ const isTransient = (error: OpenAiTransportError): boolean => {
  */
 const isRateLimited = (error: OpenAiTransportError): boolean =>
   error.reason === "HTTP_STATUS" && error.status === 429;
+
 
 const RATE_LIMIT_BACKOFF = "2 seconds";
 const RATE_LIMIT_RETRIES = 3;

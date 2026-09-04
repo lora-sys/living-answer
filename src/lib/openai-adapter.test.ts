@@ -452,12 +452,12 @@ describe("openai-adapter", () => {
     it("stops after the retry budget instead of looping on a dead provider", async () => {
       const { service, calls } = makeCountingService(
         [Effect.fail(new OpenAiTransportError({ reason: "NETWORK_FAILED" }))],
-        2,
+        3,
       );
 
       const err = await runFailure(service.complete(request));
       expect(err.reason).toBe("NETWORK_FAILED");
-      expect(calls()).toBe(3);
+      expect(calls()).toBe(4);
     });
   });
 
