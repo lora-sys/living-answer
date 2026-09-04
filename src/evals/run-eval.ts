@@ -290,18 +290,15 @@ const evaluate = async (
   // Recording every dispatched form is what separates "the provider had
   // nothing" from "we asked the keyword engine in the wrong shape".
   const searchForms: { query: string; ok: boolean; candidates: number }[] = [];
-  const [searchOutput, searchTrace] = await timed(
-    "search",
-    { query, altQueries },
-    async () =>
-      createSearchAnswerCandidatesHandler({
-        getSecret: () => deps.searchSecret,
-        createStore: async () => deps.excerptStore,
-        createQuotaGuard: async () => deps.quotaGuard,
-        onSearchAttempt: (attempt) => {
-          searchForms.push(attempt);
-        },
-      })({ query, altQueries }),
+  const [searchOutput, searchTrace] = await timed("search", { query, altQueries }, async () =>
+    createSearchAnswerCandidatesHandler({
+      getSecret: () => deps.searchSecret,
+      createStore: async () => deps.excerptStore,
+      createQuotaGuard: async () => deps.quotaGuard,
+      onSearchAttempt: (attempt) => {
+        searchForms.push(attempt);
+      },
+    })({ query, altQueries }),
   );
   tools.push({
     ...searchTrace,
@@ -318,14 +315,14 @@ const evaluate = async (
     const [rankOutput, rankTrace] = await timed(
       "rank",
       { query, count: candidates.length },
-    async () =>
-      createRankAnswerCandidatesHandler({
-        getSecret: () => deps.openaiKey,
-        getModel: () => deps.model,
-        onError: (error) => {
-          rankErrors.push(error instanceof Error ? error.message : String(error));
-        },
-        createChat: async (apiKey, model) =>
+      async () =>
+        createRankAnswerCandidatesHandler({
+          getSecret: () => deps.openaiKey,
+          getModel: () => deps.model,
+          onError: (error) => {
+            rankErrors.push(error instanceof Error ? error.message : String(error));
+          },
+          createChat: async (apiKey, model) =>
             makeOpenAiChatCompletions({
               apiKey,
               model,
@@ -589,7 +586,10 @@ const evaluate = async (
         // What makes a gap useful is the way out.  A gap with no runnable
         // supplement query is a real defect, and that is where the failure is.
         const supplement = (agent.response.nextActions ?? []).some(
-          (action) => action.type === "search_supplement" && typeof action.query === "string" && action.query.trim() !== "",
+          (action) =>
+            action.type === "search_supplement" &&
+            typeof action.query === "string" &&
+            action.query.trim() !== "",
         );
         if (!supplement) failures.push("agent_gap_without_exit");
       } else if (evidenceRefs.length === 0) {
@@ -626,7 +626,9 @@ const evaluate = async (
   );
   const recordMiss = (phrase: string): void => {
     failures.push(
-      evidenceScope.includes(phrase) ? `must_include_ai:${phrase}` : `must_include_absent:${phrase}`,
+      evidenceScope.includes(phrase)
+        ? `must_include_ai:${phrase}`
+        : `must_include_absent:${phrase}`,
     );
     missedConcepts.push(phrase);
   };
@@ -820,8 +822,7 @@ const runCaseWithRetry = async (
     (r.threadId ? 1 : 0) + (r.metrics.requiredToolsUsed ? 1 : 0);
   const chosen =
     second.failures.length < first.failures.length ||
-    (second.failures.length === first.failures.length &&
-      progress(second) >= progress(first))
+    (second.failures.length === first.failures.length && progress(second) >= progress(first))
       ? second
       : first;
   return {
@@ -904,7 +905,9 @@ export const runGoldenEval = async (args = parseArgs([])) => {
     );
 
     const metrics = metric(results.map((result) => ({ ...result.metrics })));
-    const group = <T extends string>(key: (item: { category: string; difficulty: string }) => T) => {
+    const group = <T extends string>(
+      key: (item: { category: string; difficulty: string }) => T,
+    ) => {
       const output: Record<
         string,
         { total: number; executed: number; passed: number; successRate: number }
@@ -924,7 +927,7 @@ export const runGoldenEval = async (args = parseArgs([])) => {
       }
       return output;
     };
-  
+
     const summary: EvalRunSummary = {
       runId,
       startedAt: startedAtIso,
@@ -956,7 +959,7 @@ export const runGoldenEval = async (args = parseArgs([])) => {
       console.log(JSON.stringify(summary, null, 2));
       console.log(`report: ${reportPath}`);
     }
-  
+
     const previousFiles = readdirSync(".local/evals/reports")
       .filter((file) => file.endsWith("-summary.json") && file !== `${runId}-summary.json`)
       .sort()
@@ -1027,5 +1030,5 @@ export const runGoldenEval = async (args = parseArgs([])) => {
     // Flush after every batch so an interrupted run still leaves a report.
     writeReports(false);
   }
-    writeReports(true);
+  writeReports(true);
 };

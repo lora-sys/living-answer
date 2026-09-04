@@ -9,7 +9,10 @@
  * @module zhihu-article-url
  */
 
-export type ZhihuArticleUrlFailureReason = "UNKNOWN_URL" | "UNSUPPORTED_PROTOCOL" | "UNSUPPORTED_PATH";
+export type ZhihuArticleUrlFailureReason =
+  | "UNKNOWN_URL"
+  | "UNSUPPORTED_PROTOCOL"
+  | "UNSUPPORTED_PATH";
 
 export interface ZhihuArticleUrlSuccess {
   readonly _tag: "success";

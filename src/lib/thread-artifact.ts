@@ -461,7 +461,8 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     if (
       typeof raw.answerId !== "string" ||
       !/^\d+$/.test(raw.answerId) ||
-      (typeof raw.questionId !== "string" || (raw.questionId !== "" && !/^\d+$/.test(raw.questionId)))
+      typeof raw.questionId !== "string" ||
+      (raw.questionId !== "" && !/^\d+$/.test(raw.questionId))
     ) {
       return failure("INVALID_TIMELINE_STAGE");
     }
@@ -587,8 +588,7 @@ export const createQuestionLearningThread = (input: ThreadArtifactInput): Thread
     // follows that source's kind: answer questions or column articles.
     const sourceStage = answerIdMap.get(raw.sourceAnswerId);
     const urlIsValid =
-      typeof raw.sourceUrl === "string" &&
-      raw.sourceUrl === sourceStage?.canonicalUrl;
+      typeof raw.sourceUrl === "string" && raw.sourceUrl === sourceStage?.canonicalUrl;
     if (!urlIsValid) {
       return failure("INVALID_LEARNING_NODE");
     }

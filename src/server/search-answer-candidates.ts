@@ -115,7 +115,6 @@ function processSearchItems(items: readonly unknown[], now: number): SearchProce
       if (parsed._tag !== "success") continue;
       sourceId = parsed.articleId;
       canonicalUrl = parsed.canonicalUrl;
-
     }
 
     if (seen.has(sourceId)) continue;
@@ -224,9 +223,7 @@ export interface SearchAttemptRecord {
 const isTerminalFailure = (error: unknown): boolean =>
   (error instanceof SearchError &&
     (error.reason === "API_RATE_LIMITED" || error.reason === "API_QUOTA_EXCEEDED")) ||
-  (error instanceof SearchTransportError &&
-    error.reason === "HTTP_STATUS" &&
-    error.status === 429);
+  (error instanceof SearchTransportError && error.reason === "HTTP_STATUS" && error.status === 429);
 
 const failureCode = (error: unknown): SearchCandidatesFailureCode => {
   if (error instanceof SearchError) {

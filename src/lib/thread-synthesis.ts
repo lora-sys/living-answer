@@ -275,8 +275,7 @@ const validateNode = (
       .map((ref) => excerptCitationMap.get(ref.excerptFingerprint)?.answerId)
       .filter((id): id is string => typeof id === "string" && id !== ""),
   );
-  const declaredAnswerId =
-    typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
+  const declaredAnswerId = typeof raw.sourceAnswerId === "string" ? raw.sourceAnswerId.trim() : "";
   const sourceAnswerId = answerIdMap.has(declaredAnswerId)
     ? declaredAnswerId
     : citedAnswerIds.size === 1
@@ -338,7 +337,10 @@ const SYSTEM_PROMPT =
 const excerptBudget = (stageCount: number): number =>
   Math.max(
     400,
-    Math.min(EXCERPT_CHARS_PER_STAGE, Math.floor(EXCERPT_CHARS_TOTAL_BUDGET / Math.max(stageCount, 1))),
+    Math.min(
+      EXCERPT_CHARS_PER_STAGE,
+      Math.floor(EXCERPT_CHARS_TOTAL_BUDGET / Math.max(stageCount, 1)),
+    ),
   );
 
 // ── Fallback generation ────────────────────────────────────────────────────────
@@ -563,8 +565,7 @@ const synthesizeOnce =
       const stagesSummary = input.timelineStages
         .map((s) => {
           const body = s.excerpt.excerpt.slice(0, perStage);
-          const year =
-            s.editTime > 0 ? new Date(s.editTime * 1000).getFullYear() : "时间未知";
+          const year = s.editTime > 0 ? new Date(s.editTime * 1000).getFullYear() : "时间未知";
           return `[Answer ${s.answerId}] (${year}, ${s.authorDisplayName})\n${body}`;
         })
         .join("\n\n");

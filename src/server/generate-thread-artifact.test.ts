@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { Effect } from "effect";
 
-import {
-  createGenerateThreadHandler,
-  type GenerateThreadDeps,
-} from "./generate-thread-artifact";
+import { createGenerateThreadHandler, type GenerateThreadDeps } from "./generate-thread-artifact";
 import type { AnswerExcerpt } from "../lib/answer-excerpt";
 import type { ThreadArtifactStore } from "../lib/thread-artifact-store";
 import type { ExcerptStore } from "../lib/excerpt-store";
@@ -99,7 +96,9 @@ const modelNode = (quote: string) =>
 
 describe("generate-thread-artifact synthesis mode", () => {
   it("reports synthesized when the model's own nodes survive validation", async () => {
-    const { deps } = makeDeps(modelNode("它们把不需要交互的内容留在服务端，跨端时要经过序列化边界。"));
+    const { deps } = makeDeps(
+      modelNode("它们把不需要交互的内容留在服务端，跨端时要经过序列化边界。"),
+    );
     const result = await createGenerateThreadHandler(deps)(baseInput);
     expect(result.success).toBe(true);
     if (result.success) expect(result.mode).toBe("synthesized");

@@ -20,7 +20,9 @@ describe("describeDomainError", () => {
       reason: "TRANSPORT_FAILED",
       cause: `${transport.reason}${transport.status === undefined ? "" : `:${transport.status}`}`,
     });
-    expect(describeDomainError(error)).toBe("CandidateRankingError:TRANSPORT_FAILED:HTTP_STATUS:429");
+    expect(describeDomainError(error)).toBe(
+      "CandidateRankingError:TRANSPORT_FAILED:HTTP_STATUS:429",
+    );
   });
 
   it("falls back to a readable label for plain values", () => {

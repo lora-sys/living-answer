@@ -30,13 +30,13 @@ pnpm build      # 生产构建
 
 ## 技术栈
 
-| 层 | 技术 |
-| :- | :- |
-| 框架 | [TanStack Start](https://tanstack.com/start) · [TanStack Router](https://tanstack.com/router) |
-| 样式 | [Tailwind CSS 4](https://tailwindcss.com/) |
-| 效果系统 | [Effect TS](https://effect.website/) |
-| 持久化 | SQLite (better-sqlite3) |
-| 测试 | Vite+ · 345 tests |
+| 层       | 技术                                                                                          |
+| :------- | :-------------------------------------------------------------------------------------------- |
+| 框架     | [TanStack Start](https://tanstack.com/start) · [TanStack Router](https://tanstack.com/router) |
+| 样式     | [Tailwind CSS 4](https://tailwindcss.com/)                                                    |
+| 效果系统 | [Effect TS](https://effect.website/)                                                          |
+| 持久化   | SQLite (better-sqlite3)                                                                       |
+| 测试     | Vite+ · 345 tests                                                                             |
 
 ## 项目结构
 

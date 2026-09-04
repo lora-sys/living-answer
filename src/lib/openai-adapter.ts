@@ -149,7 +149,6 @@ const isTransient = (error: OpenAiTransportError): boolean => {
 const isRateLimited = (error: OpenAiTransportError): boolean =>
   error.reason === "HTTP_STATUS" && error.status === 429;
 
-
 const RATE_LIMIT_BACKOFF = "2 seconds";
 const RATE_LIMIT_RETRIES = 3;
 

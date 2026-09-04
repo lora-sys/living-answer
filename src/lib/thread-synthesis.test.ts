@@ -598,9 +598,12 @@ describe("thread-synthesis synthesizeThread", () => {
         },
       ],
     });
-    const outcome = await runWorkflow(baseDeps(makeSucceedChat(response)), makeInput({
-      timelineStages: [stage],
-    }));
+    const outcome = await runWorkflow(
+      baseDeps(makeSucceedChat(response)),
+      makeInput({
+        timelineStages: [stage],
+      }),
+    );
     expect(outcome._tag).toBe("success");
     if (outcome._tag === "success") {
       const node = outcome.result.nodes[0];
