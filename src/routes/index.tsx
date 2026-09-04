@@ -666,7 +666,7 @@ function QuestionThreadEntry() {
                       key={c.answerId}
                       type="button"
                       onClick={() => toggleCandidate(c)}
-                      aria-label={`选择回答：${c.title || `知乎回答 #${c.answerId}`}`}
+                      aria-label={`选择${c.sourceContentType === "Article" ? "文章" : "回答"}：${c.title || (c.sourceContentType === "Article" ? `知乎文章 #${c.answerId}` : `知乎回答 #${c.answerId}`)}`}
                       className={
                         "block w-full border bg-paper-3 px-5 py-5 text-left shadow-[var(--shadow-card)] transition-colors duration-150 " +
                         (isSelected
@@ -695,7 +695,13 @@ function QuestionThreadEntry() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[17px] font-semibold leading-7 text-ink">
-                            {c.title || `知乎回答 #${c.answerId}`}
+                            {c.title || (c.sourceContentType === "Article" ? `知乎文章 #${c.answerId}` : `知乎回答 #${c.answerId}`)}
+                            <span
+                              aria-label={c.sourceContentType === "Article" ? "来源类型：专栏文章" : "来源类型：知乎回答"}
+                              className="ml-2 inline-flex h-5 items-center border border-rule px-1.5 align-middle font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-muted"
+                            >
+                              {c.sourceContentType === "Article" ? "专栏" : "回答"}
+                            </span>
                           </p>
                           {candidateRanking && (
                             <div className="mt-3 space-y-2">
