@@ -13,7 +13,7 @@ import { APP_NAME, PRODUCT_TAGLINE } from "./app-info";
 
 describe("hero copy invariants", () => {
   it("APP_NAME is the brand name only, no metric attached", () => {
-    expect(APP_NAME).toBe("Living Answer");
+    expect(APP_NAME).toBe("Zhihu Threads");
     expect(APP_NAME).not.toMatch(/\d+/);
     expect(APP_NAME).not.toMatch(/%|k|万|亿/);
   });
