@@ -59,6 +59,8 @@ const METRIC_LABELS: Record<string, string> = {
   similarity: "概念覆盖",
   judgeScore: "Judge 分数",
   agentGapRate: "追问证据缺口率",
+  conceptSynonymCovered: "概念同义词已覆盖",
+  conceptRealGap: "概念真缺口",
 };
 
 const toPercent = (value: number): string => `${Math.round(value * 100)}%`;
