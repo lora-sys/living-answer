@@ -6,10 +6,10 @@ This folder evaluates the real product workflow, not mocked UI text.
 
 Two versions exist, both immutable:
 
-| Version | File | Cases | Notes |
-| ------- | ---- | ----: | ----- |
-| golden-v1 | `datasets/golden-v1.jsonl` | 264 | Original frozen baseline |
-| golden-v2 | `datasets/golden-v2.jsonl` | 264 | Additive on v1: 62 cases gain `mustIncludeAny` synonym groups |
+| Version   | File                       | Cases | Notes                                                         |
+| --------- | -------------------------- | ----: | ------------------------------------------------------------- |
+| golden-v1 | `datasets/golden-v1.jsonl` |   264 | Original frozen baseline                                      |
+| golden-v2 | `datasets/golden-v2.jsonl` |   264 | Additive on v1: 62 cases gain `mustIncludeAny` synonym groups |
 
 Each version has a manifest recording the SHA-256 hash, count, and freeze policy.
 Cases are immutable. To evolve coverage, create `golden-v3.jsonl` and a new
@@ -84,14 +84,14 @@ question (`questionId` may be empty for that kind) and use the
 
 ## Latest real results (1/4 stratified sample, golden-v2)
 
-| Category | Pass / Total |
-| -------- | :-: |
-| adversarial | 8 / 9 |
-| bug_regression | 0 / 9 |
-| tool_call | 2 / 12 |
-| multi_turn | 1 / 12 |
-| rag_qa | 2 / 24 |
-| **Total** | **13 / 66 (20%)** |
+| Category       |   Pass / Total    |
+| -------------- | :---------------: |
+| adversarial    |       8 / 9       |
+| bug_regression |       0 / 9       |
+| tool_call      |      2 / 12       |
+| multi_turn     |      1 / 12       |
+| rag_qa         |      2 / 24       |
+| **Total**      | **13 / 66 (20%)** |
 
 Primary remaining gap: `must_include_absent` — concepts that only appear deep
 inside Zhihu answer bodies and are not reachable from summary-class excerpts.
